@@ -30,7 +30,7 @@ enum AiProvider {
 // Konfigurasi pusat. Developer hanya perlu mengubah string di sini
 // untuk mengganti model AI yang digunakan di seluruh aplikasi.
 const aiConfig = {
-    provider: AiProvider.OPENAI // Ubah ke AiProvider.GEMINI untuk menggunakan Gemini
+    provider: AiProvider.GEMINI // Ubah ke AiProvider.GEMINI untuk menggunakan Gemini
 };
 
 let DungeonMaster: IAiDungeonMasterService;
