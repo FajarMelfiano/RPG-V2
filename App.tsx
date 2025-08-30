@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem } from './types';
 import StartScreen from './components/StartScreen';
@@ -12,34 +11,6 @@ import NotificationContainer from './components/NotificationContainer';
 import DungeonMaster from './services/aiService';
 
 const SAVE_GAME_KEY = 'gemini-rpg-worlds';
-
-const calculateCharacterStats = (character: Character): Character => {
-    const newStats = { ...character.baseStats };
-    const baseAC = 10 + Math.floor((newStats.dexterity - 10) / 2);
-    let finalAC = baseAC;
-
-    for (const slotKey in character.equipment) {
-        const slot = slotKey as ItemSlot;
-        const item = character.equipment[slot];
-        if (!item) continue;
-
-        if (item.type === 'Accessory' && item.statBonuses) {
-            for (const statKey in item.statBonuses) {
-                const stat = statKey as keyof typeof newStats;
-                const bonus = item.statBonuses[stat];
-                if (bonus !== undefined && stat in newStats) {
-                    (newStats as any)[stat] += bonus;
-                }
-            }
-        }
-        
-        if (item.type === 'Armor') {
-            finalAC += item.armorClass;
-        }
-    }
-
-    return { ...character, stats: { ...newStats, armorClass: finalAC } };
-}
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.START);
@@ -141,9 +112,8 @@ const App: React.FC = () => {
     try {
       const { character: newCharacterData, initialScene, introStory } = await DungeonMaster.generateCharacter(characterData, activeWorld.description);
       
-      const characterWithStats = calculateCharacterStats({ ...newCharacterData, id: crypto.randomUUID() });
       const newSavedCharacter: SavedCharacter = {
-        character: characterWithStats,
+        character: { ...newCharacterData, id: crypto.randomUUID() },
         party: [],
         scene: initialScene,
         storyHistory: [{ type: 'narrative', content: introStory }],
@@ -341,8 +311,7 @@ const App: React.FC = () => {
       newInventory.splice(itemIndex, 1);
     }
     
-    let updatedChar = { ...character, equipment: newEquipment, inventory: newInventory };
-    updatedChar = calculateCharacterStats(updatedChar);
+    const updatedChar = { ...character, equipment: newEquipment, inventory: newInventory };
 
     updateActiveCharacterAndWorld({ ...activeCharacter, character: updatedChar });
     addNotification(`Memakai: ${itemToEquip.name}`, 'item');
@@ -366,8 +335,7 @@ const App: React.FC = () => {
       newInventory.push({ item: itemToUnequip, quantity: 1 });
     }
 
-    let updatedChar = { ...character, equipment: newEquipment, inventory: newInventory };
-    updatedChar = calculateCharacterStats(updatedChar);
+    const updatedChar = { ...character, equipment: newEquipment, inventory: newInventory };
 
     updateActiveCharacterAndWorld({ ...activeCharacter, character: updatedChar });
     addNotification(`Melepas: ${itemToUnequip.name}`, 'item');
@@ -411,7 +379,8 @@ const App: React.FC = () => {
     try {
       const response = await DungeonMaster.generateNextScene(
           activeCharacter.character, activeCharacter.party, activeCharacter.scene, currentHistory,
-          activeWorld.longTermMemory, activeCharacter.notes, activeWorld.quests, activeWorld.worldEvents, newTurnCount, action, activeCharacter.transactionLog
+          activeWorld.longTermMemory, activeCharacter.notes, activeWorld.quests, activeWorld.worldEvents, 
+          newTurnCount, action, activeCharacter.transactionLog, activeWorld.marketplace
       );
       
       const newEntries: StoryEntry[] = [];
@@ -421,11 +390,11 @@ const App: React.FC = () => {
       newEntries.push({ type: 'narrative', content: response.narasiBaru });
 
       const finalHistory = [...currentHistory, ...newEntries];
-      let updatedCharacterData = calculateCharacterStats({ ...response.karakterTerbaru, id: activeCharacter.character.id });
+      let updatedCharacterData = { ...response.karakterTerbaru, id: activeCharacter.character.id };
       
       const existingPartyIds = new Map(activeCharacter.party.map(p => [p.name, p.id]));
       const updatedParty: Character[] = (response.partyTerbaru || []).map(companion => ({
-          ...calculateCharacterStats({ ...companion, id: existingPartyIds.get(companion.name) || crypto.randomUUID() })
+          ...companion, id: existingPartyIds.get(companion.name) || crypto.randomUUID()
       }));
 
       let updatedWorld = { ...activeWorld };

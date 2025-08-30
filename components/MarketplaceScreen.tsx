@@ -1,8 +1,6 @@
-
-
 import React, { useState, useEffect } from 'react';
-import { Marketplace, Scene, Character, ShopItem, InventoryItem, ItemRarity, AnyItem, Weapon, Armor, Accessory } from '../types';
-import { StoreIcon, CoinIcon, SwordIcon, ShieldIcon, SparklesIcon } from './icons';
+import { Marketplace, Scene, Character, ShopItem, InventoryItem, ItemRarity, AnyItem } from '../types';
+import { StoreIcon, CoinIcon } from './icons';
 
 interface MarketplaceScreenProps {
     marketplace: Marketplace;
@@ -20,29 +18,6 @@ const getRarityColor = (rarity: ItemRarity) => {
         case ItemRarity.EPIK: return 'text-purple-400';
         default: return 'text-stone-300';
     }
-}
-
-const ItemStatDisplay: React.FC<{ item: AnyItem }> = ({ item }) => {
-    const renderStats = () => {
-        switch(item.type) {
-            case 'Weapon':
-                return <div className="flex items-center gap-1 text-xs" title="Kerusakan"><SwordIcon className="w-3 h-3 text-red-400"/><span>{(item as Weapon).damage}</span></div>;
-            case 'Armor':
-                return <div className="flex items-center gap-1 text-xs" title="Kelas Zirah"><ShieldIcon className="w-3 h-3 text-sky-400"/><span>{(item as Armor).armorClass}</span></div>;
-            case 'Accessory':
-                const bonuses = (item as Accessory).statBonuses;
-                if (!bonuses) return null;
-                return (
-                    <div className="flex flex-wrap gap-2">
-                        {Object.entries(bonuses).map(([stat, val]) => (
-                             <div key={stat} className="flex items-center gap-1 text-xs" title={`Bonus ${stat}`}><SparklesIcon className="w-3 h-3 text-yellow-400"/><span>{`+${val} ${stat.substring(0,3).toUpperCase()}`}</span></div>
-                        ))}
-                    </div>
-                );
-            default: return null;
-        }
-    }
-    return <div className="flex items-center gap-2 mt-1">{renderStats()}</div>;
 }
 
 const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scene, character, onBuyItem, onSellItem, isLoading }) => {
@@ -73,33 +48,30 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
             const { item, quantity } = inventoryItem;
             const price = mode === 'buy' ? item.value : Math.floor(item.value / 2);
             return (
-                <li key={`${item.id}-${mode}`} className="bg-stone-950/40 p-2 rounded-md border border-stone-700/50 flex flex-col gap-2">
-                    <div className="flex justify-between items-start">
-                        <div className="flex-grow">
-                            <p className={`font-bold ${getRarityColor(item.rarity)}`}>{item.name} (x{quantity})</p>
-                            <p className="text-xs text-stone-400 italic mt-1 break-words">{item.description}</p>
-                        </div>
-                        <div className="flex-shrink-0 ml-2">
-                           {mode === 'buy' ? (
-                                <button 
-                                    onClick={() => onBuyItem(inventoryItem as ShopItem, activeShop!.id)} 
-                                    disabled={character.gold < price || isLoading}
-                                    className="thematic-button text-xs py-1 px-3 rounded-md flex items-center gap-1"
-                                >
-                                    <CoinIcon className="w-3 h-3"/> {price}
-                                </button>
-                           ) : (
-                                <button 
-                                    onClick={() => onSellItem(inventoryItem, activeShop!.id)}
-                                    disabled={isLoading}
-                                    className="bg-green-800 hover:bg-green-700 border-b-2 border-green-900 text-white text-xs py-1 px-3 rounded-md flex items-center gap-1"
-                                >
-                                   <CoinIcon className="w-3 h-3"/> {price}
-                                </button>
-                           )}
-                        </div>
+                <li key={`${item.id}-${mode}`} className="bg-stone-950/40 p-2 rounded-md border border-stone-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex-grow">
+                        <p className={`font-bold ${getRarityColor(item.rarity)}`}>{item.name} (x{quantity})</p>
+                        <p className="text-xs text-stone-400 italic mt-1 break-words">{item.description}</p>
                     </div>
-                     <ItemStatDisplay item={item} />
+                    <div className="flex-shrink-0 ml-2">
+                       {mode === 'buy' ? (
+                            <button 
+                                onClick={() => onBuyItem(inventoryItem as ShopItem, activeShop!.id)} 
+                                disabled={character.gold < price || isLoading}
+                                className="thematic-button text-xs py-1 px-3 rounded-md flex items-center gap-1"
+                            >
+                                <CoinIcon className="w-3 h-3"/> {price}
+                            </button>
+                       ) : (
+                            <button 
+                                onClick={() => onSellItem(inventoryItem, activeShop!.id)}
+                                disabled={isLoading}
+                                className="bg-green-800 hover:bg-green-700 border-b-2 border-green-900 text-white text-xs py-1 px-3 rounded-md flex items-center gap-1"
+                            >
+                               <CoinIcon className="w-3 h-3"/> {price}
+                            </button>
+                       )}
+                    </div>
                 </li>
             );
         });

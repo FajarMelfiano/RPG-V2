@@ -1,47 +1,49 @@
 
 
-import { GoogleGenAI, Type } from "@google/genai";
+// FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
+import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
+import { apiKeyManager } from "../apiKeyManager";
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable not set. The application cannot start without it.");
+
+async function generateContentWithRotation(request: GenerateContentParameters): Promise<any> {
+    apiKeyManager.resetCycle(); 
+    let retries = 0;
+
+    while (retries <= (process.env.API_KEY?.split(',').length || 1)) {
+        try {
+            const ai = apiKeyManager.getCurrentAiInstance();
+            const response = await ai.models.generateContent(request);
+            return response;
+        } catch (error: any) {
+            const isResourceExhausted = error.toString().includes('429') || error.message?.includes('RESOURCE_EXHAUSTED');
+
+            if (isResourceExhausted) {
+                console.warn(`API key at index ${apiKeyManager.getCurrentIndex()} is exhausted. Rotating...`);
+                apiKeyManager.rotateToNextKey();
+                retries++;
+            } else {
+                throw error;
+            }
+        }
+    }
+    throw new Error("All available API keys are currently exhausted. Please try again later.");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// --- SCHEMAS ---
-
-const baseItemProperties = {
-  id: { type: Type.STRING, description: "ID unik untuk item ini, gunakan UUID." },
-  name: { type: Type.STRING },
-  description: { type: Type.STRING },
-  value: { type: Type.INTEGER, description: "Harga dasar item dalam keping emas. Harus lebih dari 0." },
-  rarity: { type: Type.STRING, enum: Object.values(ItemRarity) },
-};
-
-// Skema item yang disederhanakan untuk menghindari kesalahan "too many states"
 const itemSchema = {
     type: Type.OBJECT,
-    description: "Represents any item in the game.",
     properties: {
-        ...baseItemProperties,
-        type: { type: Type.STRING, enum: ['Weapon', 'Armor', 'Accessory', 'Consumable', 'Misc'] },
-        // Properti opsional untuk semua jenis item
-        slot: { type: Type.STRING, enum: Object.values(ItemSlot), description: "Slot perlengkapan jika bisa dikenakan." },
-        damage: { type: Type.STRING, description: "String dadu kerusakan (misal: '1d8 + KEK'). Hanya untuk Senjata." },
-        properties: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Properti sihir (misal: 'Api'). Hanya untuk Senjata." },
-        armorClass: { type: Type.INTEGER, description: "Bonus Kelas Zirah (AC). Hanya untuk Zirah/Perisai." },
-        statBonuses: {
-            type: Type.OBJECT,
-            properties: {
-                strength: { type: Type.INTEGER }, dexterity: { type: Type.INTEGER }, constitution: { type: Type.INTEGER },
-                intelligence: { type: Type.INTEGER }, wisdom: { type: Type.INTEGER }, charisma: { type: Type.INTEGER },
-            },
-            description: "Bonus statistik. Hanya untuk Aksesoris."
-        },
+        id: { type: Type.STRING },
+        name: { type: Type.STRING },
+        description: { type: Type.STRING },
+        value: { type: Type.INTEGER },
+        rarity: { type: Type.STRING },
+        type: { type: Type.STRING },
+        slot: { type: Type.STRING },
     },
-    required: [...Object.keys(baseItemProperties), 'type']
+    required: ["id", "name", "description", "value", "rarity", "type"]
 };
 
 const inventoryItemSchema = {
@@ -56,9 +58,9 @@ const inventoryItemSchema = {
 const shopSchema = {
   type: Type.OBJECT,
   properties: {
-    id: { type: Type.STRING, description: "ID unik untuk toko (misal: 'general_store', 'blacksmith')." },
-    name: { type: Type.STRING, description: "Nama toko." },
-    description: { type: Type.STRING, description: "Deskripsi singkat tentang toko dan pemiliknya." },
+    id: { type: Type.STRING },
+    name: { type: Type.STRING },
+    description: { type: Type.STRING },
     inventory: { type: Type.ARRAY, items: inventoryItemSchema }
   },
   required: ["id", "name", "description", "inventory"]
@@ -72,20 +74,20 @@ const marketplaceSchema = {
   required: ["shops"]
 };
 
-const baseStatsSchema = {
+const statsSchema = {
     type: Type.OBJECT,
     properties: {
-        level: { type: Type.INTEGER, description: "Level awal karakter. Analisis latar belakang. Veteran bisa mulai dari level 3-5, pemula mulai dari 1." },
-        health: { type: Type.INTEGER, description: "Poin kesehatan (HP) karakter saat ini, disesuaikan dengan level." },
-        maxHealth: { type: Type.INTEGER, description: "Poin kesehatan (HP) maksimum karakter. Harus sama dengan health di awal, disesuaikan dengan level." },
-        mana: { type: Type.INTEGER, description: "Poin mana karakter. Jika bukan kelas sihir, set ke 0. Disesuaikan dengan level." },
-        maxMana: { type: Type.INTEGER, description: "Poin mana maksimum. Jika bukan kelas sihir, set ke 0. Disesuaikan dengan level." },
-        strength: { type: Type.INTEGER, description: "Nilai antara 8 dan 18." },
-        dexterity: { type: Type.INTEGER, description: "Nilai antara 8 dan 18." },
-        constitution: { type: Type.INTEGER, description: "Nilai antara 8 dan 18." },
-        intelligence: { type: Type.INTEGER, description: "Nilai antara 8 dan 18." },
-        wisdom: { type: Type.INTEGER, description: "Nilai antara 8 dan 18." },
-        charisma: { type: Type.INTEGER, description: "Nilai antara 8 dan 18." },
+        level: { type: Type.INTEGER },
+        health: { type: Type.INTEGER },
+        maxHealth: { type: Type.INTEGER },
+        mana: { type: Type.INTEGER },
+        maxMana: { type: Type.INTEGER },
+        strength: { type: Type.INTEGER },
+        dexterity: { type: Type.INTEGER },
+        constitution: { type: Type.INTEGER },
+        intelligence: { type: Type.INTEGER },
+        wisdom: { type: Type.INTEGER },
+        charisma: { type: Type.INTEGER },
     },
     required: ["level", "health", "maxHealth", "mana", "maxMana", "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"]
 };
@@ -107,17 +109,17 @@ const equipmentSchema = {
 const characterSchema = {
   type: Type.OBJECT,
   properties: {
-    name: { type: Type.STRING, description: "Nama karakter." },
+    name: { type: Type.STRING },
     race: { type: Type.STRING },
     characterClass: { type: Type.STRING },
     backstory: { type: Type.STRING },
-    baseStats: baseStatsSchema,
+    stats: statsSchema,
     inventory: { type: Type.ARRAY, items: inventoryItemSchema },
     equipment: equipmentSchema,
     reputation: { type: Type.INTEGER },
     gold: { type: Type.INTEGER }
   },
-  required: ["name", "race", "characterClass", "backstory", "baseStats", "inventory", "equipment", "reputation", "gold"]
+  required: ["name", "race", "characterClass", "backstory", "stats", "inventory", "equipment", "reputation", "gold"]
 };
 
 const sceneSchema = {
@@ -170,7 +172,7 @@ const questSchema = {
     properties: {
         title: { type: Type.STRING },
         description: { type: Type.STRING },
-        status: { type: Type.STRING, enum: ['Aktif', 'Selesai'] },
+        status: { type: Type.STRING },
     },
     required: ["title", "description", "status"]
 };
@@ -180,7 +182,7 @@ const worldEventSchema = {
     properties: {
         title: { type: Type.STRING },
         description: { type: Type.STRING },
-        type: { type: Type.STRING, enum: ['Sejarah', 'Berita', 'Ramalan'] },
+        type: { type: Type.STRING },
     },
     required: ["title", "description", "type"]
 };
@@ -214,7 +216,7 @@ const gameTurnSchema = {
 
 class GeminiDungeonMaster implements IAiDungeonMasterService {
     async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; }> {
-        const prompt = `Anda adalah seorang Arsitek Dunia AI. Tugas Anda adalah menciptakan dunia fantasi yang hidup dengan ekonomi yang berfungsi.
+        const prompt = `Anda adalah seorang Arsitek Dunia AI. Tugas Anda adalah menciptakan dunia fantasi yang hidup dengan ekonomi yang berfungsi. SEMUA TEKS YANG DIHASILKAN HARUS DALAM BAHASA INDONESIA.
 
 Masukan Pemain:
 - Konsep Inti Dunia: "${worldData.concept}"
@@ -223,24 +225,20 @@ Masukan Pemain:
 
 Tugas Anda:
 1.  **Sintesiskan Visi**: Ciptakan nama dan deskripsi dunia yang imersif.
-2.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah toko-toko berikut:
-    *   **Toko Kelontong** (id: 'general_store')
-    *   **Pandai Besi** (id: 'blacksmith')
-    *   **Alkemis** (id: 'alchemist')
-    *   **Pedagang Keliling** (id: 'traveling_merchant')
-3.  **Isi Inventaris Toko**: Untuk setiap toko, buat 3-5 item yang relevan. **SETIAP ITEM HARUS MEMILIKI STATISTIK YANG MENDETAIL** (damage untuk senjata, armorClass untuk zirah, statBonuses untuk aksesoris, dll). Pastikan untuk memberikan ID unik (UUID) untuk setiap item.
+2.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
+3.  **Isi Inventaris Toko**: Untuk setiap toko, buat 3-5 item yang relevan dan deskriptif. Fokus pada narasi, BUKAN statistik numerik. Pastikan untuk memberikan ID unik (UUID) untuk setiap item.
 4.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
-            contents: prompt,
+        const response = await generateContentWithRotation({
+            model: "gemini-2.5-flash",
+            contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: worldGenerationSchema }
         });
         return JSON.parse(response.text);
     }
 
     async generateCharacter(characterData: { concept: string; background: string; }, worldContext: string): Promise<{ character: Omit<Character, 'id'>; initialScene: Scene; introStory: string; }> {
-        const prompt = `Anda adalah seorang Dungeon Master AI. Ciptakan karakter yang hidup di dalam dunia yang sudah ada.
+        const prompt = `Anda adalah seorang Dungeon Master AI. Ciptakan karakter yang hidup di dalam dunia yang sudah ada. SEMUA TEKS YANG DIHASILKAN HARUS DALAM BAHASA INDONESIA.
 
 Konteks Dunia: "${worldContext}"
 Masukan Pemain:
@@ -249,26 +247,26 @@ Masukan Pemain:
 
 Tugas Anda:
 1.  **Integrasi Dunia**: Karakter harus terasa seperti bagian dari dunia ini.
-2.  **Tentukan Level Awal & Statistik Dasar**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`baseStats\` yang sesuai.
-3.  **Perlengkapan Awal (Equipment)**: Berikan karakter perlengkapan awal yang logis di slot \`equipment\`.
-4.  **Inventaris Awal (Inventory)**: Berikan beberapa item tambahan di \`inventory\`.
-5.  **STATISTIK ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki statistik yang mendetail (damage, armorClass, dll.) dan ID unik (UUID).
-6.  **Adegan Awal**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan. Tentukan \`availableShopIds\` secara logis berdasarkan lokasi.
-7.  **Format JSON**: Pastikan output sesuai dengan skema.`;
+2.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
+3.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`. Fokus pada deskripsi item, bukan statistik numerik.
+4.  **ID ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID).
+5.  **Adegan Awal**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan. Tentukan \`availableShopIds\` secara logis berdasarkan lokasi. Sikap NPC HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
+6.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
-            contents: prompt,
+        const response = await generateContentWithRotation({
+            model: "gemini-2.5-flash",
+            contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: characterGenerationSchema }
         });
         return JSON.parse(response.text);
     }
 
-    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[]): Promise<GameTurnResponse> {
-        const prompt = `Anda adalah Dungeon Master AI. Lanjutkan cerita.
+    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace): Promise<GameTurnResponse> {
+        const prompt = `Anda adalah Dungeon Master AI. Lanjutkan cerita. SEMUA TEKS YANG DIHASILKAN HARUS DALAM BAHASA INDONESIA.
 
 Giliran Saat Ini: ${turnCount}
 Konteks Dunia:
+- DAFTAR TOKO YANG ADA DI DUNIA: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name, description: s.description})))}
 - LOG TRANSAKSI TERBARU: ${transactionLog.length > 0 ? transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n') : 'Tidak ada.'}
 - CATATAN PEMAIN: ${notes || 'Tidak ada.'}
 - ... (dan data lainnya seperti memori, misi, dll.)
@@ -279,24 +277,24 @@ Kondisi Saat Ini:
 - Aksi Pemain: "${playerAction}"
 
 Tugas Anda:
-1.  **Analisis Kontekstual**: Baca SEMUA informasi. Narasi Anda harus mencerminkan perlengkapan karakter. Jika AC-nya tinggi, sebutkan bagaimana serangan meleset. Jika senjatanya magis, deskripsikan efeknya. Gunakan log transaksi untuk kesadaran ekonomi.
+1.  **Analisis Naratif**: Baca SEMUA informasi. Narasi Anda harus mencerminkan perlengkapan karakter secara deskriptif. Jika karakter memakai zirah pelat, sebutkan bagaimana serangan memantul. Jika senjatanya terlihat kuno, deskripsikan. Gunakan log transaksi untuk kesadaran ekonomi.
 2.  **Proses Aksi**: Narasikan hasil aksi. Lakukan 'Pemeriksaan Keterampilan' (skillCheck) jika perlu. Tangani aksi "Periksa" NPC dengan detail.
-3.  **Perbarui Status**: Perbarui SEMUA field di \`karakterTerbaru\`, termasuk \`inventory\` dan \`equipment\` jika mereka menemukan loot. Loot HARUS memiliki statistik mendetail dan ID unik. Sikap NPC harus diperbarui secara dinamis.
-4.  **Ketersediaan Toko**: Berdasarkan \`sceneUpdate.location\` yang baru, tentukan \`availableShopIds\` secara realistis.
+3.  **Perbarui Status**: Perbarui SEMUA field di \`karakterTerbaru\`. Jika mereka menemukan loot, item baru HARUS memiliki ID unik. Sikap NPC dalam \`sceneUpdate\` harus diperbarui secara dinamis dan HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
+4.  **Ketersediaan Toko (SANGAT PENTING)**: Berdasarkan \`sceneUpdate.location\` yang baru, lihat DAFTAR TOKO YANG ADA dan tentukan \`availableShopIds\` secara realistis. Jika lokasi adalah "Pasar Perbatasan Lumina", maka toko-toko yang relevan HARUS tersedia. Jika di "Gua Gelap", maka array harus kosong.
 5.  **Manajemen Pasar**: Setiap 20-25 giliran, segarkan inventaris 'traveling_merchant' di \`marketplaceUpdate\`.
 6.  **Manajemen Misi & Dunia**: Perbarui misi dan peristiwa dunia seperti biasa.
 7.  **Format Respons**: Pastikan output sesuai dengan skema JSON.`;
         
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
-            contents: prompt,
+        const response = await generateContentWithRotation({
+            model: "gemini-2.5-flash",
+            contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: gameTurnSchema }
         });
         return JSON.parse(response.text) as GameTurnResponse;
     }
 
     async askOOCQuestion(history: StoryEntry[], longTermMemory: string[], question: string): Promise<string> {
-        const prompt = `Anda adalah seorang Game Master (GM) yang membantu. Jawab pertanyaan OOC pemain dengan jelas dan singkat, berdasarkan konteks cerita yang ada.
+        const prompt = `Anda adalah seorang Game Master (GM) yang membantu. Jawab pertanyaan OOC pemain dengan jelas dan singkat dalam Bahasa Indonesia, berdasarkan konteks cerita yang ada.
 
 Konteks Cerita:
 - Memori Jangka Panjang: ${longTermMemory.join('\n- ')}
@@ -305,9 +303,9 @@ Konteks Cerita:
 
 Jawaban Anda (sebagai GM):`;
 
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
-            contents: prompt,
+        const response = await generateContentWithRotation({
+            model: "gemini-2.5-flash",
+            contents: { parts: [{ text: prompt }] },
         });
         return response.text;
     }

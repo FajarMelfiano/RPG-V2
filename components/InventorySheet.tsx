@@ -1,8 +1,6 @@
-
-
 import React from 'react';
-import { Character, AnyItem, EquippableItem, ItemRarity, Weapon, Armor, Accessory } from '../types';
-import { ChestIcon, CoinIcon, SwordIcon, ShieldIcon, SparklesIcon } from './icons';
+import { Character, AnyItem, EquippableItem, ItemRarity } from '../types';
+import { ChestIcon, CoinIcon } from './icons';
 
 interface InventorySheetProps {
     character: Character;
@@ -18,34 +16,11 @@ const getRarityColor = (rarity: ItemRarity) => {
     }
 }
 
-const ItemStatDisplay: React.FC<{ item: AnyItem }> = ({ item }) => {
-    const renderStats = () => {
-        switch(item.type) {
-            case 'Weapon':
-                return <div className="flex items-center gap-1 text-xs" title="Kerusakan"><SwordIcon className="w-3 h-3 text-red-400"/><span>{(item as Weapon).damage}</span></div>;
-            case 'Armor':
-                return <div className="flex items-center gap-1 text-xs" title="Kelas Zirah"><ShieldIcon className="w-3 h-3 text-sky-400"/><span>{(item as Armor).armorClass}</span></div>;
-            case 'Accessory':
-                const bonuses = (item as Accessory).statBonuses;
-                if (!bonuses) return null;
-                return (
-                    <div className="flex flex-wrap gap-2">
-                        {Object.entries(bonuses).map(([stat, val]) => (
-                             <div key={stat} className="flex items-center gap-1 text-xs" title={`Bonus ${stat}`}><SparklesIcon className="w-3 h-3 text-yellow-400"/><span>{`+${val} ${stat.substring(0,3).toUpperCase()}`}</span></div>
-                        ))}
-                    </div>
-                );
-            default: return null;
-        }
-    }
-    return <div className="flex items-center gap-2 mt-1">{renderStats()}</div>;
-}
-
 const InventorySheet: React.FC<InventorySheetProps> = ({ character, onEquipItem }) => {
     const { inventory, gold } = character;
 
     const isEquippable = (item: AnyItem): item is EquippableItem => {
-        return ['Weapon', 'Armor', 'Accessory'].includes(item.type);
+        return !!item.slot;
     }
 
     return (
@@ -74,8 +49,7 @@ const InventorySheet: React.FC<InventorySheetProps> = ({ character, onEquipItem 
                                 </div>
                                 <span className="text-xs text-yellow-400 flex items-center gap-1 flex-shrink-0 ml-2" title="Nilai"><CoinIcon className="w-3 h-3"/>{invItem.item.value}</span>
                             </div>
-                            <div className="flex justify-between items-center mt-1">
-                                <ItemStatDisplay item={invItem.item} />
+                            <div className="flex justify-end items-center mt-1">
                                 {isEquippable(invItem.item) && (
                                     <button 
                                         onClick={() => onEquipItem(invItem.item.id)}

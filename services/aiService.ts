@@ -1,3 +1,4 @@
+
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry } from '../types';
 import { geminiProvider } from './providers/geminiProvider';
 import { openAiProvider } from './providers/openAIProvider';
@@ -29,7 +30,8 @@ export interface IAiDungeonMasterService {
     worldEvents: WorldEvent[],
     turnCount: number,
     playerAction: string,
-    transactionLog: TransactionLogEntry[]
+    transactionLog: TransactionLogEntry[],
+    marketplace: Marketplace
   ): Promise<GameTurnResponse>;
 
   askOOCQuestion(

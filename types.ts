@@ -19,7 +19,6 @@ export interface Stats {
   intelligence: number;
   wisdom: number;
   charisma: number;
-  armorClass: number; // AC dihitung
 }
 
 export enum ItemSlot {
@@ -40,49 +39,23 @@ export enum ItemRarity {
   EPIK = 'Epik',
 }
 
-export interface BaseItem {
+export interface AnyItem {
   id: string;
   name: string;
   description: string;
   value: number;
   rarity: ItemRarity;
   type: 'Weapon' | 'Armor' | 'Accessory' | 'Consumable' | 'Misc';
-  slot?: ItemSlot; // Hanya untuk item yang bisa dikenakan
+  slot?: ItemSlot;
 }
 
-export interface Weapon extends BaseItem {
-  type: 'Weapon';
-  damage: string; // misal: "1d8 + KEK"
-  properties?: string[];
-  slot: ItemSlot.MAIN_HAND | ItemSlot.OFF_HAND;
-}
-
-export interface Armor extends BaseItem {
-  type: 'Armor';
-  armorClass: number;
-  slot: ItemSlot.HEAD | ItemSlot.CHEST | ItemSlot.LEGS | ItemSlot.FEET | ItemSlot.OFF_HAND; // Off-hand untuk perisai
-}
-
-export interface Accessory extends BaseItem {
-  type: 'Accessory';
-  statBonuses?: Partial<Omit<Stats, 'health' | 'maxHealth' | 'mana' | 'maxMana' | 'armorClass' | 'level'>>;
-  slot: ItemSlot.NECK | ItemSlot.RING;
-}
-
-export interface MiscItem extends BaseItem {
-  type: 'Consumable' | 'Misc';
-  slot?: undefined;
-}
-
-export type EquippableItem = Weapon | Armor | Accessory;
-export type AnyItem = EquippableItem | MiscItem;
+export type EquippableItem = AnyItem & { slot: ItemSlot };
 
 export interface InventoryItem {
   item: AnyItem;
   quantity: number;
 }
 
-// Item yang dijual di toko
 export type ShopItem = InventoryItem;
 
 export type Equipment = {
@@ -96,7 +69,6 @@ export interface Character {
   characterClass: string;
   backstory: string;
   stats: Stats;
-  baseStats: Omit<Stats, 'armorClass'>; // Stats tanpa modifikasi item
   inventory: InventoryItem[];
   equipment: Equipment;
   reputation: number;

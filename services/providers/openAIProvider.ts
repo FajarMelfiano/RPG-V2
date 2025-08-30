@@ -1,5 +1,4 @@
 
-
 import OpenAI from 'openai';
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
@@ -24,21 +23,20 @@ class OpenAiDungeonMaster implements IAiDungeonMasterService {
 Aturan Penting:
 - Buat Marketplace awal dengan toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
 - Isi setiap toko dengan 3-7 item yang relevan.
-- **SETIAP ITEM HARUS MEMILIKI STATISTIK YANG MENDETAIL** (damage, armorClass, statBonuses, dll.) dan ID unik.
+- **SETIAP ITEM HARUS MEMILIKI ID UNIK**. Fokus pada deskripsi item, bukan statistik numerik.
 
 Struktur JSON yang DIWAJIBKAN:
 {
-  "name": "string (Nama yang epik dan unik untuk dunia)",
-  "description": "string (Deskripsi imersif 3-4 kalimat)",
+  "name": "string",
+  "description": "string",
   "marketplace": {
     "shops": [
       { 
         "id": "string", "name": "string", "description": "string", 
         "inventory": [{ 
           "item": { 
-            "id": "string (UUID)", "name": "string", "description": "string", "value": "integer", "rarity": "string", 
-            "type": "string ('Weapon', 'Armor', dll.)", 
-            "damage": "string (opsional, jika senjata)", "armorClass": "integer (opsional, jika zirah)", "statBonuses": {}, "slot": "string (opsional, jika bisa dikenakan)"
+            "id": "string", "name": "string", "description": "string", "value": "integer", "rarity": "string", 
+            "type": "string", "slot": "string"
           }, 
           "quantity": "integer" 
         }] 
@@ -72,7 +70,7 @@ Struktur JSON yang DIWAJIBKAN:
         
 Aturan Penting:
 - **Level Awal Dinamis**: Analisis 'Latar Belakang & Pengalaman' untuk menentukan level awal (1-5).
-- **Perlengkapan & Statistik**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki statistik mendetail dan ID unik.
+- **Perlengkapan & Item**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik. Fokus pada deskripsi, bukan statistik.
 - Adegan awal ('initialScene') HARUS menyertakan \`availableShopIds\` yang logis.
 
 Struktur JSON yang DIWAJIBKAN:
@@ -80,9 +78,9 @@ Struktur JSON yang DIWAJIBKAN:
   "character": {
     "name": "string", "race": "string", "characterClass": "string",
     "backstory": "string",
-    "baseStats": { "level": "integer (1-5)", "health": "integer", "maxHealth": "integer", "mana": "integer", "maxMana": "integer", "strength": "integer (8-18)", "dexterity": "integer (8-18)", "constitution": "integer (8-18)", "intelligence": "integer (8-18)", "wisdom": "integer (8-18)", "charisma": "integer (8-18)" },
-    "inventory": [{ "item": { ... }, "quantity": "integer" }],
-    "equipment": { "mainHand": { ... }, "chest": { ... }, ... },
+    "stats": { "level": "integer", "health": "integer", "maxHealth": "integer", "mana": "integer", "maxMana": "integer", "strength": "integer", "dexterity": "integer", "constitution": "integer", "intelligence": "integer", "wisdom": "integer", "charisma": "integer" },
+    "inventory": [{ "item": { "id": "string", "name": "string", ... }, "quantity": "integer" }],
+    "equipment": { "mainHand": { "id": "string", ... }, "chest": { "id": "string", ... } },
     "reputation": "integer", "gold": "integer"
   },
   "initialScene": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] },
@@ -110,7 +108,7 @@ Masukan Pemain untuk Karakter:
         return JSON.parse(jsonString);
     }
 
-    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[]): Promise<GameTurnResponse> {
+    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace): Promise<GameTurnResponse> {
         const recentHistory = history.slice(-5).map(entry => {
             if(entry.type === 'action') return `Pemain: ${entry.content}`;
             if(entry.type === 'narrative') return `DM: ${entry.content}`;
@@ -120,11 +118,11 @@ Masukan Pemain untuk Karakter:
         const systemPrompt = `Anda adalah Dungeon Master (DM) AI yang logis. Lanjutkan cerita. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
 
 Aturan Utama:
-1.  **Kesadaran Ekonomi & Perlengkapan**: Baca 'LOG TRANSAKSI' dan 'Karakter Pemain' (termasuk perlengkapan). Narasi Anda HARUS mencerminkan ini.
-2.  **Ketersediaan Toko Kontekstual**: Dalam \`sceneUpdate\`, tentukan \`availableShopIds\` secara logis.
+1.  **Kesadaran Naratif Perlengkapan**: Baca 'LOG TRANSAKSI' dan 'Karakter Pemain' (termasuk perlengkapan). Narasi Anda HARUS mencerminkan ini secara deskriptif.
+2.  **Ketersediaan Toko Kontekstual (SANGAT PENTING)**: Gunakan data 'DAFTAR TOKO DUNIA' yang disediakan untuk mengisi \`availableShopIds\` secara logis berdasarkan lokasi baru di \`sceneUpdate\`.
 3.  **Pedagang Keliling Dinamis**: Setiap 20-25 giliran, segarkan inventaris 'traveling_merchant' di \`marketplaceUpdate\`.
 4.  **Sikap NPC Dinamis**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis.
-5.  **Loot Bermakna**: Jika pemain menemukan loot, item baru di \`karakterTerbaru.inventory\` HARUS memiliki statistik mendetail.
+5.  **Loot Bermakna**: Jika pemain menemukan loot, item baru di \`karakterTerbaru.inventory\` HARUS memiliki ID unik dan deskripsi yang menarik.
 
 Struktur JSON yang DIWAJIBKAN:
 {
@@ -133,13 +131,15 @@ Struktur JSON yang DIWAJIBKAN:
   "partyTerbaru": [ ... ],
   "sceneUpdate": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] },
   "skillCheck": { ... },
-  "memorySummary": "string (opsional)",
+  "memorySummary": "string",
   "questsUpdate": [ { ... } ],
   "worldEventsUpdate": [ { ... } ],
   "marketplaceUpdate": { "shops": [{...}] }
 }`;
 
         const userPrompt = `Giliran Saat Ini: ${turnCount}
+DAFTAR TOKO DUNIA:
+${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}
 LOG TRANSAKSI TERBARU:
 ${transactionLog.length > 0 ? transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n') : 'Belum ada.'}
 
