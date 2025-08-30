@@ -1,11 +1,13 @@
-import React, { useState, useCallback } from 'react';
-import { GameState, Character, StoryEntry, Scene, AppNotification } from './types';
+import React, { useState, useCallback, useEffect } from 'react';
+import { GameState, Character, StoryEntry, Scene, AppNotification, SavedGame } from './types';
 import StartScreen from './components/StartScreen';
 import CharacterCreationScreen from './components/CharacterCreationScreen';
 import GameScreen from './components/GameScreen';
 import GameOverScreen from './components/GameOverScreen';
 import NotificationContainer from './components/NotificationContainer';
+import CharacterSelectionScreen from './components/CharacterSelectionScreen';
 import DungeonMaster from './services/aiService';
+import * as storageService from './services/storageService';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>(GameState.START);
@@ -15,39 +17,73 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [savedGames, setSavedGames] = useState<SavedGame[]>([]);
+
+  useEffect(() => {
+    setSavedGames(storageService.loadGames());
+  }, []);
 
   const addNotification = useCallback((message: string) => {
     const id = Date.now();
     setNotifications(prev => [...prev, {id, message}]);
     setTimeout(() => {
         setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 5000); // Notifikasi hilang setelah 5 detik
+    }, 5000);
   }, []);
 
-  const handleStart = () => {
-    setGameState(GameState.CREATING_CHARACTER);
+  const resetGameState = () => {
+    setCharacter(null);
+    setScene(null);
+    setStoryHistory([]);
+    setError(null);
+    setIsLoading(false);
   };
 
-  const handleRestart = () => {
-      setCharacter(null);
-      setScene(null);
-      setStoryHistory([]);
-      setError(null);
-      setGameState(GameState.START);
+  const handleStartNewGame = () => {
+    setGameState(GameState.CREATING_CHARACTER);
   };
+  
+  const handleContinueGame = () => {
+    setGameState(GameState.CHARACTER_SELECTION);
+  };
+
+  const handleBackToStart = () => {
+    resetGameState();
+    setGameState(GameState.START);
+  };
+
+  const handleRestartFromGameOver = useCallback(() => {
+      if (character) {
+        storageService.deleteGame(character.name);
+        setSavedGames(storageService.loadGames());
+      }
+      resetGameState();
+      setGameState(GameState.START);
+  }, [character]);
 
   const handleCharacterCreate = useCallback(async (characterData: { concept: string; background: string }) => {
     setIsLoading(true);
     setError(null);
     try {
       const { character: newCharacter, initialScene, introStory } = await DungeonMaster.generateCharacter(characterData);
-      setCharacter(newCharacter);
-      setScene(initialScene);
       
       const introStoryEntry: StoryEntry = {
         type: 'narrative',
         content: introStory,
       };
+
+      const newGame: SavedGame = {
+        id: newCharacter.name,
+        character: newCharacter,
+        scene: initialScene,
+        storyHistory: [introStoryEntry],
+      };
+
+      storageService.saveGame(newGame);
+      setSavedGames(storageService.loadGames());
+      
+      setCharacter(newCharacter);
+      setScene(initialScene);
       setStoryHistory([introStoryEntry]);
       setGameState(GameState.PLAYING);
     } catch (err) {
@@ -61,11 +97,7 @@ const App: React.FC = () => {
   const handlePlayerAction = useCallback(async (action: string) => {
     if (!character || !scene) return;
     
-    const playerActionEntry: StoryEntry = {
-        type: 'action',
-        content: action
-    };
-
+    const playerActionEntry: StoryEntry = { type: 'action', content: action };
     const currentHistory = [...storyHistory, playerActionEntry];
     setStoryHistory(currentHistory);
     setIsLoading(true);
@@ -76,21 +108,25 @@ const App: React.FC = () => {
       
       const newEntries: StoryEntry[] = [];
       if(response.skillCheck) {
-          newEntries.push({
-              type: 'dice_roll',
-              content: '', // Konten akan dirender secara khusus di komponen
-              rollDetails: response.skillCheck
-          });
+          newEntries.push({ type: 'dice_roll', content: '', rollDetails: response.skillCheck });
       }
-      newEntries.push({
-          type: 'narrative',
-          content: response.narasiBaru
-      });
+      newEntries.push({ type: 'narrative', content: response.narasiBaru });
 
-      setStoryHistory(prev => [...prev, ...newEntries]);
+      const updatedHistory = [...currentHistory, ...newEntries];
+      setStoryHistory(updatedHistory);
       setCharacter(response.karakterTerbaru);
       setScene(response.sceneUpdate);
       
+      // Simpan kemajuan secara otomatis
+      const updatedGame: SavedGame = {
+        id: response.karakterTerbaru.name,
+        character: response.karakterTerbaru,
+        scene: response.sceneUpdate,
+        storyHistory: updatedHistory,
+      };
+      storageService.saveGame(updatedGame);
+      setSavedGames(storageService.loadGames());
+
       if (response.notifications && response.notifications.length > 0) {
         response.notifications.forEach(addNotification);
       }
@@ -102,19 +138,42 @@ const App: React.FC = () => {
     } catch (err) {
       setError('Alur takdir sedang kusut. Sang AI Dungeon Master bingung. Silakan coba aksi yang berbeda.');
       console.error(err);
-      // Revert player action on error
       setStoryHistory(prev => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
     }
   }, [character, scene, storyHistory, addNotification]);
+  
+  const handleLoadGame = useCallback((game: SavedGame) => {
+    setCharacter(game.character);
+    setScene(game.scene);
+    setStoryHistory(game.storyHistory);
+    setGameState(GameState.PLAYING);
+  }, []);
+  
+  const handleDeleteGame = useCallback((gameId: string) => {
+    storageService.deleteGame(gameId);
+    setSavedGames(storageService.loadGames());
+  }, []);
+  
+  const handleSaveAndExit = useCallback(() => {
+    if (!character) return;
+    // Kemajuan sudah disimpan otomatis di setiap aksi,
+    // jadi fungsi ini hanya perlu kembali ke menu utama.
+    addNotification(`Permainan "${character.name}" disimpan!`);
+    resetGameState();
+    setGameState(GameState.START);
+  }, [character, addNotification]);
+
 
   const renderContent = () => {
     switch (gameState) {
       case GameState.START:
-        return <StartScreen onStart={handleStart} />;
+        return <StartScreen onStartNew={handleStartNewGame} onContinue={handleContinueGame} hasSavedGames={savedGames.length > 0} />;
       case GameState.CREATING_CHARACTER:
         return <CharacterCreationScreen onCreate={handleCharacterCreate} isLoading={isLoading} error={error} />;
+      case GameState.CHARACTER_SELECTION:
+        return <CharacterSelectionScreen savedGames={savedGames} onLoad={handleLoadGame} onDelete={handleDeleteGame} onBack={handleBackToStart} />;
       case GameState.PLAYING:
         if (character && scene) {
           return <GameScreen 
@@ -122,17 +181,18 @@ const App: React.FC = () => {
             scene={scene} 
             storyHistory={storyHistory} 
             onPlayerAction={handlePlayerAction} 
+            onSaveAndExit={handleSaveAndExit}
             isLoading={isLoading} 
             error={error} 
           />;
         }
         // Fallback
-        handleRestart();
+        handleBackToStart();
         return null;
       case GameState.GAME_OVER:
-        return <GameOverScreen onRestart={handleRestart} finalStory={storyHistory.slice(-1)[0]?.content} />;
+        return <GameOverScreen onRestart={handleRestartFromGameOver} finalStory={storyHistory.slice(-1)[0]?.content} />;
       default:
-        return <StartScreen onStart={handleStart} />;
+        return <StartScreen onStartNew={handleStartNewGame} onContinue={handleContinueGame} hasSavedGames={savedGames.length > 0} />;
     }
   };
 

@@ -1,6 +1,7 @@
 import { Character, GameTurnResponse, Scene, StoryEntry } from '../types';
 import { geminiProvider } from './providers/geminiProvider';
 import { openAiProvider } from './providers/openAIProvider';
+import { mainDocsProvider } from './providers/mainDocsProvider';
 
 // "Kontrak" yang harus dipatuhi oleh setiap penyedia AI.
 // Ini memastikan bahwa aplikasi dapat berinteraksi dengan AI apa pun
@@ -25,12 +26,13 @@ export interface IAiDungeonMasterService {
 enum AiProvider {
     GEMINI = 'GEMINI',
     OPENAI = 'OPENAI',
+    MAIN_DOCS = 'MAIN_DOCS',
 }
 
 // Konfigurasi pusat. Developer hanya perlu mengubah string di sini
 // untuk mengganti model AI yang digunakan di seluruh aplikasi.
 const aiConfig = {
-    provider: AiProvider.GEMINI // Ubah ke AiProvider.GEMINI untuk menggunakan Gemini
+    provider: AiProvider.MAIN_DOCS // Ubah ke AiProvider.GEMINI atau AiProvider.OPENAI untuk mengganti
 };
 
 let DungeonMaster: IAiDungeonMasterService;
@@ -43,6 +45,9 @@ switch (aiConfig.provider) {
         break;
     case AiProvider.OPENAI:
         DungeonMaster = openAiProvider;
+        break;
+    case AiProvider.MAIN_DOCS:
+        DungeonMaster = mainDocsProvider;
         break;
     default:
         throw new Error(`Penyedia AI tidak dikenal: ${aiConfig.provider}`);

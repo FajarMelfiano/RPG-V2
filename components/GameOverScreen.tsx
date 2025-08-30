@@ -21,7 +21,7 @@ const GameOverScreen: React.FC<GameOverScreenProps> = ({ onRestart, finalStory }
         onClick={onRestart}
         className="bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 px-8 rounded-lg text-xl transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-amber-400/30 font-cinzel tracking-widest"
       >
-        Mulai Petualangan Baru
+        Mulai Lagi
       </button>
     </div>
   );

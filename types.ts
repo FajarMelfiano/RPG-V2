@@ -3,6 +3,7 @@ export enum GameState {
   CREATING_CHARACTER,
   PLAYING,
   GAME_OVER,
+  CHARACTER_SELECTION,
 }
 
 export interface Stats {
@@ -77,4 +78,11 @@ export interface GameTurnResponse {
 export interface AppNotification {
     id: number;
     message: string;
+}
+
+export interface SavedGame {
+  id: string; // Menggunakan nama karakter sebagai ID unik
+  character: Character;
+  scene: Scene;
+  storyHistory: StoryEntry[];
 }

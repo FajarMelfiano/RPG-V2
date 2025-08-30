@@ -10,15 +10,16 @@ interface GameScreenProps {
   scene: Scene;
   storyHistory: StoryEntry[];
   onPlayerAction: (action: string) => void;
+  onSaveAndExit: () => void;
   isLoading: boolean;
   error: string | null;
 }
 
-const GameScreen: React.FC<GameScreenProps> = ({ character, scene, storyHistory, onPlayerAction, isLoading, error }) => {
+const GameScreen: React.FC<GameScreenProps> = ({ character, scene, storyHistory, onPlayerAction, onSaveAndExit, isLoading, error }) => {
   return (
     <div className="w-full max-w-7xl mx-auto h-[95vh] flex flex-col md:flex-row gap-4 p-1">
       <div className="w-full md:w-1/3 lg:w-1/4 h-full">
-        <CharacterSheet character={character} />
+        <CharacterSheet character={character} onSaveAndExit={onSaveAndExit} />
       </div>
       <div className="w-full md:w-2/3 lg:w-3/4 h-full flex flex-col min-h-0 bg-slate-800/70 rounded-xl shadow-lg border border-slate-700 backdrop-blur-sm">
         <SceneDisplay scene={scene} />

@@ -5,7 +5,7 @@ import { IAiDungeonMasterService } from "../aiService";
 // Menggunakan kunci API yang disediakan pengguna untuk mengatasi batasan lingkungan.
 // Dalam aplikasi produksi nyata, kunci ini HARUS disimpan sebagai variabel lingkungan yang aman.
 const openai = new OpenAI({ 
-    apiKey: "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",
+    apiKey: "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",
     dangerouslyAllowBrowser: true // Diperlukan untuk penggunaan sisi klien
 });
 
@@ -33,7 +33,7 @@ Struktur JSON yang DIWAJIBKAN:
   "initialScene": {
     "location": "string (nama lokasi awal)",
     "description": "string (deskripsi singkat lokasi)",
-    "npcs": [{ "name": "string", "description": "string", "attitude": "'Ramah'|'Netral'|'Curiga'|'Bermusuhan'", "inventory": [{...}] }]
+    "npcs": [{ "name": "string", "description": "string", "attitude": "'Ramah'|'Netral'|'Curiga'|'Bermusuhan'", "inventory": [] }]
   },
   "introStory": "string (2-3 kalimat narasi pembuka petualangan)"
 }`;
@@ -85,10 +85,10 @@ Struktur JSON yang DIWAJIBKAN:
 {
   "narasiBaru": "string (deskripsi hasil aksi pemain, 2-4 kalimat)",
   "karakterTerbaru": {
-     "name": "${character.name}", "race": "${character.race}", "characterClass": "${character.characterClass}", "backstory": "...", "stats": { ... }, "inventory": [ ... ], "reputation": "integer", "gold": "integer"
+     "name": "${character.name}", "race": "${character.race}", "characterClass": "${character.characterClass}", "backstory": "string", "stats": {}, "inventory": [], "reputation": "integer", "gold": "integer"
   },
   "sceneUpdate": {
-    "location": "string", "description": "string", "npcs": [ ... ]
+    "location": "string", "description": "string", "npcs": []
   },
   "skillCheck": {
     "skill": "string", "attribute": "string", "diceRoll": "integer (1-20)", "bonus": "integer", "total": "integer", "dc": "integer", "success": "boolean"
