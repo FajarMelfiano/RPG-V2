@@ -1,11 +1,13 @@
+
 import React, { useState } from 'react';
-import { Character, Quest, WorldEvent } from '../types';
+import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem } from '../types';
 import CharacterSheet from './CharacterSheet';
 import PartySheet from './PartySheet';
 import NotesPanel from './NotesPanel';
 import InventorySheet from './InventorySheet';
 import QuestLog from './QuestLog';
-import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon } from './icons';
+import MarketplaceScreen from './MarketplaceScreen';
+import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon } from './icons';
 
 interface SidePanelProps {
     character: Character;
@@ -16,11 +18,17 @@ interface SidePanelProps {
     worldEvents: WorldEvent[];
     isOpen: boolean;
     onClose: () => void;
+    marketplace: Marketplace;
+    scene: Scene;
+    onBuyItem: (item: ShopItem, shopName: string) => void;
+    onSellItem: (item: InventoryItem, shopName: string) => void;
+    isLoading: boolean;
 }
 
-type ActiveTab = 'character' | 'party' | 'inventory' | 'quests' | 'notes';
+type ActiveTab = 'character' | 'party' | 'inventory' | 'quests' | 'notes' | 'marketplace';
 
-const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = ({ character, party, notes, onNotesChange, quests, worldEvents }) => {
+const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (props) => {
+    const { character, party, notes, onNotesChange, quests, worldEvents, marketplace, scene, onBuyItem, onSellItem, isLoading } = props;
     const [activeTab, setActiveTab] = useState<ActiveTab>('character');
 
     const renderTabContent = () => {
@@ -39,13 +47,15 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = ({ ch
                 return <QuestLog quests={quests} worldEvents={worldEvents} />;
             case 'notes':
                 return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
+            case 'marketplace':
+                return <MarketplaceScreen marketplace={marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} />;
             default:
                 return null;
         }
     }
 
     const getTabClass = (tabName: ActiveTab) => {
-        return `flex-1 py-2 px-1 text-xs font-bold rounded-md flex flex-col items-center justify-center gap-1 transition-all duration-300 transform border-2 ${
+        return `flex-shrink-0 py-2 px-3 text-xs font-bold rounded-md flex items-center justify-center gap-1.5 transition-all duration-300 transform border-2 min-w-[100px] ${
             activeTab === tabName 
             ? 'bg-amber-800/50 text-amber-200 border-amber-600 shadow-lg scale-105' 
             : 'bg-stone-950/50 hover:bg-stone-900/70 text-stone-300 border-transparent hover:border-amber-800'
@@ -54,22 +64,27 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = ({ ch
 
     return (
         <div className="flex flex-col gap-4 h-full">
-            <div className="flex-shrink-0 bg-black/20 rounded-lg p-1 flex gap-1 border border-stone-700">
-                <button onClick={() => setActiveTab('character')} className={getTabClass('character')} title="Karakter">
-                    <ShieldIcon className="w-5 h-5" /> <span className="hidden sm:inline">Karakter</span>
-                </button>
-                <button onClick={() => setActiveTab('inventory')} className={getTabClass('inventory')} title="Inventaris">
-                    <ChestIcon className="w-5 h-5" /> <span className="hidden sm:inline">Inventaris</span>
-                </button>
-                 <button onClick={() => setActiveTab('quests')} className={getTabClass('quests')} title="Misi">
-                    <ScrollIcon className="w-5 h-5" /> <span className="hidden sm:inline">Misi</span>
-                </button>
-                 <button onClick={() => setActiveTab('party')} className={getTabClass('party')} title="Party">
-                   <UsersIcon className="w-5 h-5" /> <span className="hidden sm:inline">Party ({party.length})</span>
-                </button>
-                <button onClick={() => setActiveTab('notes')} className={getTabClass('notes')} title="Catatan">
-                    <FileTextIcon className="w-5 h-5" /> <span className="hidden sm:inline">Catatan</span>
-                </button>
+            <div className="flex-shrink-0 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-hidden">
+                <div className="flex gap-1 overflow-x-auto pb-1 -mb-1">
+                    <button onClick={() => setActiveTab('character')} className={getTabClass('character')} title="Karakter">
+                        <ShieldIcon className="w-5 h-5" /> <span>Karakter</span>
+                    </button>
+                    <button onClick={() => setActiveTab('inventory')} className={getTabClass('inventory')} title="Inventaris">
+                        <ChestIcon className="w-5 h-5" /> <span>Inventaris</span>
+                    </button>
+                    <button onClick={() => setActiveTab('quests')} className={getTabClass('quests')} title="Misi">
+                        <ScrollIcon className="w-5 h-5" /> <span>Misi</span>
+                    </button>
+                    <button onClick={() => setActiveTab('marketplace')} className={getTabClass('marketplace')} title="Pasar">
+                        <StoreIcon className="w-5 h-5" /> <span>Pasar</span>
+                    </button>
+                    <button onClick={() => setActiveTab('party')} className={getTabClass('party')} title="Party">
+                    <UsersIcon className="w-5 h-5" /> <span>Party ({party.length})</span>
+                    </button>
+                    <button onClick={() => setActiveTab('notes')} className={getTabClass('notes')} title="Catatan">
+                        <FileTextIcon className="w-5 h-5" /> <span>Catatan</span>
+                    </button>
+                </div>
             </div>
             <div className="flex-grow min-h-0">
                 {renderTabContent()}

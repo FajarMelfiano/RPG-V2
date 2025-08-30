@@ -1,5 +1,6 @@
+
 import OpenAI from 'openai';
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent } from '../../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 
 if (!process.env.API_KEY) {
@@ -16,13 +17,22 @@ const getJsonContent = (completion: OpenAI.Chat.Completions.ChatCompletion): str
 }
 
 class OpenAiDungeonMaster implements IAiDungeonMasterService {
-    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; }> {
+    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; }> {
         const systemPrompt = `Anda adalah seorang Arsitek Dunia AI. Tugas Anda adalah mengubah ide-ide pemain menjadi fondasi dunia fantasi yang kohesif. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
+
+Aturan Penting:
+- Buat Marketplace awal dengan toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
+- Isi setiap toko dengan 3-7 item yang relevan.
 
 Struktur JSON yang DIWAJIBKAN:
 {
   "name": "string (Nama yang epik dan unik untuk dunia, berdasarkan konsepnya)",
-  "description": "string (Deskripsi imersif 3-4 kalimat yang menyatukan konsep, faksi, dan konflik)"
+  "description": "string (Deskripsi imersif 3-4 kalimat yang menyatukan konsep, faksi, dan konflik)",
+  "marketplace": {
+    "shops": [
+      { "id": "string", "name": "string", "description": "string", "inventory": [{ "name": "string", "quantity": "integer", "description": "string", "value": "integer" }] }
+    ]
+  }
 }`;
 
         const userPrompt = `Masukan Pemain:
@@ -51,7 +61,7 @@ Struktur JSON yang DIWAJIBKAN:
 Aturan Penting:
 - **Konteks Dunia adalah Segalanya**: Latar belakang, afiliasi, dan masalah karakter HARUS berakar pada deskripsi dunia yang diberikan.
 - **Level Awal Dinamis**: Analisis 'Latar Belakang & Pengalaman' untuk menentukan level awal. Veteran = level 3-5, Pemula = level 1.
-- Adegan awal ('initialScene' dan 'introStory') HARUS merupakan kelanjutan yang logis dari 'backstory' karakter.
+- Adegan awal ('initialScene') HARUS menyertakan \`availableShopIds\` yang ditentukan secara logis berdasarkan lokasi.
 
 Struktur JSON yang DIWAJIBKAN:
 {
@@ -63,7 +73,7 @@ Struktur JSON yang DIWAJIBKAN:
     "inventory": [{ "name": "string", "quantity": "integer", "description": "string", "value": "integer" }],
     "reputation": "integer", "gold": "integer"
   },
-  "initialScene": { "location": "string", "description": "string", "npcs": [{...}] },
+  "initialScene": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] },
   "introStory": "string (narasi pembuka yang imersif)"
 }`;
 
@@ -88,7 +98,7 @@ Masukan Pemain untuk Karakter:
         return JSON.parse(jsonString);
     }
 
-    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string): Promise<GameTurnResponse> {
+    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[]): Promise<GameTurnResponse> {
         const recentHistory = history.slice(-5).map(entry => {
             if(entry.type === 'action') return `Pemain: ${entry.content}`;
             if(entry.type === 'narrative') return `DM: ${entry.content}`;
@@ -98,31 +108,32 @@ Masukan Pemain untuk Karakter:
         const systemPrompt = `Anda adalah Dungeon Master (DM) AI yang logis. Lanjutkan cerita, kelola misi, dan buat dunia terasa hidup. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
 
 Aturan Utama:
-1.  **Konsistensi Dunia**: Gunakan semua data yang diberikan sebagai sumber kebenaran.
-2.  **Aksi "Periksa"**: Jika aksi pemain adalah "Periksa [Nama NPC]", berikan deskripsi yang lebih mendalam. Anda BISA memicu \`skillCheck\` (Insight/Investigasi) untuk mengungkap petunjuk tersembunyi.
-3.  **Sikap NPC Dinamis**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis berdasarkan tindakan pemain (misalnya, menjadi lebih ramah atau lebih curiga).
-4.  **Manajemen Misi**: Deteksi atau perbarui misi di \`questsUpdate\`.
-5.  **Tawarikh Dunia**: Secara berkala (setiap 5-10 giliran), ciptakan satu peristiwa dunia baru di \`worldEventsUpdate\`.
-6.  **Skill Check**: Jika hasil aksi (selain Periksa) tidak pasti, sertakan objek \`skillCheck\`.
-7.  **Memori Baru**: Jika terjadi peristiwa penting, buat ringkasan di \`memorySummary\`.
+1.  **Kesadaran Ekonomi**: Baca 'LOG TRANSAKSI' yang diberikan untuk memahami aktivitas ekonomi pemain. JANGAN narasikan ulang transaksi ini, cukup gunakan sebagai konteks.
+2.  **Ketersediaan Toko Kontekstual**: Dalam \`sceneUpdate\`, tentukan \`availableShopIds\` secara logis berdasarkan lokasi.
+3.  **Pedagang Keliling Dinamis**: Setiap 20-25 giliran, segarkan inventaris 'traveling_merchant' dan kembalikan di \`marketplaceUpdate\`.
+4.  **Sikap NPC Dinamis**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis berdasarkan tindakan pemain.
+5.  **Manajemen Misi & Dunia**: Deteksi atau perbarui misi di \`questsUpdate\` dan peristiwa dunia di \`worldEventsUpdate\`.
+6.  **Aksi "Periksa"**: Tangani aksi "Periksa" dengan memberikan wawasan lebih dalam atau memicu \`skillCheck\`.
 
 Struktur JSON yang DIWAJIBKAN:
 {
   "narasiBaru": "string",
   "karakterTerbaru": { ... },
   "partyTerbaru": [ ... ],
-  "sceneUpdate": { ... },
+  "sceneUpdate": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] },
   "skillCheck": { ... },
   "notifications": [ "string" ],
   "memorySummary": "string (opsional)",
   "questsUpdate": [ { ... } ],
-  "worldEventsUpdate": [ { ... } ]
+  "worldEventsUpdate": [ { ... } ],
+  "marketplaceUpdate": { "shops": [{...}] }
 }`;
 
         const userPrompt = `Giliran Saat Ini: ${turnCount}
 MEMORI JANGKA PANJANG:
 - ${longTermMemory.join('\n- ') || 'Belum ada.'}
 ${notes.trim() ? `CATATAN PRIBADI PEMAIN:\n${notes}` : ''}
+${transactionLog.length > 0 ? `LOG TRANSAKSI TERBARU:\n${transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n')}` : ''}
 
 Kondisi Saat Ini:
 - Karakter Pemain: ${JSON.stringify(character, null, 2)}

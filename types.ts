@@ -28,6 +28,9 @@ export interface InventoryItem {
   value: number; // Nilai dasar dalam keping emas
 }
 
+// Item yang dijual di toko, bisa jadi sama dengan InventoryItem
+export type ShopItem = InventoryItem;
+
 export interface Character {
   id: string;
   name: string;
@@ -61,6 +64,7 @@ export interface Scene {
     location: string;
     description: string;
     npcs: NPC[];
+    availableShopIds?: string[]; // ID toko yang tersedia di lokasi ini
 }
 
 export interface StoryEntry {
@@ -84,6 +88,17 @@ export interface WorldEvent {
   type: 'Sejarah' | 'Berita' | 'Ramalan';
 }
 
+export interface Shop {
+  id: string;
+  name: string;
+  description: string;
+  inventory: ShopItem[];
+}
+
+export interface Marketplace {
+  shops: Shop[];
+}
+
 export interface GameTurnResponse {
     narasiBaru: string;
     karakterTerbaru: Omit<Character, 'id'>;
@@ -91,9 +106,10 @@ export interface GameTurnResponse {
     sceneUpdate: Scene;
     skillCheck?: SkillCheckResult;
     notifications?: string[];
-    memorySummary?: string; // Ringkasan satu kalimat untuk ingatan jangka panjang AI
-    questsUpdate?: Quest[]; // Pembaruan atau penambahan misi
-    worldEventsUpdate?: Omit<WorldEvent, 'id' | 'turn'>[]; // Penambahan peristiwa dunia baru
+    memorySummary?: string; 
+    questsUpdate?: Quest[];
+    worldEventsUpdate?: Omit<WorldEvent, 'id' | 'turn'>[];
+    marketplaceUpdate?: Marketplace; // Pembaruan inventaris pedagang
 }
 
 export interface AppNotification {
@@ -101,7 +117,14 @@ export interface AppNotification {
     message: string;
 }
 
-// Menyimpan data progres spesifik untuk satu karakter di dalam sebuah dunia
+export interface TransactionLogEntry {
+  turn: number;
+  type: 'buy' | 'sell';
+  itemName: string;
+  quantity: number;
+  goldAmount: number; // positif untuk jual, negatif untuk beli
+}
+
 export interface SavedCharacter {
   character: Character;
   party: Character[];
@@ -109,10 +132,10 @@ export interface SavedCharacter {
   storyHistory: StoryEntry[];
   notes: string;
   turnCount: number;
-  lastPlayed: string; // ISO Date string
+  lastPlayed: string;
+  transactionLog: TransactionLogEntry[];
 }
 
-// Entitas penyimpanan utama yang baru
 export interface World {
   id: string;
   name: string;
@@ -121,4 +144,5 @@ export interface World {
   worldEvents: WorldEvent[];
   quests: Quest[];
   characters: SavedCharacter[];
+  marketplace: Marketplace;
 }

@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { World, SavedCharacter } from '../types';
+import { World, SavedCharacter, ShopItem, InventoryItem } from '../types';
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
@@ -12,9 +13,11 @@ interface GameScreenProps {
   isLoading: boolean;
   error: string | null;
   onNotesChange: (notes: string) => void;
+  onBuyItem: (item: ShopItem, shopName: string) => void;
+  onSellItem: (item: InventoryItem, shopName: string) => void;
 }
 
-const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayerAction, isLoading, error, onNotesChange }) => {
+const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayerAction, isLoading, error, onNotesChange, onBuyItem, onSellItem }) => {
   const [actionText, setActionText] = useState('');
   const [isJournalOpen, setIsJournalOpen] = useState(false);
 
@@ -27,7 +30,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
   };
 
   const { character, party, scene, storyHistory, notes } = savedCharacter;
-  const { quests, worldEvents } = world;
+  const { quests, worldEvents, marketplace } = world;
 
   return (
     <div className="w-full max-w-[1600px] mx-auto h-[95vh] flex flex-row gap-4 sm:gap-6 p-1 sm:p-2">
@@ -41,6 +44,11 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
         worldEvents={worldEvents}
         isOpen={isJournalOpen}
         onClose={() => setIsJournalOpen(false)}
+        marketplace={marketplace}
+        scene={scene}
+        onBuyItem={onBuyItem}
+        onSellItem={onSellItem}
+        isLoading={isLoading}
       />
       
       <main className="flex-1 h-full flex flex-col min-h-0 relative">

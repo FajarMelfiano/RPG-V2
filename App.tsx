@@ -1,5 +1,6 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent } from './types';
+import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry } from './types';
 import StartScreen from './components/StartScreen';
 import WorldCreationScreen from './components/WorldCreationScreen';
 import WorldLobbyScreen from './components/WorldLobbyScreen';
@@ -64,7 +65,7 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-        const { name, description } = await DungeonMaster.generateWorld(worldData);
+        const { name, description, marketplace } = await DungeonMaster.generateWorld(worldData);
         const newWorld: World = {
             id: crypto.randomUUID(),
             name,
@@ -73,6 +74,7 @@ const App: React.FC = () => {
             worldEvents: [],
             quests: [],
             characters: [],
+            marketplace,
         };
         const updatedWorlds = [...worlds, newWorld];
         persistWorlds(updatedWorlds);
@@ -119,6 +121,7 @@ const App: React.FC = () => {
         notes: '',
         turnCount: 0,
         lastPlayed: new Date().toISOString(),
+        transactionLog: [],
       };
 
       const updatedWorld = { ...activeWorld, characters: [...activeWorld.characters, newSavedCharacter] };
@@ -156,20 +159,115 @@ const App: React.FC = () => {
     }
   }
 
-  const handleNotesChange = useCallback((newNotes: string) => {
-      if (!activeWorld || !activeCharacter) return;
-      
-      const updatedCharacter = { ...activeCharacter, notes: newNotes };
-      setActiveCharacter(updatedCharacter);
+  const updateActiveCharacterAndWorld = (updatedCharacter: SavedCharacter, updatedWorld?: World) => {
+    const finalWorld = updatedWorld || activeWorld;
+    if (!finalWorld) return;
 
-      const updatedWorld = {
-          ...activeWorld,
-          characters: activeWorld.characters.map(c => c.character.id === activeCharacter.character.id ? updatedCharacter : c)
+    const newWorldState = {
+        ...finalWorld,
+        characters: finalWorld.characters.map(c => c.character.id === updatedCharacter.character.id ? updatedCharacter : c)
+    };
+    persistWorlds(worlds.map(w => w.id === newWorldState.id ? newWorldState : w));
+    setActiveWorld(newWorldState);
+    setActiveCharacter(updatedCharacter);
+  }
+
+  const handleNotesChange = useCallback((newNotes: string) => {
+      if (!activeCharacter) return;
+      const updatedCharacter = { ...activeCharacter, notes: newNotes };
+      updateActiveCharacterAndWorld(updatedCharacter);
+  }, [activeCharacter, activeWorld, worlds]);
+  
+  const handleBuyItem = useCallback((item: ShopItem, shopId: string) => {
+      if (!activeCharacter || !activeWorld) return;
+      if (activeCharacter.character.gold < item.value) {
+          addNotification("Emas tidak cukup!");
+          return;
+      }
+
+      // --- Update Karakter ---
+      const updatedCharacter = { ...activeCharacter.character };
+      updatedCharacter.gold -= item.value;
+      const existingItem = updatedCharacter.inventory.find(i => i.name === item.name);
+      if (existingItem) {
+          existingItem.quantity += item.quantity;
+      } else {
+          updatedCharacter.inventory.push({ ...item });
+      }
+
+      // --- Update Toko ---
+      const updatedWorld = { ...activeWorld };
+      const shop = updatedWorld.marketplace.shops.find(s => s.id === shopId);
+      if (shop) {
+          shop.inventory = shop.inventory.filter(i => i.name !== item.name);
+      }
+      
+      // --- Buat Log Transaksi ---
+      const newLogEntry: TransactionLogEntry = {
+        turn: activeCharacter.turnCount,
+        type: 'buy',
+        itemName: item.name,
+        quantity: item.quantity,
+        goldAmount: -item.value
       };
       
-      const newWorlds = worlds.map(w => w.id === activeWorld.id ? updatedWorld : w);
-      persistWorlds(newWorlds);
-  }, [activeWorld, activeCharacter, worlds]);
+      const updatedSavedChar: SavedCharacter = {
+        ...activeCharacter,
+        character: updatedCharacter,
+        transactionLog: [...activeCharacter.transactionLog, newLogEntry]
+      };
+
+      updateActiveCharacterAndWorld(updatedSavedChar, updatedWorld);
+      addNotification(`Membeli: ${item.name}`, 'item');
+  }, [activeCharacter, activeWorld, worlds, addNotification]);
+
+  const handleSellItem = useCallback((item: InventoryItem, shopId: string) => {
+      if (!activeCharacter || !activeWorld) return;
+      const sellValue = Math.floor(item.value / 2);
+
+      // --- Update Karakter ---
+      const updatedCharacter = { ...activeCharacter.character };
+      updatedCharacter.gold += sellValue;
+      const itemToSell = updatedCharacter.inventory.find(i => i.name === item.name);
+      if (itemToSell) {
+          if (itemToSell.quantity > 1) {
+              itemToSell.quantity -= 1;
+          } else {
+              updatedCharacter.inventory = updatedCharacter.inventory.filter(i => i.name !== item.name);
+          }
+      }
+
+      // --- Update Toko (opsional: tambahkan item ke inventaris toko) ---
+      const updatedWorld = { ...activeWorld };
+      const shop = updatedWorld.marketplace.shops.find(s => s.id === shopId);
+      if (shop) {
+          const existingShopItem = shop.inventory.find(i => i.name === item.name);
+          if (existingShopItem) {
+              existingShopItem.quantity += 1;
+          } else {
+              shop.inventory.push({ ...item, quantity: 1 });
+          }
+      }
+
+      // --- Buat Log Transaksi ---
+      const newLogEntry: TransactionLogEntry = {
+        turn: activeCharacter.turnCount,
+        type: 'sell',
+        itemName: item.name,
+        quantity: 1,
+        goldAmount: sellValue
+      };
+
+      const updatedSavedChar: SavedCharacter = {
+        ...activeCharacter,
+        character: updatedCharacter,
+        transactionLog: [...activeCharacter.transactionLog, newLogEntry]
+      };
+
+      updateActiveCharacterAndWorld(updatedSavedChar, updatedWorld);
+      addNotification(`Menjual: ${item.name} (+${sellValue} Emas)`, 'gold');
+  }, [activeCharacter, activeWorld, worlds, addNotification]);
+
 
   const handlePlayerAction = useCallback(async (action: string) => {
     if (!activeWorld || !activeCharacter) return;
@@ -195,10 +293,7 @@ const App: React.FC = () => {
          currentHistory = currentHistory.slice(0, -1);
       } finally {
         const finalCharacter = { ...activeCharacter, storyHistory: currentHistory };
-        const finalWorld = { ...activeWorld, characters: activeWorld.characters.map(c => c.character.id === activeCharacter.character.id ? finalCharacter : c) };
-        persistWorlds(worlds.map(w => w.id === activeWorld.id ? finalWorld : w));
-        setActiveCharacter(finalCharacter);
-        setActiveWorld(finalWorld);
+        updateActiveCharacterAndWorld(finalCharacter);
         setIsLoading(false);
       }
       return;
@@ -212,7 +307,7 @@ const App: React.FC = () => {
     try {
       const response = await DungeonMaster.generateNextScene(
           activeCharacter.character, activeCharacter.party, activeCharacter.scene, currentHistory,
-          activeWorld.longTermMemory, activeCharacter.notes, activeWorld.quests, activeWorld.worldEvents, newTurnCount, action
+          activeWorld.longTermMemory, activeCharacter.notes, activeWorld.quests, activeWorld.worldEvents, newTurnCount, action, activeCharacter.transactionLog
       );
       
       const newEntries: StoryEntry[] = [];
@@ -231,6 +326,10 @@ const App: React.FC = () => {
 
       let updatedWorld = { ...activeWorld };
       updatedWorld.longTermMemory = response.memorySummary ? [...updatedWorld.longTermMemory, response.memorySummary] : updatedWorld.longTermMemory;
+
+      if (response.marketplaceUpdate) {
+        updatedWorld.marketplace = response.marketplaceUpdate;
+      }
 
       if (response.questsUpdate?.length) {
         let currentQuests = [...updatedWorld.quests];
@@ -264,14 +363,11 @@ const App: React.FC = () => {
         storyHistory: finalHistory,
         turnCount: newTurnCount,
         lastPlayed: new Date().toISOString(),
+        transactionLog: [], // Hapus log setelah AI melihatnya
       };
       
-      updatedWorld.characters = updatedWorld.characters.map(c => c.character.id === updatedSavedCharacter.character.id ? updatedSavedCharacter : c);
-
-      persistWorlds(worlds.map(w => w.id === updatedWorld.id ? updatedWorld : w));
-      setActiveWorld(updatedWorld);
-      setActiveCharacter(updatedSavedCharacter);
-
+      updateActiveCharacterAndWorld(updatedSavedCharacter, updatedWorld);
+      
       if (updatedCharacterData.stats.health <= 0) {
         setGameState(GameState.GAME_OVER);
       }
@@ -310,6 +406,8 @@ const App: React.FC = () => {
             isLoading={isLoading} 
             error={error} 
             onNotesChange={handleNotesChange}
+            onBuyItem={handleBuyItem}
+            onSellItem={handleSellItem}
           />;
         }
         break;

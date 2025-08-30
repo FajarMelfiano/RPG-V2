@@ -1,5 +1,6 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent } from '../../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 
 if (!process.env.API_KEY) {
@@ -19,6 +20,25 @@ const inventoryItemSchema = {
       value: { type: Type.INTEGER, description: "Harga dasar item dalam keping emas. Harus lebih dari 0." }
     },
     required: ["name", "quantity", "description", "value"]
+};
+
+const shopSchema = {
+  type: Type.OBJECT,
+  properties: {
+    id: { type: Type.STRING, description: "ID unik untuk toko (misal: 'general_store', 'blacksmith')." },
+    name: { type: Type.STRING, description: "Nama toko." },
+    description: { type: Type.STRING, description: "Deskripsi singkat tentang toko dan pemiliknya." },
+    inventory: { type: Type.ARRAY, items: inventoryItemSchema }
+  },
+  required: ["id", "name", "description", "inventory"]
+};
+
+const marketplaceSchema = {
+  type: Type.OBJECT,
+  properties: {
+    shops: { type: Type.ARRAY, items: shopSchema }
+  },
+  required: ["shops"]
 };
 
 const characterSchema = {
@@ -65,22 +85,27 @@ const sceneSchema = {
                     name: { type: Type.STRING, description: "Nama NPC yang unik dan sesuai fantasi." },
                     description: { type: Type.STRING },
                     attitude: { type: Type.STRING, enum: ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'] },
-                    inventory: { type: Type.ARRAY, description: "Jika NPC ini adalah pedagang, isi dengan barang yang mereka jual. Jika tidak, biarkan kosong.", items: inventoryItemSchema }
                 },
                 required: ["name", "description", "attitude"]
             }
+        },
+        availableShopIds: {
+          type: Type.ARRAY,
+          description: "Daftar ID toko yang tersedia di lokasi ini. Tentukan secara logis (misal, di kota besar ada semua, di hutan tidak ada).",
+          items: { type: Type.STRING }
         }
     },
-    required: ["location", "description", "npcs"]
+    required: ["location", "description", "npcs", "availableShopIds"]
 };
 
 const worldGenerationSchema = {
     type: Type.OBJECT,
     properties: {
         name: { type: Type.STRING, description: "Nama yang epik dan unik untuk dunia ini, berdasarkan konsepnya." },
-        description: { type: Type.STRING, description: "Deskripsi dunia yang kaya dan imersif (3-4 kalimat), menyatukan konsep, faksi, dan konflik yang diberikan." }
+        description: { type: Type.STRING, description: "Deskripsi dunia yang kaya dan imersif (3-4 kalimat), menyatukan konsep, faksi, dan konflik yang diberikan." },
+        marketplace: marketplaceSchema,
     },
-    required: ["name", "description"]
+    required: ["name", "description", "marketplace"]
 };
 
 const characterGenerationSchema = {
@@ -135,15 +160,16 @@ const gameTurnSchema = {
         notifications: { type: Type.ARRAY, description: "Daftar notifikasi singkat (misal: 'Item Ditemukan: Kunci'). Kosongkan jika tidak ada.", items: { type: Type.STRING } },
         memorySummary: { type: Type.STRING, description: "Ringkasan satu kalimat dari peristiwa penting giliran ini. Biarkan kosong jika tidak ada." },
         questsUpdate: { type: Type.ARRAY, description: "Daftar misi yang baru dibuat atau diperbarui. Kosongkan jika tidak ada.", items: questSchema },
-        worldEventsUpdate: { type: Type.ARRAY, description: "Daftar peristiwa dunia baru. Buat satu setiap 5-10 giliran. Kosongkan jika tidak ada.", items: worldEventSchema }
+        worldEventsUpdate: { type: Type.ARRAY, description: "Daftar peristiwa dunia baru. Buat satu setiap 5-10 giliran. Kosongkan jika tidak ada.", items: worldEventSchema },
+        marketplaceUpdate: marketplaceSchema,
     },
     required: ["narasiBaru", "karakterTerbaru", "partyTerbaru", "sceneUpdate"]
 };
 
 
 class GeminiDungeonMaster implements IAiDungeonMasterService {
-    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; }> {
-        const prompt = `Anda adalah seorang Arsitek Dunia AI, seorang pendongeng ulung yang bertugas menciptakan fondasi dari sebuah saga fantasi. Berdasarkan pilar-pilar yang diberikan pemain, tempa sebuah dunia yang kohesif dan menarik.
+    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; }> {
+        const prompt = `Anda adalah seorang Arsitek Dunia AI, seorang pendongeng ulung yang bertugas menciptakan fondasi dari sebuah saga fantasi. Berdasarkan pilar-pilar yang diberikan pemain, tempa sebuah dunia yang kohesif, menarik, dan hidup secara ekonomi.
 
 Masukan Pemain:
 - Konsep Inti Dunia: "${worldData.concept}"
@@ -151,10 +177,15 @@ Masukan Pemain:
 - Konflik Saat Ini: "${worldData.conflict}"
 
 Tugas Anda:
-1.  **Sintesiskan Visi**: Baca dan pahami ketiga pilar tersebut. Temukan benang merah yang menghubungkannya.
-2.  **Beri Nama Dunia**: Ciptakan nama yang epik, unik, dan menggugah untuk dunia ini, yang mencerminkan konsep intinya.
-3.  **Tulis Deskripsi Dunia**: Tulis deskripsi yang kaya dan imersif (3-4 kalimat). Gabungkan konsep, faksi, dan konflik menjadi satu narasi yang koheren. Ini akan menjadi 'kebenaran dasar' dari dunia ini.
-4.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
+1.  **Sintesiskan Visi**: Baca dan pahami ketiga pilar tersebut.
+2.  **Beri Nama Dunia**: Ciptakan nama yang epik dan unik untuk dunia ini.
+3.  **Tulis Deskripsi Dunia**: Tulis deskripsi yang kaya dan imersif (3-4 kalimat).
+4.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah sebuah marketplace awal yang hidup dengan toko-toko berikut:
+    *   **Toko Kelontong** (id: 'general_store'): Jual 5-7 item petualangan dasar (ransum, tali, obor, dll).
+    *   **Pandai Besi** (id: 'blacksmith'): Jual 3-5 senjata dan zirah dasar.
+    *   **Alkemis** (id: 'alchemist'): Jual 3-5 ramuan dasar (penyembuhan, mana, dll).
+    *   **Pedagang Keliling** (id: 'traveling_merchant'): Mulai dengan 4-6 item yang sedikit lebih menarik atau eksotis. Inventarisnya akan berubah seiring waktu.
+5.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -183,7 +214,7 @@ Tugas Anda (Ikuti dengan SANGAT TELITI):
 4.  **Alokasi Statistik Cerdas**: Distribusikan poin atribut (8-18) yang mencerminkan cerita dan Konteks Dunia.
 5.  **Konteks Ekonomi & Sosial**: Berikan 'gold' dan 'reputation' awal yang logis berdasarkan latar belakang DAN status sosial mereka di dalam dunia.
 6.  **Inventaris yang Relevan**: Ciptakan inventaris awal yang masuk akal untuk peran mereka di dunia ini.
-7.  **Adegan Awal yang Koheren**: Buat \`initialScene\` dan \`introStory\` yang merupakan kelanjutan langsung dari \`backstory\` karakter DAN terjadi di lokasi yang masuk akal di dalam dunia.
+7.  **Adegan Awal yang Koheren**: Buat \`initialScene\` dan \`introStory\` yang merupakan kelanjutan langsung dari \`backstory\` karakter DAN terjadi di lokasi yang masuk akal di dalam dunia. Tentukan \`availableShopIds\` untuk adegan awal ini secara logis.
 8.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await ai.models.generateContent({
@@ -194,7 +225,7 @@ Tugas Anda (Ikuti dengan SANGAT TELITI):
         return JSON.parse(response.text);
     }
 
-    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string): Promise<GameTurnResponse> {
+    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[]): Promise<GameTurnResponse> {
         const recentHistory = history.slice(-5).map(entry => {
             if(entry.type === 'action') return `Pemain: ${entry.content}`;
             if(entry.type === 'narrative') return `DM: ${entry.content}`;
@@ -210,6 +241,9 @@ MEMORI JANGKA PANJANG (Sejarah Dunia):
 ${notes.trim() ? `
 CATATAN PRIBADI PEMAIN (Gunakan ini untuk memahami fokus dan teori pemain):
 ${notes}` : ''}
+${transactionLog.length > 0 ? `
+LOG TRANSAKSI TERBARU (Gunakan ini untuk kesadaran ekonomi. JANGAN narasikan ulang, cukup ketahui saja):
+${transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n')}` : ''}
 
 Kondisi Saat Ini:
 - Karakter Pemain: ${JSON.stringify(character, null, 2)}
@@ -224,16 +258,19 @@ Aksi Pemain:
 "${playerAction}"
 
 Tugas Anda (Ikuti Urutan Ini dengan SANGAT TELITI):
-1.  **Analisis & Konsistensi Dunia**: Baca SEMUA informasi di atas. Pastikan respons Anda logis dan konsisten dengan semua yang telah terjadi.
+1.  **Analisis & Konsistensi Dunia**: Baca SEMUA informasi di atas. Pastikan respons Anda logis dan konsisten dengan semua yang telah terjadi. Perhatikan log transaksi untuk memahami kekuatan ekonomi pemain saat ini.
 2.  **Proses Aksi & Konsekuensi**: 
-    *   **Aksi "Periksa"**: Jika aksi pemain adalah "Periksa [Nama NPC]", berikan deskripsi yang lebih mendalam tentang penampilan, bahasa tubuh, atau detail tersembunyi NPC tersebut. Ini adalah kesempatan untuk memberikan wawasan. Berdasarkan Kebijaksanaan (Insight) atau Kecerdasan (Investigasi) karakter, Anda BISA memicu 'Pemeriksaan Keterampilan' (skillCheck) untuk mengungkap niat tersembunyi atau petunjuk.
+    *   **Aksi "Periksa"**: Jika aksi pemain adalah "Periksa [Nama NPC]", berikan deskripsi yang lebih mendalam tentang NPC tersebut. Anda BISA memicu 'Pemeriksaan Keterampilan' (skillCheck) untuk mengungkap niat tersembunyi.
     *   **Aksi Lainnya**: Narasikan hasil aksi pemain. Jika perlu, lakukan 'Pemeriksaan Keterampilan' (skillCheck).
     *   **Perbarui Status**: Perbarui status karakter, party, dan adegan (\`karakterTerbaru\`, \`partyTerbaru\`, \`sceneUpdate\`).
-    *   **SIKAP NPC HARUS BERUBAH**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis berdasarkan aksi pemain. Jika pemain bersikap baik, sikap bisa membaik (misal: Netral -> Ramah). Jika pemain mengancam atau gagal dalam pemeriksaan sosial, sikap bisa memburuk (misal: Netral -> Curiga).
-3.  **Manajemen Misi (questsUpdate)**: Identifikasi jika aksi memicu, memajukan, atau menyelesaikan misi. Jika ya, tambahkan objek Quest baru atau yang diperbarui ke array \`questsUpdate\`.
-4.  **Tawarikh Dunia (worldEventsUpdate)**: Secara berkala (setiap 5-10 giliran), ciptakan satu peristiwa dunia baru. Variasikan jenisnya ('Sejarah', 'Berita', 'Ramalan').
-5.  **Ciptakan Memori Baru (memorySummary)**: Jika terjadi peristiwa penting, tulis ringkasan satu kalimat di \`memorySummary\`.
-6.  **Format Respons**: Pastikan respons Anda sesuai dengan skema JSON yang disediakan. Kosongkan array yang tidak relevan.`;
+    *   **Ketersediaan Toko (PENTING)**: Dalam \`sceneUpdate\`, tentukan \`availableShopIds\` secara logis. Di kota besar, semua toko permanen tersedia. Di desa, mungkin hanya 'general_store'. Di alam liar, array kosong KECUALI jika ada NPC Pedagang Keliling di adegan.
+    *   **SIKAP NPC HARUS BERUBAH**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis berdasarkan aksi pemain.
+3.  **Manajemen Pasar (marketplaceUpdate)**:
+    *   **Pedagang Keliling**: Setiap 20-25 giliran (periksa \`turnCount\`), segarkan inventaris toko 'traveling_merchant' dengan 4-6 item baru yang menarik. Jika Anda melakukannya, sertakan objek \`marketplaceUpdate\` dengan inventaris baru tersebut. Jika tidak, biarkan kosong.
+4.  **Manajemen Misi (questsUpdate)**: Identifikasi jika aksi memicu, memajukan, atau menyelesaikan misi. Jika ya, tambahkan objek Quest baru atau yang diperbarui ke array \`questsUpdate\`.
+5.  **Tawarikh Dunia (worldEventsUpdate)**: Secara berkala (setiap 5-10 giliran), ciptakan satu peristiwa dunia baru.
+6.  **Ciptakan Memori Baru (memorySummary)**: Jika terjadi peristiwa penting, tulis ringkasan satu kalimat di \`memorySummary\`.
+7.  **Format Respons**: Pastikan respons Anda sesuai dengan skema JSON yang disediakan. Kosongkan field/array yang tidak relevan.`;
         
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
