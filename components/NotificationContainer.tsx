@@ -12,31 +12,23 @@ const NotificationToast: React.FC<{ message: string }> = ({ message }) => {
         if (lowerCaseMessage.includes('reputasi')) {
             return <ReputationIcon className="w-6 h-6 text-amber-200 flex-shrink-0" />;
         }
-        if (lowerCaseMessage.includes('item') || lowerCaseMessage.includes('diperoleh')) {
-            return <ChestIcon className="w-6 h-6 text-amber-400 flex-shrink-0" />;
-        }
-        // Ikon default jika tidak ada kata kunci yang cocok
-        return <ChestIcon className="w-6 h-6 text-slate-400 flex-shrink-0" />;
+        // A generic icon for other notifications like items found
+        return <ChestIcon className="w-6 h-6 text-green-400 flex-shrink-0" />;
     };
 
     return (
-        <div className="bg-slate-800 border border-amber-500 rounded-lg shadow-lg p-3 flex items-center gap-3 w-72 animate-toast">
+        <div className="animate-toast bg-slate-800/90 border border-slate-600 rounded-lg shadow-2xl p-4 flex items-center gap-4 w-80 max-w-sm backdrop-blur-sm">
             {getIcon()}
-            <p className="text-slate-200 text-sm">{message}</p>
+            <p className="text-slate-200">{message}</p>
         </div>
     );
 };
 
-interface NotificationContainerProps {
-    notifications: AppNotification[];
-}
-
-const NotificationContainer: React.FC<NotificationContainerProps> = ({ notifications }) => {
+const NotificationContainer: React.FC<{ notifications: AppNotification[] }> = ({ notifications }) => {
     return (
-        <div className="fixed top-5 right-5 z-50 space-y-3">
-            {notifications.map(notif => (
-                // FIX: Corrected variable name from 'not' to 'notif' to match the map function parameter.
-                <NotificationToast key={notif.id} message={notif.message} />
+        <div className="fixed top-4 right-4 z-50 space-y-2">
+            {notifications.map(notification => (
+                <NotificationToast key={notification.id} message={notification.message} />
             ))}
         </div>
     );

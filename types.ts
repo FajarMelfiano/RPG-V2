@@ -3,7 +3,6 @@ export enum GameState {
   CREATING_CHARACTER,
   PLAYING,
   GAME_OVER,
-  CHARACTER_SELECTION,
 }
 
 export interface Stats {
@@ -28,6 +27,7 @@ export interface InventoryItem {
 }
 
 export interface Character {
+  id: string;
   name: string;
   race: string;
   characterClass: string;
@@ -62,17 +62,19 @@ export interface Scene {
 }
 
 export interface StoryEntry {
-    type: 'narrative' | 'action' | 'system' | 'dice_roll';
+    type: 'narrative' | 'action' | 'system' | 'dice_roll' | 'ooc_query' | 'ooc_response';
     content: string;
     rollDetails?: SkillCheckResult;
 }
 
 export interface GameTurnResponse {
     narasiBaru: string;
-    karakterTerbaru: Character;
+    karakterTerbaru: Omit<Character, 'id'>;
+    partyTerbaru?: Omit<Character, 'id'>[];
     sceneUpdate: Scene;
     skillCheck?: SkillCheckResult;
     notifications?: string[];
+    memorySummary?: string; // Ringkasan satu kalimat untuk ingatan jangka panjang AI
 }
 
 export interface AppNotification {
@@ -81,8 +83,12 @@ export interface AppNotification {
 }
 
 export interface SavedGame {
-  id: string; // Menggunakan nama karakter sebagai ID unik
+  id: string;
   character: Character;
+  party: Character[];
   scene: Scene;
   storyHistory: StoryEntry[];
+  longTermMemory: string[]; // Menyimpan memori jangka panjang AI
+  notes: string; // Menyimpan catatan pemain
+  lastSaved: string; // ISO Date string
 }

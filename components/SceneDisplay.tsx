@@ -4,6 +4,7 @@ import { CoinIcon } from './icons';
 
 interface SceneDisplayProps {
   scene: Scene;
+  onNpcInteract: (npcName: string) => void;
 }
 
 const getAttitudeColor = (attitude: NPC['attitude']) => {
@@ -16,7 +17,7 @@ const getAttitudeColor = (attitude: NPC['attitude']) => {
     }
 }
 
-const SceneDisplay: React.FC<SceneDisplayProps> = ({ scene }) => {
+const SceneDisplay: React.FC<SceneDisplayProps> = ({ scene, onNpcInteract }) => {
   return (
     <div className="p-4 border-b border-slate-700 bg-slate-900/50 rounded-t-xl overflow-y-auto flex-shrink-0">
       <h2 className="text-xl font-cinzel text-amber-300">{scene.location}</h2>
@@ -29,7 +30,12 @@ const SceneDisplay: React.FC<SceneDisplayProps> = ({ scene }) => {
                       <li key={index} className="bg-slate-800/50 p-2 rounded-md">
                           <div className="flex justify-between items-start">
                               <div>
-                                <span className="font-bold">{npc.name}</span> - <i className="text-slate-400 text-xs">{npc.description}</i>
+                                <button 
+                                  onClick={() => onNpcInteract(npc.name)}
+                                  className="font-bold text-amber-300 hover:text-amber-200 hover:underline transition-colors text-left"
+                                >
+                                  {npc.name}
+                                </button> - <i className="text-slate-400 text-xs">{npc.description}</i>
                               </div>
                               <span className={`font-bold text-xs py-0.5 px-1.5 rounded-full bg-slate-900 ${getAttitudeColor(npc.attitude)}`}>{npc.attitude}</span>
                           </div>

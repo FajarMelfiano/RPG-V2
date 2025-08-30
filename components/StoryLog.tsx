@@ -59,6 +59,24 @@ const StoryLog: React.FC<StoryLogProps> = ({ storyHistory }) => {
                 </p>
             );
           }
+          
+          if (entry.type === 'ooc_query') {
+            return (
+              <div key={index} className="pt-4 mt-4 border-t border-slate-700/60">
+                <p className="text-slate-400 italic text-sm">
+                  <span className="font-semibold">[OOC] Anda bertanya:</span> {entry.content}
+                </p>
+              </div>
+            );
+          }
+          
+          if (entry.type === 'ooc_response') {
+            return (
+                <p key={index} className="text-slate-400 italic text-sm p-3 bg-slate-900/50 rounded-lg whitespace-pre-wrap">
+                  <span className="font-semibold">[GM]:</span> {entry.content}
+                </p>
+            );
+          }
 
           return null;
         })}
