@@ -5,7 +5,7 @@ import { IAiDungeonMasterService } from "../aiService";
 // Menggunakan kunci API yang disediakan pengguna untuk mengatasi batasan lingkungan.
 // Dalam aplikasi produksi nyata, kunci ini HARUS disimpan sebagai variabel lingkungan yang aman.
 const openai = new OpenAI({ 
-    apiKey: "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",
+    apiKey: "sk-1234ijkl1234ijkl1234ijkl1234ijkl1234ijkl",
     dangerouslyAllowBrowser: true // Diperlukan untuk penggunaan sisi klien
 });
 
