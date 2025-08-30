@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StoryEntry, SkillCheckResult, Scene, NPC } from '../types';
 import { DiceIcon, EyeIcon } from './icons';
 
@@ -78,12 +78,6 @@ const StoryHeader: React.FC<{ scene: Scene; onNpcInteract: (npcName: string) => 
 
 
 const renderSkillCheck = (details: SkillCheckResult) => {
-    const [rolled, setRolled] = useState(false);
-    useEffect(() => {
-        const timer = setTimeout(() => setRolled(true), 100);
-        return () => clearTimeout(timer);
-    }, []);
-
     const successClass = details.success ? "text-green-400 border-green-700" : "text-red-400 border-red-700";
     return (
         <div className="bg-stone-950/50 rounded-lg p-3 my-2 text-sm border border-stone-700 shadow-lg">
@@ -97,8 +91,8 @@ const renderSkillCheck = (details: SkillCheckResult) => {
                     </p>
                 </div>
                 <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-stone-900 rounded-full flex items-center justify-center border-2 border-stone-600 shadow-inner">
-                        <span className={`font-cinzel text-2xl sm:text-3xl text-stone-200 transition-all duration-500 ease-out ${rolled ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+                    <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-stone-900 rounded-full flex items-center justify-center border-2 border-stone-600 shadow-inner overflow-hidden">
+                        <span className="font-cinzel text-2xl sm:text-3xl text-stone-200 dice-animation">
                             {details.diceRoll}
                         </span>
                     </div>
