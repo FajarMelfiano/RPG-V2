@@ -12,7 +12,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // --- SCHEMAS ---
 
-const baseItemSchema = {
+const baseItemProperties = {
   id: { type: Type.STRING, description: "ID unik untuk item ini, gunakan UUID." },
   name: { type: Type.STRING },
   description: { type: Type.STRING },
@@ -20,63 +20,34 @@ const baseItemSchema = {
   rarity: { type: Type.STRING, enum: Object.values(ItemRarity) },
 };
 
-const weaponSchema = {
-  type: Type.OBJECT,
-  properties: {
-    ...baseItemSchema,
-    type: { type: Type.STRING, enum: ['Weapon'] },
-    damage: { type: Type.STRING, description: "String dadu kerusakan (misal: '1d8 + KEK')." },
-    properties: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Properti sihir (misal: 'Api', 'Es')." },
-    slot: { type: Type.STRING, enum: [ItemSlot.MAIN_HAND, ItemSlot.OFF_HAND] },
-  },
-  required: Object.keys(baseItemSchema).concat(['type', 'damage', 'slot'])
-};
-
-const armorSchema = {
-  type: Type.OBJECT,
-  properties: {
-    ...baseItemSchema,
-    type: { type: Type.STRING, enum: ['Armor'] },
-    armorClass: { type: Type.INTEGER, description: "Bonus Kelas Zirah (AC) yang diberikan item ini." },
-    slot: { type: Type.STRING, enum: [ItemSlot.HEAD, ItemSlot.CHEST, ItemSlot.LEGS, ItemSlot.FEET, ItemSlot.OFF_HAND] },
-  },
-  required: Object.keys(baseItemSchema).concat(['type', 'armorClass', 'slot'])
-};
-
-const accessorySchema = {
-  type: Type.OBJECT,
-  properties: {
-    ...baseItemSchema,
-    type: { type: Type.STRING, enum: ['Accessory'] },
-    statBonuses: {
-      type: Type.OBJECT,
-      properties: {
-        strength: { type: Type.INTEGER }, dexterity: { type: Type.INTEGER }, constitution: { type: Type.INTEGER },
-        intelligence: { type: Type.INTEGER }, wisdom: { type: Type.INTEGER }, charisma: { type: Type.INTEGER },
-      }
-    },
-    slot: { type: Type.STRING, enum: [ItemSlot.NECK, ItemSlot.RING] },
-  },
-  required: Object.keys(baseItemSchema).concat(['type', 'slot'])
-};
-
-const miscItemSchema = {
+// Skema item yang disederhanakan untuk menghindari kesalahan "too many states"
+const itemSchema = {
     type: Type.OBJECT,
+    description: "Represents any item in the game.",
     properties: {
-        ...baseItemSchema,
-        type: { type: Type.STRING, enum: ['Consumable', 'Misc'] },
+        ...baseItemProperties,
+        type: { type: Type.STRING, enum: ['Weapon', 'Armor', 'Accessory', 'Consumable', 'Misc'] },
+        // Properti opsional untuk semua jenis item
+        slot: { type: Type.STRING, enum: Object.values(ItemSlot), description: "Slot perlengkapan jika bisa dikenakan." },
+        damage: { type: Type.STRING, description: "String dadu kerusakan (misal: '1d8 + KEK'). Hanya untuk Senjata." },
+        properties: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Properti sihir (misal: 'Api'). Hanya untuk Senjata." },
+        armorClass: { type: Type.INTEGER, description: "Bonus Kelas Zirah (AC). Hanya untuk Zirah/Perisai." },
+        statBonuses: {
+            type: Type.OBJECT,
+            properties: {
+                strength: { type: Type.INTEGER }, dexterity: { type: Type.INTEGER }, constitution: { type: Type.INTEGER },
+                intelligence: { type: Type.INTEGER }, wisdom: { type: Type.INTEGER }, charisma: { type: Type.INTEGER },
+            },
+            description: "Bonus statistik. Hanya untuk Aksesoris."
+        },
     },
-    required: Object.keys(baseItemSchema).concat(['type'])
-};
-
-const anyItemSchema = {
-    oneOf: [weaponSchema, armorSchema, accessorySchema, miscItemSchema]
+    required: [...Object.keys(baseItemProperties), 'type']
 };
 
 const inventoryItemSchema = {
     type: Type.OBJECT,
     properties: {
-        item: anyItemSchema,
+        item: itemSchema,
         quantity: { type: Type.INTEGER },
     },
     required: ["item", "quantity"]
@@ -122,14 +93,14 @@ const baseStatsSchema = {
 const equipmentSchema = {
     type: Type.OBJECT,
     properties: {
-        mainHand: weaponSchema,
-        offHand: { oneOf: [weaponSchema, armorSchema] }, // Bisa senjata atau perisai
-        head: armorSchema,
-        chest: armorSchema,
-        legs: armorSchema,
-        feet: armorSchema,
-        neck: accessorySchema,
-        ring: accessorySchema,
+        mainHand: itemSchema,
+        offHand: itemSchema,
+        head: itemSchema,
+        chest: itemSchema,
+        legs: itemSchema,
+        feet: itemSchema,
+        neck: itemSchema,
+        ring: itemSchema,
     }
 };
 
@@ -240,7 +211,6 @@ const gameTurnSchema = {
     },
     required: ["narasiBaru", "karakterTerbaru", "partyTerbaru", "sceneUpdate"]
 };
-
 
 class GeminiDungeonMaster implements IAiDungeonMasterService {
     async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; }> {

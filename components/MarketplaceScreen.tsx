@@ -33,7 +33,7 @@ const ItemStatDisplay: React.FC<{ item: AnyItem }> = ({ item }) => {
                 const bonuses = (item as Accessory).statBonuses;
                 if (!bonuses) return null;
                 return (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         {Object.entries(bonuses).map(([stat, val]) => (
                              <div key={stat} className="flex items-center gap-1 text-xs" title={`Bonus ${stat}`}><SparklesIcon className="w-3 h-3 text-yellow-400"/><span>{`+${val} ${stat.substring(0,3).toUpperCase()}`}</span></div>
                         ))}
@@ -73,7 +73,7 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
             const { item, quantity } = inventoryItem;
             const price = mode === 'buy' ? item.value : Math.floor(item.value / 2);
             return (
-                <li key={item.id} className="bg-stone-950/40 p-2 rounded-md border border-stone-700/50 flex flex-col gap-2">
+                <li key={`${item.id}-${mode}`} className="bg-stone-950/40 p-2 rounded-md border border-stone-700/50 flex flex-col gap-2">
                     <div className="flex justify-between items-start">
                         <div className="flex-grow">
                             <p className={`font-bold ${getRarityColor(item.rarity)}`}>{item.name} (x{quantity})</p>

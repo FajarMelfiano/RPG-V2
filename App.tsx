@@ -13,32 +13,32 @@ import DungeonMaster from './services/aiService';
 
 const SAVE_GAME_KEY = 'gemini-rpg-worlds';
 
-// FIX: Iterate over keys to preserve type information, which Object.values can sometimes lose. This resolves errors related to properties not existing on type 'unknown'. Also added a check for `bonus` being defined.
 const calculateCharacterStats = (character: Character): Character => {
     const newStats = { ...character.baseStats };
-    
-    // Terapkan bonus dari aksesoris
-    for (const slot in character.equipment) {
-        const item = character.equipment[slot as ItemSlot];
-        if (item?.type === 'Accessory' && item.statBonuses) {
-            for (const [stat, bonus] of Object.entries(item.statBonuses)) {
-                if (bonus !== undefined) {
-                    (newStats as any)[stat] = (newStats as any)[stat] + bonus;
+    const baseAC = 10 + Math.floor((newStats.dexterity - 10) / 2);
+    let finalAC = baseAC;
+
+    for (const slotKey in character.equipment) {
+        const slot = slotKey as ItemSlot;
+        const item = character.equipment[slot];
+        if (!item) continue;
+
+        if (item.type === 'Accessory' && item.statBonuses) {
+            for (const statKey in item.statBonuses) {
+                const stat = statKey as keyof typeof newStats;
+                const bonus = item.statBonuses[stat];
+                if (bonus !== undefined && stat in newStats) {
+                    (newStats as any)[stat] += bonus;
                 }
             }
         }
-    }
-
-    // Hitung Armor Class (AC)
-    let armorClass = 10 + Math.floor((newStats.dexterity - 10) / 2); // AC dasar + bonus Ketangkasan
-    for (const slot in character.equipment) {
-        const item = character.equipment[slot as ItemSlot];
-        if (item?.type === 'Armor') {
-            armorClass += item.armorClass;
+        
+        if (item.type === 'Armor') {
+            finalAC += item.armorClass;
         }
     }
 
-    return { ...character, stats: { ...newStats, armorClass } };
+    return { ...character, stats: { ...newStats, armorClass: finalAC } };
 }
 
 const App: React.FC = () => {
@@ -213,21 +213,40 @@ const App: React.FC = () => {
           addNotification("Emas tidak cukup!");
           return;
       }
-      const updatedCharacter = { ...activeCharacter.character };
-      updatedCharacter.gold -= item.item.value;
-      const existingItem = updatedCharacter.inventory.find(i => i.item.id === item.item.id);
-      if (existingItem) {
-          existingItem.quantity += item.quantity;
-      } else {
-          updatedCharacter.inventory.push({ ...item });
-      }
 
-      const updatedWorld = { ...activeWorld };
-      const shop = updatedWorld.marketplace.shops.find(s => s.id === shopId);
+      // Optimistic update
+      const updatedCharacterState = { ...activeCharacter };
+      const updatedWorldState = { ...activeWorld };
+
+      // Kurangi emas
+      updatedCharacterState.character = { ...updatedCharacterState.character, gold: updatedCharacterState.character.gold - item.item.value };
+
+      // Tambah item ke inventaris
+      const newInventory = [...updatedCharacterState.character.inventory];
+      const existingItemIndex = newInventory.findIndex(i => i.item.id === item.item.id);
+      if (existingItemIndex > -1) {
+          newInventory[existingItemIndex] = { ...newInventory[existingItemIndex], quantity: newInventory[existingItemIndex].quantity + item.quantity };
+      } else {
+          newInventory.push({ ...item });
+      }
+      updatedCharacterState.character.inventory = newInventory;
+      
+      // Hapus item dari toko
+      const shop = updatedWorldState.marketplace.shops.find(s => s.id === shopId);
       if (shop) {
-          shop.inventory = shop.inventory.filter(i => i.item.id !== item.item.id);
+        const newShopInventory = [...shop.inventory];
+        const shopItemIndex = newShopInventory.findIndex(i => i.item.id === item.item.id);
+        if(shopItemIndex > -1) {
+            if(newShopInventory[shopItemIndex].quantity > item.quantity) {
+                newShopInventory[shopItemIndex].quantity -= item.quantity;
+            } else {
+                newShopInventory.splice(shopItemIndex, 1);
+            }
+            shop.inventory = newShopInventory;
+        }
       }
       
+      // Tambah log transaksi
       const newLogEntry: TransactionLogEntry = {
         turn: activeCharacter.turnCount,
         type: 'buy',
@@ -235,14 +254,9 @@ const App: React.FC = () => {
         quantity: item.quantity,
         goldAmount: -item.item.value
       };
-      
-      const updatedSavedChar: SavedCharacter = {
-        ...activeCharacter,
-        character: updatedCharacter,
-        transactionLog: [...activeCharacter.transactionLog, newLogEntry]
-      };
+      updatedCharacterState.transactionLog = [...updatedCharacterState.transactionLog, newLogEntry];
 
-      updateActiveCharacterAndWorld(updatedSavedChar, updatedWorld);
+      updateActiveCharacterAndWorld(updatedCharacterState, updatedWorldState);
       addNotification(`Membeli: ${item.item.name}`, 'item');
   }, [activeCharacter, activeWorld, worlds, addNotification]);
 
@@ -250,28 +264,38 @@ const App: React.FC = () => {
       if (!activeCharacter || !activeWorld) return;
       const sellValue = Math.floor(item.item.value / 2);
 
-      const updatedCharacter = { ...activeCharacter.character };
-      updatedCharacter.gold += sellValue;
-      const itemToSell = updatedCharacter.inventory.find(i => i.item.id === item.item.id);
-      if (itemToSell) {
-          if (itemToSell.quantity > 1) {
-              itemToSell.quantity -= 1;
+      const updatedCharacterState = { ...activeCharacter };
+      const updatedWorldState = { ...activeWorld };
+
+      // Tambah emas
+      updatedCharacterState.character = { ...updatedCharacterState.character, gold: updatedCharacterState.character.gold + sellValue };
+      
+      // Kurangi item dari inventaris
+      const newInventory = [...updatedCharacterState.character.inventory];
+      const itemToSellIndex = newInventory.findIndex(i => i.item.id === item.item.id);
+      if (itemToSellIndex > -1) {
+          if (newInventory[itemToSellIndex].quantity > 1) {
+              newInventory[itemToSellIndex].quantity -= 1;
           } else {
-              updatedCharacter.inventory = updatedCharacter.inventory.filter(i => i.item.id !== item.item.id);
+              newInventory.splice(itemToSellIndex, 1);
           }
       }
+      updatedCharacterState.character.inventory = newInventory;
 
-      const updatedWorld = { ...activeWorld };
-      const shop = updatedWorld.marketplace.shops.find(s => s.id === shopId);
+      // Tambah item ke toko
+      const shop = updatedWorldState.marketplace.shops.find(s => s.id === shopId);
       if (shop) {
-          const existingShopItem = shop.inventory.find(i => i.item.name === item.item.name);
-          if (existingShopItem) {
-              existingShopItem.quantity += 1;
+          const newShopInventory = [...shop.inventory];
+          const existingShopItemIndex = newShopInventory.findIndex(i => i.item.id === item.item.id);
+          if (existingShopItemIndex > -1) {
+              newShopInventory[existingShopItemIndex].quantity += 1;
           } else {
-              shop.inventory.push({ item: item.item, quantity: 1 });
+              newShopInventory.push({ item: item.item, quantity: 1 });
           }
+          shop.inventory = newShopInventory;
       }
 
+      // Tambah log transaksi
       const newLogEntry: TransactionLogEntry = {
         turn: activeCharacter.turnCount,
         type: 'sell',
@@ -279,14 +303,9 @@ const App: React.FC = () => {
         quantity: 1,
         goldAmount: sellValue
       };
+      updatedCharacterState.transactionLog = [...updatedCharacterState.transactionLog, newLogEntry];
 
-      const updatedSavedChar: SavedCharacter = {
-        ...activeCharacter,
-        character: updatedCharacter,
-        transactionLog: [...activeCharacter.transactionLog, newLogEntry]
-      };
-
-      updateActiveCharacterAndWorld(updatedSavedChar, updatedWorld);
+      updateActiveCharacterAndWorld(updatedCharacterState, updatedWorldState);
       addNotification(`Menjual: ${item.item.name} (+${sellValue} Emas)`, 'gold');
   }, [activeCharacter, activeWorld, worlds, addNotification]);
 
@@ -298,22 +317,23 @@ const App: React.FC = () => {
     if (itemIndex === -1) return;
 
     const inventoryItem = character.inventory[itemIndex];
+    if (!inventoryItem.item.slot) return;
     const itemToEquip = inventoryItem.item as EquippableItem;
     const slotToEquip = itemToEquip.slot;
-    if (!slotToEquip) return;
 
     const newEquipment = { ...character.equipment };
     const newInventory = [...character.inventory];
 
-    // Lepas item yang sudah ada
     const currentlyEquipped = newEquipment[slotToEquip];
     if (currentlyEquipped) {
-      const existingInvItem = newInventory.find(i => i.item.id === currentlyEquipped.id);
-      if (existingInvItem) existingInvItem.quantity += 1;
-      else newInventory.push({ item: currentlyEquipped, quantity: 1 });
+      const existingInvItemIndex = newInventory.findIndex(i => i.item.id === currentlyEquipped.id);
+      if (existingInvItemIndex > -1) {
+        newInventory[existingInvItemIndex].quantity += 1;
+      } else {
+        newInventory.push({ item: currentlyEquipped, quantity: 1 });
+      }
     }
 
-    // Pakai item baru
     newEquipment[slotToEquip] = itemToEquip;
     if (inventoryItem.quantity > 1) {
       newInventory[itemIndex] = { ...inventoryItem, quantity: inventoryItem.quantity - 1 };
@@ -339,9 +359,9 @@ const App: React.FC = () => {
     delete newEquipment[slot];
 
     const newInventory = [...character.inventory];
-    const existingInvItem = newInventory.find(i => i.item.id === itemToUnequip.id);
-    if (existingInvItem) {
-      existingInvItem.quantity += 1;
+    const existingInvItemIndex = newInventory.findIndex(i => i.item.id === itemToUnequip.id);
+    if (existingInvItemIndex > -1) {
+      newInventory[existingInvItemIndex].quantity += 1;
     } else {
       newInventory.push({ item: itemToUnequip, quantity: 1 });
     }
@@ -352,7 +372,6 @@ const App: React.FC = () => {
     updateActiveCharacterAndWorld({ ...activeCharacter, character: updatedChar });
     addNotification(`Melepas: ${itemToUnequip.name}`, 'item');
   }, [activeCharacter, addNotification]);
-
 
   const handlePlayerAction = useCallback(async (action: string) => {
     if (!activeWorld || !activeCharacter) return;

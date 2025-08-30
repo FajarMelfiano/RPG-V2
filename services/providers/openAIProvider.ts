@@ -38,7 +38,7 @@ Struktur JSON yang DIWAJIBKAN:
           "item": { 
             "id": "string (UUID)", "name": "string", "description": "string", "value": "integer", "rarity": "string", 
             "type": "string ('Weapon', 'Armor', dll.)", 
-            "damage": "string (jika senjata)", "armorClass": "integer (jika zirah)", "statBonuses": {}, "slot": "string"
+            "damage": "string (opsional, jika senjata)", "armorClass": "integer (opsional, jika zirah)", "statBonuses": {}, "slot": "string (opsional, jika bisa dikenakan)"
           }, 
           "quantity": "integer" 
         }] 

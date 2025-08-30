@@ -71,7 +71,6 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
     const tabsRef = useRef<HTMLDivElement>(null);
     const handleWheel = (e: React.WheelEvent) => {
         if (tabsRef.current) {
-            e.preventDefault();
             tabsRef.current.scrollLeft += e.deltaY;
         }
     };
