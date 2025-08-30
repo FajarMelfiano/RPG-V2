@@ -12,7 +12,7 @@ interface WorldLobbyScreenProps {
 
 const WorldLobbyScreen: React.FC<WorldLobbyScreenProps> = ({ world, onNewCharacter, onContinueCharacter, onDeleteCharacter, onBack }) => {
   return (
-    <div className="p-4 sm:p-8 max-w-4xl w-full mx-auto journal-panel">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl w-full mx-auto journal-panel">
       <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-amber-300 mb-4 text-center tracking-wider text-glow">
         {world.name}
       </h1>
@@ -39,7 +39,7 @@ const WorldLobbyScreen: React.FC<WorldLobbyScreenProps> = ({ world, onNewCharact
             {world.characters
               .sort((a, b) => new Date(b.lastPlayed).getTime() - new Date(a.lastPlayed).getTime())
               .map(savedChar => (
-                <div key={savedChar.character.id} className="bg-stone-950/30 p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4 text-left border border-stone-700 hover:border-amber-500 transition-all shadow-md hover:shadow-amber-500/10">
+                <div key={savedChar.character.id} className="bg-stone-950/30 p-4 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 text-left border border-stone-700 hover:border-amber-500 transition-all shadow-md hover:shadow-amber-500/10">
                   <div className="flex-grow">
                     <p className="font-bold text-lg sm:text-xl text-stone-200">{savedChar.character.name}</p>
                     <p className="text-sm text-stone-400">
@@ -49,16 +49,16 @@ const WorldLobbyScreen: React.FC<WorldLobbyScreenProps> = ({ world, onNewCharact
                       Terakhir dimainkan: {new Date(savedChar.lastPlayed).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
                     </p>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
+                  <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
                     <button
                       onClick={() => onContinueCharacter(savedChar.character.id)}
-                      className="bg-green-800 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors w-1/2 sm:w-auto border-b-4 border-green-900"
+                      className="bg-green-800 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors w-1/2 md:w-auto border-b-4 border-green-900"
                     >
                       Lanjutkan
                     </button>
                     <button
                       onClick={() => onDeleteCharacter(savedChar.character.id)}
-                      className="bg-red-900 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-md transition-colors w-1/2 sm:w-auto border-b-4 border-red-950"
+                      className="bg-red-900 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-md transition-colors w-1/2 md:w-auto border-b-4 border-red-950"
                     >
                       Hapus
                     </button>

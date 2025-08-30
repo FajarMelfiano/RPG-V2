@@ -10,7 +10,7 @@ interface StartScreenProps {
 
 const StartScreen: React.FC<StartScreenProps> = ({ worlds, onNewWorld, onSelectWorld, onDeleteWorld }) => {
   return (
-    <div className="text-center p-4 sm:p-8 max-w-4xl w-full mx-auto journal-panel">
+    <div className="text-center p-4 sm:p-6 lg:p-8 max-w-4xl w-full mx-auto journal-panel">
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-amber-300 mb-4 tracking-wider text-glow">
         Gemini RPG
       </h1>
@@ -32,7 +32,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ worlds, onNewWorld, onSelectW
           <h3 className="text-2xl sm:text-3xl font-cinzel text-amber-300 mb-6 text-glow">Pilih Dunia</h3>
           <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
             {worlds.map(world => (
-                <div key={world.id} className="bg-stone-950/30 p-4 rounded-lg text-left border border-stone-700 hover:border-amber-500 transition-all shadow-md hover:shadow-amber-500/10 flex flex-col sm:flex-row items-center gap-4">
+                <div key={world.id} className="bg-stone-950/30 p-4 rounded-lg text-left border border-stone-700 hover:border-amber-500 transition-all shadow-md hover:shadow-amber-500/10 flex flex-col md:flex-row items-center gap-4">
                   <div className="flex-grow">
                     <p className="font-bold text-lg sm:text-xl text-stone-200 font-cinzel">{world.name}</p>
                     <p className="text-sm text-stone-400 italic clamp-2">{world.description}</p>
@@ -40,16 +40,16 @@ const StartScreen: React.FC<StartScreenProps> = ({ worlds, onNewWorld, onSelectW
                       {world.characters.length} petualang | {world.worldEvents.length} peristiwa dunia
                     </p>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0 w-full sm:w-auto">
+                  <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
                     <button
                       onClick={() => onSelectWorld(world.id)}
-                      className="bg-green-800 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors w-1/2 sm:w-auto border-b-4 border-green-900"
+                      className="bg-green-800 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors w-1/2 md:w-auto border-b-4 border-green-900"
                     >
                       Masuk
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); onDeleteWorld(world.id); }}
-                      className="bg-red-900 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-md transition-colors w-1/2 sm:w-auto border-b-4 border-red-950"
+                      className="bg-red-900 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-md transition-colors w-1/2 md:w-auto border-b-4 border-red-950"
                     >
                       Hapus
                     </button>

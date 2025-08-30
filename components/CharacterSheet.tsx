@@ -9,7 +9,7 @@ interface StatDisplayProps {
 }
 
 const StatDisplay: React.FC<StatDisplayProps> = ({ label, value, icon }) => (
-  <div className="flex justify-between items-center bg-stone-950/40 py-1 px-2 rounded">
+  <div className="flex justify-between items-center bg-stone-950/40 py-1 px-2 rounded flex-1 min-w-[120px]">
     <div className="flex items-center gap-2">
         {icon}
         <span className="text-sm font-bold text-stone-300">{label}</span>
@@ -61,18 +61,14 @@ const CharacterSheet: React.FC<{ character: Character }> = ({ character }) => {
           </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         <StatDisplay label="KEK" value={stats.strength} icon={<SwordIcon className="w-4 h-4 text-red-400" />} />
         <StatDisplay label="TKS" value={stats.dexterity} icon={<ShieldIcon className="w-4 h-4 text-green-400" />} />
         <StatDisplay label="KON" value={stats.constitution} icon={<HeartIcon className="w-4 h-4 text-yellow-400" />} />
         <StatDisplay label="KCR" value={stats.intelligence} icon={<BookIcon className="w-4 h-4 text-blue-400" />} />
         <StatDisplay label="KBJ" value={stats.wisdom} icon={<BookIcon className="w-4 h-4 text-purple-400" />} />
-        <StatDisplay label="KRM" value={stats.charisma} icon={<ShieldIcon className="w-4 h-4 text-amber-400 opacity-0" />} /> 
+        <StatDisplay label="KRM" value={stats.charisma} icon={<ReputationIcon className="w-4 h-4 text-amber-400" />} />
       </div>
-      <div className="col-span-2 sm:col-span-1 sm:col-start-2">
-         <StatDisplay label="KRM" value={stats.charisma} icon={<ReputationIcon className="w-4 h-4 text-amber-400" />} />
-      </div>
-      
       
       <DecorativeSeparator />
       

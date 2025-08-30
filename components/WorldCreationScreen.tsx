@@ -30,7 +30,7 @@ const WorldCreationScreen: React.FC<WorldCreationScreenProps> = ({ onCreate, onB
   const isFormValid = formData.concept.trim() && formData.factions.trim() && formData.conflict.trim();
 
   return (
-    <div className="p-4 sm:p-8 max-w-3xl w-full mx-auto journal-panel">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl w-full mx-auto journal-panel">
       <h1 className="text-3xl md:text-4xl font-bold text-amber-300 mb-4 text-center text-glow">
         Tempa Duniamu
       </h1>

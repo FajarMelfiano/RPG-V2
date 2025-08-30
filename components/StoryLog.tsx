@@ -45,8 +45,8 @@ const renderSkillCheck = (details: SkillCheckResult) => {
     const successClass = details.success ? "text-green-400 border-green-700" : "text-red-400 border-red-700";
     return (
         <div className="bg-stone-950/50 rounded-lg p-3 my-2 text-sm border border-stone-700 shadow-lg">
-            <div className="flex justify-between items-center gap-4">
-                <div className="flex-grow">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="flex-grow w-full">
                     <p className="font-bold text-amber-300 text-glow">
                         Pemeriksaan {details.skill} ({details.attribute})
                     </p>
@@ -54,13 +54,15 @@ const renderSkillCheck = (details: SkillCheckResult) => {
                         Total <span className="font-bold text-lg text-white">{details.total}</span> vs Kesulitan <span className="font-bold">{details.dc}</span>
                     </p>
                 </div>
-                <div className="flex-shrink-0 w-16 h-16 bg-stone-900 rounded-full flex items-center justify-center border-2 border-stone-600 shadow-inner">
-                    <span className={`font-cinzel text-3xl text-stone-200 transition-all duration-500 ease-out ${rolled ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
-                        {details.diceRoll}
-                    </span>
-                </div>
-                 <div className={`font-cinzel text-lg font-bold p-2 rounded-md border-2 bg-black/30 ${successClass}`}>
-                    {details.success ? "BERHASIL" : "GAGAL"}
+                <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-stone-900 rounded-full flex items-center justify-center border-2 border-stone-600 shadow-inner">
+                        <span className={`font-cinzel text-2xl sm:text-3xl text-stone-200 transition-all duration-500 ease-out ${rolled ? 'opacity-100 scale-100' : 'opacity-0 scale-50'}`}>
+                            {details.diceRoll}
+                        </span>
+                    </div>
+                     <div className={`font-cinzel text-base sm:text-lg font-bold p-2 rounded-md border-2 bg-black/30 ${successClass}`}>
+                        {details.success ? "BERHASIL" : "GAGAL"}
+                    </div>
                 </div>
             </div>
         </div>

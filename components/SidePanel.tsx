@@ -81,13 +81,13 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = ({ ch
 const SidePanel: React.FC<SidePanelProps> = (props) => {
     const { isOpen, onClose } = props;
 
-    // Mobile: Full-screen overlay
+    // Mobile & Tablet: Full-screen overlay
     const MobileJournal = (
         <div
-            className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`lg:hidden fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             aria-hidden={!isOpen}
         >
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
             <aside
                 className={`relative z-10 journal-panel w-full h-full p-4 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
                 aria-label="Jurnal"
@@ -109,7 +109,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
 
     // Desktop: Static side panel
     const DesktopJournal = (
-        <aside className="hidden md:block md:w-1/3 lg:w-[450px] flex-shrink-0 h-full journal-panel p-4">
+        <aside className="hidden lg:block md:w-1/3 lg:w-[450px] flex-shrink-0 h-full journal-panel p-4">
              <div className="h-full overflow-y-auto">
                 <PanelContent {...props} />
             </div>

@@ -35,7 +35,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ world
   ];
 
   return (
-    <div className="p-4 sm:p-8 max-w-3xl w-full mx-auto journal-panel">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl w-full mx-auto journal-panel">
       <h1 className="text-3xl md:text-4xl font-bold text-amber-300 mb-2 text-center text-glow">Ciptakan Pahlawanmu</h1>
       <p className="text-stone-400 mb-4 text-center text-xs sm:text-sm italic">
         Anda sedang menciptakan karakter di dunia ini.
@@ -56,7 +56,7 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ world
         
         <div className="pt-6 mt-6 border-t-2 border-amber-900/50">
             <h3 className="text-amber-300 font-bold mb-4 text-center text-glow">Atau, Pilih Arketipe</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {templates.map((template, i) => (
                     <button key={i} type="button" onClick={() => setFormData({concept: template.concept, background: template.background})} disabled={isLoading} className="text-left bg-stone-800/50 hover:bg-stone-800/90 hover:border-amber-500 border border-stone-700 text-stone-300 p-4 rounded-lg transition-all transform hover:scale-105 shadow-lg">
                         <span className="font-bold font-cinzel text-amber-400">{template.archetype}</span>

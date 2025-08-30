@@ -60,7 +60,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
 
        <button
         onClick={() => setIsJournalOpen(true)}
-        className="md:hidden fixed top-4 right-4 z-30 bg-stone-800/80 text-amber-300 p-3 rounded-full shadow-lg backdrop-blur-sm border border-amber-800/50"
+        className="lg:hidden fixed top-4 right-4 z-30 bg-stone-800/80 text-amber-300 p-3 rounded-full shadow-lg backdrop-blur-sm border border-amber-800/50"
         aria-label="Buka Jurnal"
       >
         <BookOpenIcon className="w-6 h-6" />

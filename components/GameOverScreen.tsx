@@ -7,7 +7,7 @@ interface GameOverScreenProps {
 
 const GameOverScreen: React.FC<GameOverScreenProps> = ({ onRestart, finalStory }) => {
   return (
-    <div className="text-center p-8 max-w-2xl mx-auto journal-panel border-red-800">
+    <div className="text-center p-4 sm:p-8 max-w-2xl mx-auto journal-panel border-red-800">
       <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-red-500 mb-4 tracking-wider font-cinzel" style={{textShadow: '0 0 15px rgba(239, 68, 68, 0.7)'}}>
         ANDA TELAH GUGUR
       </h1>
