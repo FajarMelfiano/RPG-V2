@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StoryEntry, SkillCheckResult, Scene, NPC } from '../types';
-import { DiceIcon } from './icons';
+import { DiceIcon, EyeIcon } from './icons';
 
-// Merged SceneDisplay Logic
 const getAttitudeColor = (attitude: NPC['attitude']) => {
     switch (attitude) {
         case 'Ramah': return 'text-green-400';
@@ -13,21 +12,64 @@ const getAttitudeColor = (attitude: NPC['attitude']) => {
     }
 }
 
-const StoryHeader: React.FC<{ scene: Scene; onNpcInteract: (npcName: string) => void; }> = ({ scene, onNpcInteract }) => (
+const getAttitudeTooltip = (attitude: NPC['attitude']): string => {
+    switch (attitude) {
+        case 'Ramah': return 'NPC ini bersahabat dan kemungkinan besar akan membantu Anda.';
+        case 'Netral': return 'NPC ini tidak memiliki pendapat kuat tentang Anda. Interaksi akan menentukan sikap mereka.';
+        case 'Curiga': return 'NPC ini waspada terhadap Anda. Pilihlah kata-kata Anda dengan hati-hati.';
+        case 'Bermusuhan': return 'NPC ini secara aktif menentang Anda dan mungkin akan menyerang.';
+        default: return '';
+    }
+}
+
+const NpcCard: React.FC<{ npc: NPC; onInteract: (name: string) => void; onInspect: (name: string) => void }> = ({ npc, onInteract, onInspect }) => {
+    const attitudeColor = getAttitudeColor(npc.attitude);
+    const attitudeTooltip = getAttitudeTooltip(npc.attitude);
+
+    return (
+        <div className="bg-stone-950/40 p-3 rounded-lg border border-stone-700/50 flex-grow basis-full md:basis-[48%] transition-all duration-300 hover:border-amber-600 hover:shadow-lg hover:shadow-amber-900/20">
+            <div className="flex justify-between items-start gap-2">
+                <div className="flex-grow">
+                    <button onClick={() => onInteract(npc.name)} className="font-bold text-amber-300 text-left hover:underline text-glow">
+                        {npc.name}
+                    </button>
+                    <p className="text-xs text-stone-400 italic mt-1">{npc.description}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <span 
+                        className={`text-xs font-bold py-1 px-2 rounded-md border bg-black/30 ${attitudeColor} border-current`}
+                        title={attitudeTooltip}
+                    >
+                        {npc.attitude}
+                    </span>
+                    <button 
+                        onClick={() => onInspect(npc.name)}
+                        className="text-stone-400 hover:text-amber-300 transition-colors"
+                        title={`Periksa ${npc.name}`}
+                        aria-label={`Periksa ${npc.name}`}
+                    >
+                        <EyeIcon className="w-5 h-5"/>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+const StoryHeader: React.FC<{ scene: Scene; onNpcInteract: (npcName: string) => void; onNpcInspect: (npcName: string) => void; }> = ({ scene, onNpcInteract, onNpcInspect }) => (
     <div className="p-4 border-b-2 border-amber-900/50 bg-black/20 flex-shrink-0 sticky top-0 z-10 backdrop-blur-sm">
       <h2 className="text-xl font-cinzel text-amber-300 text-glow">{scene.location}</h2>
       <p className="text-sm text-stone-400 italic mb-3">{scene.description}</p>
       {scene.npcs.length > 0 && (
           <div className="flex flex-wrap gap-2">
               {scene.npcs.map((npc) => (
-                  <button 
+                  <NpcCard 
                     key={npc.name} 
-                    onClick={() => onNpcInteract(npc.name)}
-                    className={`text-xs py-1 px-2 rounded-full border transition-all ${getAttitudeColor(npc.attitude)} border-current bg-stone-950/50 hover:bg-stone-900 hover:shadow-lg`}
-                    title={npc.description}
-                  >
-                    {npc.name}
-                  </button>
+                    npc={npc}
+                    onInteract={onNpcInteract}
+                    onInspect={onNpcInspect}
+                  />
               ))}
           </div>
       )}
@@ -74,7 +116,8 @@ const StoryLog: React.FC<{
   storyHistory: StoryEntry[];
   scene: Scene;
   onNpcInteract: (npcName: string) => void;
-}> = ({ storyHistory, scene, onNpcInteract }) => {
+  onNpcInspect: (npcName: string) => void;
+}> = ({ storyHistory, scene, onNpcInteract, onNpcInspect }) => {
   const endOfLogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,7 +126,7 @@ const StoryLog: React.FC<{
 
   return (
     <div className="world-panel flex-grow h-full flex flex-col min-h-0 relative">
-        <StoryHeader scene={scene} onNpcInteract={onNpcInteract}/>
+        <StoryHeader scene={scene} onNpcInteract={onNpcInteract} onNpcInspect={onNpcInspect}/>
         <div className="flex-grow p-4 overflow-y-auto min-h-0" style={{ scrollbarGutter: 'stable' }}>
           <div className="space-y-4">
             {storyHistory.map((entry, index) => {

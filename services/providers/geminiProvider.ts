@@ -225,7 +225,11 @@ Aksi Pemain:
 
 Tugas Anda (Ikuti Urutan Ini dengan SANGAT TELITI):
 1.  **Analisis & Konsistensi Dunia**: Baca SEMUA informasi di atas. Pastikan respons Anda logis dan konsisten dengan semua yang telah terjadi.
-2.  **Proses Aksi & Konsekuensi**: Narasikan hasil aksi pemain. Jika perlu, lakukan 'Pemeriksaan Keterampilan' (skillCheck). Perbarui status karakter, party, dan adegan (\`karakterTerbaru\`, \`partyTerbaru\`, \`sceneUpdate\`).
+2.  **Proses Aksi & Konsekuensi**: 
+    *   **Aksi "Periksa"**: Jika aksi pemain adalah "Periksa [Nama NPC]", berikan deskripsi yang lebih mendalam tentang penampilan, bahasa tubuh, atau detail tersembunyi NPC tersebut. Ini adalah kesempatan untuk memberikan wawasan. Berdasarkan Kebijaksanaan (Insight) atau Kecerdasan (Investigasi) karakter, Anda BISA memicu 'Pemeriksaan Keterampilan' (skillCheck) untuk mengungkap niat tersembunyi atau petunjuk.
+    *   **Aksi Lainnya**: Narasikan hasil aksi pemain. Jika perlu, lakukan 'Pemeriksaan Keterampilan' (skillCheck).
+    *   **Perbarui Status**: Perbarui status karakter, party, dan adegan (\`karakterTerbaru\`, \`partyTerbaru\`, \`sceneUpdate\`).
+    *   **SIKAP NPC HARUS BERUBAH**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis berdasarkan aksi pemain. Jika pemain bersikap baik, sikap bisa membaik (misal: Netral -> Ramah). Jika pemain mengancam atau gagal dalam pemeriksaan sosial, sikap bisa memburuk (misal: Netral -> Curiga).
 3.  **Manajemen Misi (questsUpdate)**: Identifikasi jika aksi memicu, memajukan, atau menyelesaikan misi. Jika ya, tambahkan objek Quest baru atau yang diperbarui ke array \`questsUpdate\`.
 4.  **Tawarikh Dunia (worldEventsUpdate)**: Secara berkala (setiap 5-10 giliran), ciptakan satu peristiwa dunia baru. Variasikan jenisnya ('Sejarah', 'Berita', 'Ramalan').
 5.  **Ciptakan Memori Baru (memorySummary)**: Jika terjadi peristiwa penting, tulis ringkasan satu kalimat di \`memorySummary\`.

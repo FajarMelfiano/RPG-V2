@@ -22,6 +22,10 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
     setActionText(`Bicara dengan ${npcName}`);
   };
 
+  const handleNpcInspect = (npcName: string) => {
+    setActionText(`Periksa ${npcName}`);
+  };
+
   const { character, party, scene, storyHistory, notes } = savedCharacter;
   const { quests, worldEvents } = world;
 
@@ -44,6 +48,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
           storyHistory={storyHistory} 
           scene={scene}
           onNpcInteract={handleNpcInteract}
+          onNpcInspect={handleNpcInspect}
         />
         <ActionInput 
           onAction={onPlayerAction} 

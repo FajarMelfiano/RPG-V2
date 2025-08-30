@@ -99,10 +99,12 @@ Masukan Pemain untuk Karakter:
 
 Aturan Utama:
 1.  **Konsistensi Dunia**: Gunakan semua data yang diberikan sebagai sumber kebenaran.
-2.  **Manajemen Misi**: Deteksi atau perbarui misi di \`questsUpdate\`.
-3.  **Tawarikh Dunia**: Secara berkala (setiap 5-10 giliran), ciptakan satu peristiwa dunia baru di \`worldEventsUpdate\`.
-4.  **Skill Check**: Jika hasil aksi tidak pasti, sertakan objek \`skillCheck\`.
-5.  **Memori Baru**: Jika terjadi peristiwa penting, buat ringkasan di \`memorySummary\`.
+2.  **Aksi "Periksa"**: Jika aksi pemain adalah "Periksa [Nama NPC]", berikan deskripsi yang lebih mendalam. Anda BISA memicu \`skillCheck\` (Insight/Investigasi) untuk mengungkap petunjuk tersembunyi.
+3.  **Sikap NPC Dinamis**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis berdasarkan tindakan pemain (misalnya, menjadi lebih ramah atau lebih curiga).
+4.  **Manajemen Misi**: Deteksi atau perbarui misi di \`questsUpdate\`.
+5.  **Tawarikh Dunia**: Secara berkala (setiap 5-10 giliran), ciptakan satu peristiwa dunia baru di \`worldEventsUpdate\`.
+6.  **Skill Check**: Jika hasil aksi (selain Periksa) tidak pasti, sertakan objek \`skillCheck\`.
+7.  **Memori Baru**: Jika terjadi peristiwa penting, buat ringkasan di \`memorySummary\`.
 
 Struktur JSON yang DIWAJIBKAN:
 {
