@@ -1,6 +1,6 @@
 
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot } from '../types';
 import CharacterSheet from './CharacterSheet';
 import PartySheet from './PartySheet';
@@ -8,8 +8,7 @@ import NotesPanel from './NotesPanel';
 import InventorySheet from './InventorySheet';
 import QuestLog from './QuestLog';
 import MarketplaceScreen from './MarketplaceScreen';
-import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon } from './icons';
-import EquipmentSheet from './EquipmentSheet';
+import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon } from './icons';
 
 interface SidePanelProps {
     character: Character;
@@ -29,7 +28,7 @@ interface SidePanelProps {
     onUnequipItem: (slot: ItemSlot) => void;
 }
 
-type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes';
+type ActiveTab = 'character' | 'party' | 'inventory' | 'quests' | 'notes' | 'marketplace';
 
 const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (props) => {
     const { character, party, notes, onNotesChange, quests, worldEvents, marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, onUnequipItem } = props;
@@ -39,8 +38,6 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
         switch (activeTab) {
             case 'character':
                 return <CharacterSheet character={character} />;
-            case 'equipment':
-                return <EquipmentSheet equipment={character.equipment} onUnequipItem={onUnequipItem} />;
             case 'party':
                 return party.length > 0 ? <PartySheet party={party} /> : (
                     <div className="p-4 text-center text-stone-400 mt-4 h-full flex items-center justify-center">
@@ -48,7 +45,7 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
                     </div>
                 );
             case 'inventory':
-                return <InventorySheet character={character} onEquipItem={onEquipItem} />;
+                return <InventorySheet character={character} onEquipItem={onEquipItem} onUnequipItem={onUnequipItem} />;
             case 'quests':
                 return <QuestLog quests={quests} worldEvents={worldEvents} />;
             case 'notes':
@@ -67,24 +64,13 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
             : 'bg-stone-950/50 hover:bg-stone-900/70 text-stone-300 border-transparent hover:border-amber-800'
         }`;
     }
-    
-    const tabsRef = useRef<HTMLDivElement>(null);
-    const handleWheel = (e: React.WheelEvent) => {
-        if (tabsRef.current) {
-            e.preventDefault();
-            tabsRef.current.scrollLeft += e.deltaY;
-        }
-    };
 
     return (
         <div className="flex flex-col gap-4 h-full">
             <div className="flex-shrink-0 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-hidden">
-                <div ref={tabsRef} onWheel={handleWheel} className="flex gap-1 overflow-x-auto pb-1 -mb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
+                <div className="flex gap-1 overflow-x-auto pb-1 -mb-1">
                     <button onClick={() => setActiveTab('character')} className={getTabClass('character')} title="Karakter">
                         <ShieldIcon className="w-5 h-5" /> <span>Karakter</span>
-                    </button>
-                    <button onClick={() => setActiveTab('equipment')} className={getTabClass('equipment')} title="Perlengkapan">
-                        <HelmetIcon className="w-5 h-5" /> <span>Perlengkapan</span>
                     </button>
                     <button onClick={() => setActiveTab('inventory')} className={getTabClass('inventory')} title="Inventaris">
                         <ChestIcon className="w-5 h-5" /> <span>Inventaris</span>
@@ -103,7 +89,7 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
                     </button>
                 </div>
             </div>
-            <div className="flex-grow min-h-0 overflow-y-auto pr-1">
+            <div className="flex-grow min-h-0">
                 {renderTabContent()}
             </div>
         </div>
@@ -116,7 +102,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
     // Mobile & Tablet: Full-screen overlay
     const MobileJournal = (
         <div
-            className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`lg:hidden fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             aria-hidden={!isOpen}
         >
             <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
@@ -132,7 +118,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
                 >
                     <XIcon className="w-6 h-6" />
                 </button>
-                <div className="h-full pt-8">
+                <div className="h-full overflow-y-auto pt-8">
                     <PanelContent {...props} />
                 </div>
             </aside>
@@ -141,8 +127,8 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
 
     // Desktop: Static side panel
     const DesktopJournal = (
-        <aside className="hidden md:block md:w-2/5 lg:w-1/3 xl:w-[450px] flex-shrink-0 h-full journal-panel p-4">
-             <div className="h-full">
+        <aside className="hidden lg:block md:w-1/3 lg:w-[450px] flex-shrink-0 h-full journal-panel p-4">
+             <div className="h-full overflow-y-auto">
                 <PanelContent {...props} />
             </div>
         </aside>

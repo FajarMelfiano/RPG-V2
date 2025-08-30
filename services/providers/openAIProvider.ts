@@ -1,4 +1,5 @@
 
+
 import OpenAI from 'openai';
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
@@ -23,14 +24,25 @@ class OpenAiDungeonMaster implements IAiDungeonMasterService {
 Aturan Penting:
 - Buat Marketplace awal dengan toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
 - Isi setiap toko dengan 3-7 item yang relevan.
+- **SETIAP ITEM HARUS MEMILIKI STATISTIK YANG MENDETAIL** (damage, armorClass, statBonuses, dll.) dan ID unik.
 
 Struktur JSON yang DIWAJIBKAN:
 {
-  "name": "string (Nama yang epik dan unik untuk dunia, berdasarkan konsepnya)",
-  "description": "string (Deskripsi imersif 3-4 kalimat yang menyatukan konsep, faksi, dan konflik)",
+  "name": "string (Nama yang epik dan unik untuk dunia)",
+  "description": "string (Deskripsi imersif 3-4 kalimat)",
   "marketplace": {
     "shops": [
-      { "id": "string", "name": "string", "description": "string", "inventory": [{ "name": "string", "quantity": "integer", "description": "string", "value": "integer" }] }
+      { 
+        "id": "string", "name": "string", "description": "string", 
+        "inventory": [{ 
+          "item": { 
+            "id": "string (UUID)", "name": "string", "description": "string", "value": "integer", "rarity": "string", 
+            "type": "string ('Weapon', 'Armor', dll.)", 
+            "damage": "string (jika senjata)", "armorClass": "integer (jika zirah)", "statBonuses": {}, "slot": "string"
+          }, 
+          "quantity": "integer" 
+        }] 
+      }
     ]
   }
 }`;
@@ -56,25 +68,25 @@ Struktur JSON yang DIWAJIBKAN:
 
     async generateCharacter(characterData: { concept: string; background: string; }, worldContext: string): Promise<{ character: Omit<Character, 'id'>; initialScene: Scene; introStory: string; }> {
         
-        const systemPrompt = `Anda adalah Dungeon Master (DM) AI. Tugas Anda adalah menciptakan karakter yang secara logis cocok dengan dunia yang sudah ada. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
+        const systemPrompt = `Anda adalah Dungeon Master (DM) AI. Ciptakan karakter yang logis untuk dunia yang ada. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
         
 Aturan Penting:
-- **Konteks Dunia adalah Segalanya**: Latar belakang, afiliasi, dan masalah karakter HARUS berakar pada deskripsi dunia yang diberikan.
-- **Level Awal Dinamis**: Analisis 'Latar Belakang & Pengalaman' untuk menentukan level awal. Veteran = level 3-5, Pemula = level 1.
-- Adegan awal ('initialScene') HARUS menyertakan \`availableShopIds\` yang ditentukan secara logis berdasarkan lokasi.
+- **Level Awal Dinamis**: Analisis 'Latar Belakang & Pengalaman' untuk menentukan level awal (1-5).
+- **Perlengkapan & Statistik**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki statistik mendetail dan ID unik.
+- Adegan awal ('initialScene') HARUS menyertakan \`availableShopIds\` yang logis.
 
 Struktur JSON yang DIWAJIBKAN:
 {
   "character": {
-    "name": "string (Buat nama fantasi yang unik)",
-    "race": "string", "characterClass": "string",
-    "backstory": "string (ringkasan mendalam, relevan dengan dunia)",
-    "stats": { "level": "integer (1-5)", "health": "integer", "maxHealth": "integer", "mana": "integer", "maxMana": "integer", "strength": "integer (8-18)", "dexterity": "integer (8-18)", "constitution": "integer (8-18)", "intelligence": "integer (8-18)", "wisdom": "integer (8-18)", "charisma": "integer (8-18)" },
-    "inventory": [{ "name": "string", "quantity": "integer", "description": "string", "value": "integer" }],
+    "name": "string", "race": "string", "characterClass": "string",
+    "backstory": "string",
+    "baseStats": { "level": "integer (1-5)", "health": "integer", "maxHealth": "integer", "mana": "integer", "maxMana": "integer", "strength": "integer (8-18)", "dexterity": "integer (8-18)", "constitution": "integer (8-18)", "intelligence": "integer (8-18)", "wisdom": "integer (8-18)", "charisma": "integer (8-18)" },
+    "inventory": [{ "item": { ... }, "quantity": "integer" }],
+    "equipment": { "mainHand": { ... }, "chest": { ... }, ... },
     "reputation": "integer", "gold": "integer"
   },
   "initialScene": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] },
-  "introStory": "string (narasi pembuka yang imersif)"
+  "introStory": "string"
 }`;
 
         const userPrompt = `Konteks Dunia (Kebenaran Dasar):
@@ -105,15 +117,14 @@ Masukan Pemain untuk Karakter:
             return '';
         }).join('\n');
 
-        const systemPrompt = `Anda adalah Dungeon Master (DM) AI yang logis. Lanjutkan cerita, kelola misi, dan buat dunia terasa hidup. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
+        const systemPrompt = `Anda adalah Dungeon Master (DM) AI yang logis. Lanjutkan cerita. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
 
 Aturan Utama:
-1.  **Kesadaran Ekonomi**: Baca 'LOG TRANSAKSI' yang diberikan untuk memahami aktivitas ekonomi pemain. JANGAN narasikan ulang transaksi ini, cukup gunakan sebagai konteks.
-2.  **Ketersediaan Toko Kontekstual**: Dalam \`sceneUpdate\`, tentukan \`availableShopIds\` secara logis berdasarkan lokasi.
-3.  **Pedagang Keliling Dinamis**: Setiap 20-25 giliran, segarkan inventaris 'traveling_merchant' dan kembalikan di \`marketplaceUpdate\`.
-4.  **Sikap NPC Dinamis**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis berdasarkan tindakan pemain.
-5.  **Manajemen Misi & Dunia**: Deteksi atau perbarui misi di \`questsUpdate\` dan peristiwa dunia di \`worldEventsUpdate\`.
-6.  **Aksi "Periksa"**: Tangani aksi "Periksa" dengan memberikan wawasan lebih dalam atau memicu \`skillCheck\`.
+1.  **Kesadaran Ekonomi & Perlengkapan**: Baca 'LOG TRANSAKSI' dan 'Karakter Pemain' (termasuk perlengkapan). Narasi Anda HARUS mencerminkan ini.
+2.  **Ketersediaan Toko Kontekstual**: Dalam \`sceneUpdate\`, tentukan \`availableShopIds\` secara logis.
+3.  **Pedagang Keliling Dinamis**: Setiap 20-25 giliran, segarkan inventaris 'traveling_merchant' di \`marketplaceUpdate\`.
+4.  **Sikap NPC Dinamis**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis.
+5.  **Loot Bermakna**: Jika pemain menemukan loot, item baru di \`karakterTerbaru.inventory\` HARUS memiliki statistik mendetail.
 
 Struktur JSON yang DIWAJIBKAN:
 {
@@ -122,7 +133,6 @@ Struktur JSON yang DIWAJIBKAN:
   "partyTerbaru": [ ... ],
   "sceneUpdate": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] },
   "skillCheck": { ... },
-  "notifications": [ "string" ],
   "memorySummary": "string (opsional)",
   "questsUpdate": [ { ... } ],
   "worldEventsUpdate": [ { ... } ],
@@ -130,22 +140,13 @@ Struktur JSON yang DIWAJIBKAN:
 }`;
 
         const userPrompt = `Giliran Saat Ini: ${turnCount}
-MEMORI JANGKA PANJANG:
-- ${longTermMemory.join('\n- ') || 'Belum ada.'}
-${notes.trim() ? `CATATAN PRIBADI PEMAIN:\n${notes}` : ''}
-${transactionLog.length > 0 ? `LOG TRANSAKSI TERBARU:\n${transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n')}` : ''}
+LOG TRANSAKSI TERBARU:
+${transactionLog.length > 0 ? transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n') : 'Belum ada.'}
 
 Kondisi Saat Ini:
 - Karakter Pemain: ${JSON.stringify(character, null, 2)}
-- Party: ${JSON.stringify(party, null, 2)}
 - Adegan: ${JSON.stringify(scene, null, 2)}
-- Misi: ${JSON.stringify(quests, null, 2)}
-- Tawarikh Dunia: ${JSON.stringify(worldEvents, null, 2)}
-Log Terbaru:
-${recentHistory}
-
-Aksi Pemain:
-"${playerAction}"`;
+- Aksi Pemain: "${playerAction}"`;
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",

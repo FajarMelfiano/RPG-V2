@@ -1,8 +1,8 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { Marketplace, Scene, Character, ShopItem, InventoryItem, ItemRarity, AnyItem, Weapon, Armor, Accessory } from '../types';
-import { StoreIcon, CoinIcon, SwordIcon, ShieldIcon, SparklesIcon } from './icons';
+import { Marketplace, Scene, Character, Shop, ShopItem, InventoryItem } from '../types';
+import { StoreIcon, CoinIcon } from './icons';
 
 interface MarketplaceScreenProps {
     marketplace: Marketplace;
@@ -13,38 +13,6 @@ interface MarketplaceScreenProps {
     isLoading: boolean;
 }
 
-const getRarityColor = (rarity: ItemRarity) => {
-    switch(rarity) {
-        case ItemRarity.TIDAK_BIASA: return 'text-green-400';
-        case ItemRarity.LANGKA: return 'text-blue-400';
-        case ItemRarity.EPIK: return 'text-purple-400';
-        default: return 'text-stone-300';
-    }
-}
-
-const ItemStatDisplay: React.FC<{ item: AnyItem }> = ({ item }) => {
-    const renderStats = () => {
-        switch(item.type) {
-            case 'Weapon':
-                return <div className="flex items-center gap-1 text-xs" title="Kerusakan"><SwordIcon className="w-3 h-3 text-red-400"/><span>{(item as Weapon).damage}</span></div>;
-            case 'Armor':
-                return <div className="flex items-center gap-1 text-xs" title="Kelas Zirah"><ShieldIcon className="w-3 h-3 text-sky-400"/><span>{(item as Armor).armorClass}</span></div>;
-            case 'Accessory':
-                const bonuses = (item as Accessory).statBonuses;
-                if (!bonuses) return null;
-                return (
-                    <div className="flex gap-2">
-                        {Object.entries(bonuses).map(([stat, val]) => (
-                             <div key={stat} className="flex items-center gap-1 text-xs" title={`Bonus ${stat}`}><SparklesIcon className="w-3 h-3 text-yellow-400"/><span>{`+${val} ${stat.substring(0,3).toUpperCase()}`}</span></div>
-                        ))}
-                    </div>
-                );
-            default: return null;
-        }
-    }
-    return <div className="flex items-center gap-2 mt-1">{renderStats()}</div>;
-}
-
 const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scene, character, onBuyItem, onSellItem, isLoading }) => {
     const [activeShopId, setActiveShopId] = useState<string | null>(null);
     const [mode, setMode] = useState<'buy' | 'sell'>('buy');
@@ -52,6 +20,8 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
     const availableShops = marketplace.shops.filter(shop => scene.availableShopIds?.includes(shop.id));
     const activeShop = activeShopId ? marketplace.shops.find(shop => shop.id === activeShopId) : null;
 
+    // Efek ini akan mereset tampilan jika toko yang aktif tidak lagi tersedia (misalnya karena pemain pindah lokasi)
+    // Ini memperbaiki bug layar kosong di beberapa perangkat.
     useEffect(() => {
         if (activeShopId && !availableShops.some(shop => shop.id === activeShopId)) {
             setActiveShopId(null);
@@ -60,49 +30,7 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
 
     const handleSelectShop = (shopId: string) => {
         setActiveShopId(shopId);
-        setMode('buy');
-    }
-
-    const renderItemList = () => {
-        const itemsToDisplay = mode === 'buy' ? activeShop?.inventory : character.inventory;
-        if (!itemsToDisplay || itemsToDisplay.length === 0) {
-            return <li className="text-stone-500 italic text-center py-4">{mode === 'buy' ? 'Toko ini kehabisan stok.' : 'Anda tidak punya apa-apa untuk dijual.'}</li>;
-        }
-
-        return itemsToDisplay.map((inventoryItem) => {
-            const { item, quantity } = inventoryItem;
-            const price = mode === 'buy' ? item.value : Math.floor(item.value / 2);
-            return (
-                <li key={item.id} className="bg-stone-950/40 p-2 rounded-md border border-stone-700/50 flex flex-col gap-2">
-                    <div className="flex justify-between items-start">
-                        <div className="flex-grow">
-                            <p className={`font-bold ${getRarityColor(item.rarity)}`}>{item.name} (x{quantity})</p>
-                            <p className="text-xs text-stone-400 italic mt-1 break-words">{item.description}</p>
-                        </div>
-                        <div className="flex-shrink-0 ml-2">
-                           {mode === 'buy' ? (
-                                <button 
-                                    onClick={() => onBuyItem(inventoryItem as ShopItem, activeShop!.id)} 
-                                    disabled={character.gold < price || isLoading}
-                                    className="thematic-button text-xs py-1 px-3 rounded-md flex items-center gap-1"
-                                >
-                                    <CoinIcon className="w-3 h-3"/> {price}
-                                </button>
-                           ) : (
-                                <button 
-                                    onClick={() => onSellItem(inventoryItem, activeShop!.id)}
-                                    disabled={isLoading}
-                                    className="bg-green-800 hover:bg-green-700 border-b-2 border-green-900 text-white text-xs py-1 px-3 rounded-md flex items-center gap-1"
-                                >
-                                   <CoinIcon className="w-3 h-3"/> {price}
-                                </button>
-                           )}
-                        </div>
-                    </div>
-                     <ItemStatDisplay item={item} />
-                </li>
-            );
-        });
+        setMode('buy'); // Selalu reset ke mode beli saat memilih toko baru
     }
 
     return (
@@ -113,6 +41,7 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
             </h3>
             
             {activeShop ? (
+                // Tampilan Antarmuka Toko
                 <div>
                     <div className="mb-4 text-center">
                         <button onClick={() => setActiveShopId(null)} disabled={isLoading} className="text-xs text-stone-400 hover:text-amber-300 mb-2 disabled:opacity-50">&larr; Kembali ke Daftar Toko</button>
@@ -134,10 +63,45 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
                     </div>
 
                     <ul className="space-y-2 text-sm overflow-y-auto max-h-[50vh] pr-1">
-                        {renderItemList()}
+                        {/* FIX: Access item properties via shopItem.item */}
+                        {mode === 'buy' && (activeShop.inventory.map((shopItem) => (
+                            <li key={shopItem.item.id} className="bg-stone-950/40 p-2 rounded-md border border-stone-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div className="flex-grow">
+                                    <p className="font-bold text-stone-200">{shopItem.item.name} (x{shopItem.quantity})</p>
+                                    <p className="text-xs text-stone-400 italic mt-1 break-words">{shopItem.item.description}</p>
+                                </div>
+                                <button 
+                                    onClick={() => onBuyItem(shopItem, activeShop.id)} 
+                                    disabled={character.gold < shopItem.item.value || isLoading}
+                                    className="thematic-button text-xs py-1 px-3 rounded-md flex-shrink-0 disabled:opacity-50 flex items-center gap-1"
+                                >
+                                    <CoinIcon className="w-3 h-3"/> {shopItem.item.value}
+                                </button>
+                            </li>
+                        )))}
+                        {mode === 'buy' && activeShop.inventory.length === 0 && <li className="text-stone-500 italic text-center py-4">Toko ini kehabisan stok.</li>}
+                        
+                        {/* FIX: Access item properties via invItem.item */}
+                        {mode === 'sell' && (character.inventory.map((invItem) => (
+                            <li key={invItem.item.id} className="bg-stone-950/40 p-2 rounded-md border border-stone-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <div className="flex-grow">
+                                    <p className="font-bold text-stone-200">{invItem.item.name} (x{invItem.quantity})</p>
+                                     <p className="text-xs text-stone-400 italic mt-1 break-words">{invItem.item.description}</p>
+                                </div>
+                                <button 
+                                    onClick={() => onSellItem(invItem, activeShop.id)}
+                                    disabled={isLoading}
+                                    className="bg-green-800 hover:bg-green-700 border-b-2 border-green-900 text-white text-xs py-1 px-3 rounded-md flex-shrink-0 flex items-center gap-1 disabled:bg-gray-600 disabled:border-gray-800"
+                                >
+                                   <CoinIcon className="w-3 h-3"/> {Math.floor(invItem.item.value / 2)}
+                                </button>
+                            </li>
+                        )))}
+                        {mode === 'sell' && character.inventory.length === 0 && <li className="text-stone-500 italic text-center py-4">Anda tidak punya apa-apa untuk dijual.</li>}
                     </ul>
                 </div>
             ) : (
+                 // Tampilan Daftar Toko
                 availableShops.length > 0 ? (
                     <div className="space-y-2">
                         {availableShops.map(shop => (

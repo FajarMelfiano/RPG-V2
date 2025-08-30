@@ -1,6 +1,7 @@
 
+
 import { GoogleGenAI, Type } from "@google/genai";
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry } from '../../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 
 if (!process.env.API_KEY) {
@@ -11,15 +12,74 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // --- SCHEMAS ---
 
+const baseItemSchema = {
+  id: { type: Type.STRING, description: "ID unik untuk item ini, gunakan UUID." },
+  name: { type: Type.STRING },
+  description: { type: Type.STRING },
+  value: { type: Type.INTEGER, description: "Harga dasar item dalam keping emas. Harus lebih dari 0." },
+  rarity: { type: Type.STRING, enum: Object.values(ItemRarity) },
+};
+
+const weaponSchema = {
+  type: Type.OBJECT,
+  properties: {
+    ...baseItemSchema,
+    type: { type: Type.STRING, enum: ['Weapon'] },
+    damage: { type: Type.STRING, description: "String dadu kerusakan (misal: '1d8 + KEK')." },
+    properties: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Properti sihir (misal: 'Api', 'Es')." },
+    slot: { type: Type.STRING, enum: [ItemSlot.MAIN_HAND, ItemSlot.OFF_HAND] },
+  },
+  required: Object.keys(baseItemSchema).concat(['type', 'damage', 'slot'])
+};
+
+const armorSchema = {
+  type: Type.OBJECT,
+  properties: {
+    ...baseItemSchema,
+    type: { type: Type.STRING, enum: ['Armor'] },
+    armorClass: { type: Type.INTEGER, description: "Bonus Kelas Zirah (AC) yang diberikan item ini." },
+    slot: { type: Type.STRING, enum: [ItemSlot.HEAD, ItemSlot.CHEST, ItemSlot.LEGS, ItemSlot.FEET, ItemSlot.OFF_HAND] },
+  },
+  required: Object.keys(baseItemSchema).concat(['type', 'armorClass', 'slot'])
+};
+
+const accessorySchema = {
+  type: Type.OBJECT,
+  properties: {
+    ...baseItemSchema,
+    type: { type: Type.STRING, enum: ['Accessory'] },
+    statBonuses: {
+      type: Type.OBJECT,
+      properties: {
+        strength: { type: Type.INTEGER }, dexterity: { type: Type.INTEGER }, constitution: { type: Type.INTEGER },
+        intelligence: { type: Type.INTEGER }, wisdom: { type: Type.INTEGER }, charisma: { type: Type.INTEGER },
+      }
+    },
+    slot: { type: Type.STRING, enum: [ItemSlot.NECK, ItemSlot.RING] },
+  },
+  required: Object.keys(baseItemSchema).concat(['type', 'slot'])
+};
+
+const miscItemSchema = {
+    type: Type.OBJECT,
+    properties: {
+        ...baseItemSchema,
+        type: { type: Type.STRING, enum: ['Consumable', 'Misc'] },
+    },
+    required: Object.keys(baseItemSchema).concat(['type'])
+};
+
+const anyItemSchema = {
+    oneOf: [weaponSchema, armorSchema, accessorySchema, miscItemSchema]
+};
+
 const inventoryItemSchema = {
     type: Type.OBJECT,
     properties: {
-      name: { type: Type.STRING },
-      quantity: { type: Type.INTEGER },
-      description: { type: Type.STRING },
-      value: { type: Type.INTEGER, description: "Harga dasar item dalam keping emas. Harus lebih dari 0." }
+        item: anyItemSchema,
+        quantity: { type: Type.INTEGER },
     },
-    required: ["name", "quantity", "description", "value"]
+    required: ["item", "quantity"]
 };
 
 const shopSchema = {
@@ -41,16 +101,9 @@ const marketplaceSchema = {
   required: ["shops"]
 };
 
-const characterSchema = {
-  type: Type.OBJECT,
-  properties: {
-    name: { type: Type.STRING, description: "Nama karakter." },
-    race: { type: Type.STRING, description: "Ras karakter (contoh: Manusia, Elf, Kurcaci)." },
-    characterClass: { type: Type.STRING, description: "Kelas karakter (contoh: Prajurit, Penyihir, Pencuri)." },
-    backstory: { type: Type.STRING, description: "Latar belakang cerita yang mendalam dan menarik untuk karakter dalam Bahasa Indonesia, berdasarkan masukan pemain." },
-    stats: {
-      type: Type.OBJECT,
-      properties: {
+const baseStatsSchema = {
+    type: Type.OBJECT,
+    properties: {
         level: { type: Type.INTEGER, description: "Level awal karakter. Analisis latar belakang. Veteran bisa mulai dari level 3-5, pemula mulai dari 1." },
         health: { type: Type.INTEGER, description: "Poin kesehatan (HP) karakter saat ini, disesuaikan dengan level." },
         maxHealth: { type: Type.INTEGER, description: "Poin kesehatan (HP) maksimum karakter. Harus sama dengan health di awal, disesuaikan dengan level." },
@@ -62,27 +115,51 @@ const characterSchema = {
         intelligence: { type: Type.INTEGER, description: "Nilai antara 8 dan 18." },
         wisdom: { type: Type.INTEGER, description: "Nilai antara 8 dan 18." },
         charisma: { type: Type.INTEGER, description: "Nilai antara 8 dan 18." },
-      },
-      required: ["level", "health", "maxHealth", "mana", "maxMana", "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"]
     },
+    required: ["level", "health", "maxHealth", "mana", "maxMana", "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"]
+};
+
+const equipmentSchema = {
+    type: Type.OBJECT,
+    properties: {
+        mainHand: weaponSchema,
+        offHand: { oneOf: [weaponSchema, armorSchema] }, // Bisa senjata atau perisai
+        head: armorSchema,
+        chest: armorSchema,
+        legs: armorSchema,
+        feet: armorSchema,
+        neck: accessorySchema,
+        ring: accessorySchema,
+    }
+};
+
+const characterSchema = {
+  type: Type.OBJECT,
+  properties: {
+    name: { type: Type.STRING, description: "Nama karakter." },
+    race: { type: Type.STRING },
+    characterClass: { type: Type.STRING },
+    backstory: { type: Type.STRING },
+    baseStats: baseStatsSchema,
     inventory: { type: Type.ARRAY, items: inventoryItemSchema },
-    reputation: { type: Type.INTEGER, description: "Reputasi awal karakter, berdasarkan latar belakang. Bisa positif jika mereka pahlawan, atau 0 jika tidak dikenal." },
-    gold: { type: Type.INTEGER, description: "Jumlah keping emas awal, berdasarkan latar belakang. Bangsawan mungkin punya 100, petualang biasa 25, orang miskin 5."}
+    equipment: equipmentSchema,
+    reputation: { type: Type.INTEGER },
+    gold: { type: Type.INTEGER }
   },
-  required: ["name", "race", "characterClass", "backstory", "stats", "inventory", "reputation", "gold"]
+  required: ["name", "race", "characterClass", "backstory", "baseStats", "inventory", "equipment", "reputation", "gold"]
 };
 
 const sceneSchema = {
     type: Type.OBJECT,
     properties: {
-        location: { type: Type.STRING, description: "Nama lokasi awal yang sesuai dengan latar belakang karakter." },
-        description: { type: Type.STRING, description: "Deskripsi singkat (2 kalimat) tentang lokasi dan suasana awal." },
+        location: { type: Type.STRING },
+        description: { type: Type.STRING },
         npcs: { 
             type: Type.ARRAY,
             items: {
                 type: Type.OBJECT,
                 properties: {
-                    name: { type: Type.STRING, description: "Nama NPC yang unik dan sesuai fantasi." },
+                    name: { type: Type.STRING },
                     description: { type: Type.STRING },
                     attitude: { type: Type.STRING, enum: ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'] },
                 },
@@ -91,7 +168,6 @@ const sceneSchema = {
         },
         availableShopIds: {
           type: Type.ARRAY,
-          description: "Daftar ID toko yang tersedia di lokasi ini. Tentukan secara logis (misal, di kota besar ada semua, di hutan tidak ada).",
           items: { type: Type.STRING }
         }
     },
@@ -101,8 +177,8 @@ const sceneSchema = {
 const worldGenerationSchema = {
     type: Type.OBJECT,
     properties: {
-        name: { type: Type.STRING, description: "Nama yang epik dan unik untuk dunia ini, berdasarkan konsepnya." },
-        description: { type: Type.STRING, description: "Deskripsi dunia yang kaya dan imersif (3-4 kalimat), menyatukan konsep, faksi, dan konflik yang diberikan." },
+        name: { type: Type.STRING },
+        description: { type: Type.STRING },
         marketplace: marketplaceSchema,
     },
     required: ["name", "description", "marketplace"]
@@ -113,7 +189,7 @@ const characterGenerationSchema = {
     properties: {
         character: characterSchema,
         initialScene: sceneSchema,
-        introStory: { type: Type.STRING, description: "Narasi pembuka yang mendalam dan imersif untuk memulai petualangan karakter dalam Bahasa Indonesia."}
+        introStory: { type: Type.STRING }
     },
     required: ["character", "initialScene", "introStory"]
 };
@@ -121,9 +197,9 @@ const characterGenerationSchema = {
 const questSchema = {
     type: Type.OBJECT,
     properties: {
-        title: { type: Type.STRING, description: "Judul misi yang singkat dan jelas. Harus unik." },
-        description: { type: Type.STRING, description: "Deskripsi misi yang diperbarui, menjelaskan apa yang perlu dilakukan." },
-        status: { type: Type.STRING, enum: ['Aktif', 'Selesai'], description: "Status misi saat ini." },
+        title: { type: Type.STRING },
+        description: { type: Type.STRING },
+        status: { type: Type.STRING, enum: ['Aktif', 'Selesai'] },
     },
     required: ["title", "description", "status"]
 };
@@ -131,9 +207,9 @@ const questSchema = {
 const worldEventSchema = {
     type: Type.OBJECT,
     properties: {
-        title: { type: Type.STRING, description: "Judul singkat untuk peristiwa dunia." },
-        description: { type: Type.STRING, description: "Deskripsi singkat tentang peristiwa yang terjadi di dunia." },
-        type: { type: Type.STRING, enum: ['Sejarah', 'Berita', 'Ramalan'], description: "Kategori peristiwa dunia." },
+        title: { type: Type.STRING },
+        description: { type: Type.STRING },
+        type: { type: Type.STRING, enum: ['Sejarah', 'Berita', 'Ramalan'] },
     },
     required: ["title", "description", "type"]
 };
@@ -141,26 +217,25 @@ const worldEventSchema = {
 const gameTurnSchema = {
     type: Type.OBJECT,
     properties: {
-        narasiBaru: { type: Type.STRING, description: "Bagian cerita selanjutnya dalam Bahasa Indonesia, mendeskripsikan hasil dari aksi pemain dan situasi baru. Harus menarik dan detail. Jika HP karakter 0 atau kurang, ini adalah narasi kematian mereka." },
+        narasiBaru: { type: Type.STRING },
         karakterTerbaru: characterSchema,
-        partyTerbaru: { type: Type.ARRAY, description: "Daftar LENGKAP semua anggota party saat ini, dengan statistik terbarunya. Jika tidak ada, array kosong.", items: characterSchema },
+        partyTerbaru: { type: Type.ARRAY, items: characterSchema },
         sceneUpdate: sceneSchema,
         skillCheck: {
             type: Type.OBJECT,
             properties: {
-                skill: { type: Type.STRING, description: "Keterampilan yang diuji." },
-                attribute: { type: Type.STRING, description: "Atribut yang digunakan." },
-                diceRoll: { type: Type.INTEGER, description: "Hasil lemparan d20 murni (1-20)." },
-                bonus: { type: Type.INTEGER, description: "Bonus dari atribut karakter. ((nilai_atribut - 10) / 2)." },
-                total: { type: Type.INTEGER, description: "diceRoll + bonus." },
-                dc: { type: Type.INTEGER, description: "Tingkat Kesulitan (Difficulty Class)." },
-                success: { type: Type.BOOLEAN, description: "Apakah total >= DC." }
+                skill: { type: Type.STRING },
+                attribute: { type: Type.STRING },
+                diceRoll: { type: Type.INTEGER },
+                bonus: { type: Type.INTEGER },
+                total: { type: Type.INTEGER },
+                dc: { type: Type.INTEGER },
+                success: { type: Type.BOOLEAN }
             }
         },
-        notifications: { type: Type.ARRAY, description: "Daftar notifikasi singkat (misal: 'Item Ditemukan: Kunci'). Kosongkan jika tidak ada.", items: { type: Type.STRING } },
-        memorySummary: { type: Type.STRING, description: "Ringkasan satu kalimat dari peristiwa penting giliran ini. Biarkan kosong jika tidak ada." },
-        questsUpdate: { type: Type.ARRAY, description: "Daftar misi yang baru dibuat atau diperbarui. Kosongkan jika tidak ada.", items: questSchema },
-        worldEventsUpdate: { type: Type.ARRAY, description: "Daftar peristiwa dunia baru. Buat satu setiap 5-10 giliran. Kosongkan jika tidak ada.", items: worldEventSchema },
+        memorySummary: { type: Type.STRING },
+        questsUpdate: { type: Type.ARRAY, items: questSchema },
+        worldEventsUpdate: { type: Type.ARRAY, items: worldEventSchema },
         marketplaceUpdate: marketplaceSchema,
     },
     required: ["narasiBaru", "karakterTerbaru", "partyTerbaru", "sceneUpdate"]
@@ -169,7 +244,7 @@ const gameTurnSchema = {
 
 class GeminiDungeonMaster implements IAiDungeonMasterService {
     async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; }> {
-        const prompt = `Anda adalah seorang Arsitek Dunia AI, seorang pendongeng ulung yang bertugas menciptakan fondasi dari sebuah saga fantasi. Berdasarkan pilar-pilar yang diberikan pemain, tempa sebuah dunia yang kohesif, menarik, dan hidup secara ekonomi.
+        const prompt = `Anda adalah seorang Arsitek Dunia AI. Tugas Anda adalah menciptakan dunia fantasi yang hidup dengan ekonomi yang berfungsi.
 
 Masukan Pemain:
 - Konsep Inti Dunia: "${worldData.concept}"
@@ -177,15 +252,14 @@ Masukan Pemain:
 - Konflik Saat Ini: "${worldData.conflict}"
 
 Tugas Anda:
-1.  **Sintesiskan Visi**: Baca dan pahami ketiga pilar tersebut.
-2.  **Beri Nama Dunia**: Ciptakan nama yang epik dan unik untuk dunia ini.
-3.  **Tulis Deskripsi Dunia**: Tulis deskripsi yang kaya dan imersif (3-4 kalimat).
-4.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah sebuah marketplace awal yang hidup dengan toko-toko berikut:
-    *   **Toko Kelontong** (id: 'general_store'): Jual 5-7 item petualangan dasar (ransum, tali, obor, dll).
-    *   **Pandai Besi** (id: 'blacksmith'): Jual 3-5 senjata dan zirah dasar.
-    *   **Alkemis** (id: 'alchemist'): Jual 3-5 ramuan dasar (penyembuhan, mana, dll).
-    *   **Pedagang Keliling** (id: 'traveling_merchant'): Mulai dengan 4-6 item yang sedikit lebih menarik atau eksotis. Inventarisnya akan berubah seiring waktu.
-5.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
+1.  **Sintesiskan Visi**: Ciptakan nama dan deskripsi dunia yang imersif.
+2.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah toko-toko berikut:
+    *   **Toko Kelontong** (id: 'general_store')
+    *   **Pandai Besi** (id: 'blacksmith')
+    *   **Alkemis** (id: 'alchemist')
+    *   **Pedagang Keliling** (id: 'traveling_merchant')
+3.  **Isi Inventaris Toko**: Untuk setiap toko, buat 3-5 item yang relevan. **SETIAP ITEM HARUS MEMILIKI STATISTIK YANG MENDETAIL** (damage untuk senjata, armorClass untuk zirah, statBonuses untuk aksesoris, dll). Pastikan untuk memberikan ID unik (UUID) untuk setiap item.
+4.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -196,26 +270,21 @@ Tugas Anda:
     }
 
     async generateCharacter(characterData: { concept: string; background: string; }, worldContext: string): Promise<{ character: Omit<Character, 'id'>; initialScene: Scene; introStory: string; }> {
-        const prompt = `Anda adalah seorang Dungeon Master (DM) AI yang sangat cerdas dan kreatif. Tugas Anda adalah menciptakan karakter yang hidup dan bernapas di dalam dunia yang sudah ada.
+        const prompt = `Anda adalah seorang Dungeon Master AI. Ciptakan karakter yang hidup di dalam dunia yang sudah ada.
 
-Konteks Dunia (Kebenaran Dasar):
-"${worldContext}"
-
-Masukan Pemain untuk Karakter:
+Konteks Dunia: "${worldContext}"
+Masukan Pemain:
 - Konsep Inti: "${characterData.concept}"
 - Latar Belakang & Pengalaman: "${characterData.background}"
 
-Tugas Anda (Ikuti dengan SANGAT TELITI):
-1.  **Integrasi Dunia**: Karakter ini HARUS terasa seperti bagian dari Konteks Dunia. Latar belakang, afiliasi, dan masalah mereka harus berakar pada realitas dunia tersebut.
-2.  **Tentukan Level Awal**: Analisis 'Latar Belakang & Pengalaman'. Jika menggambarkan seorang pahlawan berpengalaman, tetapkan \`level\` awal yang lebih tinggi (3-5). Jika pemula, \`level\` adalah 1. Statistik lain harus disesuaikan dengan level ini.
-3.  **Ciptakan Identitas**:
-    *   **Nama**: Cari nama dari masukan pemain. Jika tidak ada, ciptakan nama fantasi unik yang sesuai dengan ras, kelas, dan dunia.
-    *   **Ras & Kelas**: Tentukan dari 'Konsep Inti'.
-4.  **Alokasi Statistik Cerdas**: Distribusikan poin atribut (8-18) yang mencerminkan cerita dan Konteks Dunia.
-5.  **Konteks Ekonomi & Sosial**: Berikan 'gold' dan 'reputation' awal yang logis berdasarkan latar belakang DAN status sosial mereka di dalam dunia.
-6.  **Inventaris yang Relevan**: Ciptakan inventaris awal yang masuk akal untuk peran mereka di dunia ini.
-7.  **Adegan Awal yang Koheren**: Buat \`initialScene\` dan \`introStory\` yang merupakan kelanjutan langsung dari \`backstory\` karakter DAN terjadi di lokasi yang masuk akal di dalam dunia. Tentukan \`availableShopIds\` untuk adegan awal ini secara logis.
-8.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
+Tugas Anda:
+1.  **Integrasi Dunia**: Karakter harus terasa seperti bagian dari dunia ini.
+2.  **Tentukan Level Awal & Statistik Dasar**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`baseStats\` yang sesuai.
+3.  **Perlengkapan Awal (Equipment)**: Berikan karakter perlengkapan awal yang logis di slot \`equipment\`.
+4.  **Inventaris Awal (Inventory)**: Berikan beberapa item tambahan di \`inventory\`.
+5.  **STATISTIK ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki statistik yang mendetail (damage, armorClass, dll.) dan ID unik (UUID).
+6.  **Adegan Awal**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan. Tentukan \`availableShopIds\` secara logis berdasarkan lokasi.
+7.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -226,51 +295,27 @@ Tugas Anda (Ikuti dengan SANGAT TELITI):
     }
 
     async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[]): Promise<GameTurnResponse> {
-        const recentHistory = history.slice(-5).map(entry => {
-            if(entry.type === 'action') return `Pemain: ${entry.content}`;
-            if(entry.type === 'narrative') return `DM: ${entry.content}`;
-            return '';
-        }).join('\n');
-        
-        const prompt = `Anda adalah Dungeon Master (DM) AI yang logis, konsisten, dan seorang pembangun dunia yang ulung. Tugas Anda adalah melanjutkan cerita, mengelola misi, dan membuat dunia terasa hidup. Selalu balas dalam Bahasa Indonesia.
+        const prompt = `Anda adalah Dungeon Master AI. Lanjutkan cerita.
 
 Giliran Saat Ini: ${turnCount}
-
-MEMORI JANGKA PANJANG (Sejarah Dunia):
-- ${longTermMemory.join('\n- ') || 'Belum ada.'}
-${notes.trim() ? `
-CATATAN PRIBADI PEMAIN (Gunakan ini untuk memahami fokus dan teori pemain):
-${notes}` : ''}
-${transactionLog.length > 0 ? `
-LOG TRANSAKSI TERBARU (Gunakan ini untuk kesadaran ekonomi. JANGAN narasikan ulang, cukup ketahui saja):
-${transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n')}` : ''}
+Konteks Dunia:
+- LOG TRANSAKSI TERBARU: ${transactionLog.length > 0 ? transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n') : 'Tidak ada.'}
+- CATATAN PEMAIN: ${notes || 'Tidak ada.'}
+- ... (dan data lainnya seperti memori, misi, dll.)
 
 Kondisi Saat Ini:
-- Karakter Pemain: ${JSON.stringify(character, null, 2)}
-- Party (Rekan): ${JSON.stringify(party, null, 2)}
+- Karakter Pemain (termasuk perlengkapan): ${JSON.stringify(character, null, 2)}
 - Adegan: ${JSON.stringify(scene, null, 2)}
-- Misi Aktif & Selesai: ${JSON.stringify(quests, null, 2)}
-- Tawarikh Dunia (Peristiwa Masa Lalu): ${JSON.stringify(worldEvents, null, 2)}
-- Log Cerita Terbaru:
-${recentHistory}
+- Aksi Pemain: "${playerAction}"
 
-Aksi Pemain:
-"${playerAction}"
-
-Tugas Anda (Ikuti Urutan Ini dengan SANGAT TELITI):
-1.  **Analisis & Konsistensi Dunia**: Baca SEMUA informasi di atas. Pastikan respons Anda logis dan konsisten dengan semua yang telah terjadi. Perhatikan log transaksi untuk memahami kekuatan ekonomi pemain saat ini.
-2.  **Proses Aksi & Konsekuensi**: 
-    *   **Aksi "Periksa"**: Jika aksi pemain adalah "Periksa [Nama NPC]", berikan deskripsi yang lebih mendalam tentang NPC tersebut. Anda BISA memicu 'Pemeriksaan Keterampilan' (skillCheck) untuk mengungkap niat tersembunyi.
-    *   **Aksi Lainnya**: Narasikan hasil aksi pemain. Jika perlu, lakukan 'Pemeriksaan Keterampilan' (skillCheck).
-    *   **Perbarui Status**: Perbarui status karakter, party, dan adegan (\`karakterTerbaru\`, \`partyTerbaru\`, \`sceneUpdate\`).
-    *   **Ketersediaan Toko (PENTING)**: Dalam \`sceneUpdate\`, tentukan \`availableShopIds\` secara logis. Di kota besar, semua toko permanen tersedia. Di desa, mungkin hanya 'general_store'. Di alam liar, array kosong KECUALI jika ada NPC Pedagang Keliling di adegan.
-    *   **SIKAP NPC HARUS BERUBAH**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis berdasarkan aksi pemain.
-3.  **Manajemen Pasar (marketplaceUpdate)**:
-    *   **Pedagang Keliling**: Setiap 20-25 giliran (periksa \`turnCount\`), segarkan inventaris toko 'traveling_merchant' dengan 4-6 item baru yang menarik. Jika Anda melakukannya, sertakan objek \`marketplaceUpdate\` dengan inventaris baru tersebut. Jika tidak, biarkan kosong.
-4.  **Manajemen Misi (questsUpdate)**: Identifikasi jika aksi memicu, memajukan, atau menyelesaikan misi. Jika ya, tambahkan objek Quest baru atau yang diperbarui ke array \`questsUpdate\`.
-5.  **Tawarikh Dunia (worldEventsUpdate)**: Secara berkala (setiap 5-10 giliran), ciptakan satu peristiwa dunia baru.
-6.  **Ciptakan Memori Baru (memorySummary)**: Jika terjadi peristiwa penting, tulis ringkasan satu kalimat di \`memorySummary\`.
-7.  **Format Respons**: Pastikan respons Anda sesuai dengan skema JSON yang disediakan. Kosongkan field/array yang tidak relevan.`;
+Tugas Anda:
+1.  **Analisis Kontekstual**: Baca SEMUA informasi. Narasi Anda harus mencerminkan perlengkapan karakter. Jika AC-nya tinggi, sebutkan bagaimana serangan meleset. Jika senjatanya magis, deskripsikan efeknya. Gunakan log transaksi untuk kesadaran ekonomi.
+2.  **Proses Aksi**: Narasikan hasil aksi. Lakukan 'Pemeriksaan Keterampilan' (skillCheck) jika perlu. Tangani aksi "Periksa" NPC dengan detail.
+3.  **Perbarui Status**: Perbarui SEMUA field di \`karakterTerbaru\`, termasuk \`inventory\` dan \`equipment\` jika mereka menemukan loot. Loot HARUS memiliki statistik mendetail dan ID unik. Sikap NPC harus diperbarui secara dinamis.
+4.  **Ketersediaan Toko**: Berdasarkan \`sceneUpdate.location\` yang baru, tentukan \`availableShopIds\` secara realistis.
+5.  **Manajemen Pasar**: Setiap 20-25 giliran, segarkan inventaris 'traveling_merchant' di \`marketplaceUpdate\`.
+6.  **Manajemen Misi & Dunia**: Perbarui misi dan peristiwa dunia seperti biasa.
+7.  **Format Respons**: Pastikan output sesuai dengan skema JSON.`;
         
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -281,22 +326,12 @@ Tugas Anda (Ikuti Urutan Ini dengan SANGAT TELITI):
     }
 
     async askOOCQuestion(history: StoryEntry[], longTermMemory: string[], question: string): Promise<string> {
-        const recentHistory = history.slice(-10).map(entry => {
-            if(entry.type === 'action') return `Pemain: ${entry.content}`;
-            if(entry.type === 'narrative') return `DM: ${entry.content}`;
-            return '';
-        }).join('\n');
+        const prompt = `Anda adalah seorang Game Master (GM) yang membantu. Jawab pertanyaan OOC pemain dengan jelas dan singkat, berdasarkan konteks cerita yang ada.
 
-        const prompt = `Anda adalah seorang Game Master (GM) yang membantu untuk sebuah game RPG. Pemain mengajukan pertanyaan di luar karakter (OOC). Jawab pertanyaan mereka dengan jelas dan singkat, berdasarkan konteks cerita yang ada.
-
-MEMORI JANGKA PANJANG (Sejarah Dunia):
-- ${longTermMemory.join('\n- ')}
-
-Konteks Cerita Terbaru:
-${recentHistory}
-
-Pertanyaan OOC Pemain:
-"${question}"
+Konteks Cerita:
+- Memori Jangka Panjang: ${longTermMemory.join('\n- ')}
+- Dialog Terbaru: ${history.slice(-10).map(e => `${e.type}: ${e.content}`).join('\n')}
+- Pertanyaan OOC Pemain: "${question}"
 
 Jawaban Anda (sebagai GM):`;
 

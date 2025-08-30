@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 type IconProps = React.SVGProps<SVGSVGElement>;
@@ -127,5 +128,45 @@ export const StoreIcon: React.FC<IconProps> = (props) => (
         <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4" />
         <path d="M2 7h20" />
         <path d="M22 7.172a2 2 0 0 1-.586 1.414L16 14l-4-4-6 6" />
+    </svg>
+);
+
+export const HelmetIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1" />
+        <path d="M17 15h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-2v-2a4 4 0 0 0-4-4" />
+        <path d="M12 15a3 3 0 0 0 3-3V9" />
+        <path d="M12 15a3 3 0 0 1-3-3V9" />
+        <path d="M12 22V15" />
+    </svg>
+);
+
+export const ShirtIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z" />
+    </svg>
+);
+
+export const ChevronsRightIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="m6 17 5-5-5-5" />
+        <path d="m13 17 5-5-5-5" />
+    </svg>
+);
+
+export const DumbbellIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M14.4 14.4 9.6 9.6" />
+        <path d="M18.657 21.213a2.4 2.4 0 1 1-3.394-3.394l-2.263-2.263a4.8 4.8 0 1 0-6.788-6.788l-2.263-2.263a2.4 2.4 0 1 1 3.394-3.394l11.314 11.314a2.4 2.4 0 1 1-3.394 3.394Z" />
+    </svg>
+);
+
+export const SparklesIcon: React.FC<IconProps> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
+        <path d="M5 3v4" />
+        <path d="M19 17v4" />
+        <path d="M3 5h4" />
+        <path d="M17 19h4" />
     </svg>
 );

@@ -19,17 +19,75 @@ export interface Stats {
   intelligence: number;
   wisdom: number;
   charisma: number;
+  armorClass: number; // AC dihitung
 }
+
+export enum ItemSlot {
+  MAIN_HAND = 'mainHand',
+  OFF_HAND = 'offHand',
+  HEAD = 'head',
+  CHEST = 'chest',
+  LEGS = 'legs',
+  FEET = 'feet',
+  NECK = 'neck',
+  RING = 'ring',
+}
+
+export enum ItemRarity {
+  BIASA = 'Biasa',
+  TIDAK_BIASA = 'Tidak Biasa',
+  LANGKA = 'Langka',
+  EPIK = 'Epik',
+}
+
+export interface BaseItem {
+  id: string;
+  name: string;
+  description: string;
+  value: number;
+  rarity: ItemRarity;
+  type: 'Weapon' | 'Armor' | 'Accessory' | 'Consumable' | 'Misc';
+  slot?: ItemSlot; // Hanya untuk item yang bisa dikenakan
+}
+
+export interface Weapon extends BaseItem {
+  type: 'Weapon';
+  damage: string; // misal: "1d8 + KEK"
+  properties?: string[];
+  slot: ItemSlot.MAIN_HAND | ItemSlot.OFF_HAND;
+}
+
+export interface Armor extends BaseItem {
+  type: 'Armor';
+  armorClass: number;
+  slot: ItemSlot.HEAD | ItemSlot.CHEST | ItemSlot.LEGS | ItemSlot.FEET | ItemSlot.OFF_HAND; // Off-hand untuk perisai
+}
+
+export interface Accessory extends BaseItem {
+  type: 'Accessory';
+  statBonuses?: Partial<Omit<Stats, 'health' | 'maxHealth' | 'mana' | 'maxMana' | 'armorClass' | 'level'>>;
+  slot: ItemSlot.NECK | ItemSlot.RING;
+}
+
+export interface MiscItem extends BaseItem {
+  type: 'Consumable' | 'Misc';
+  slot?: undefined;
+}
+
+export type EquippableItem = Weapon | Armor | Accessory;
+export type AnyItem = EquippableItem | MiscItem;
 
 export interface InventoryItem {
-  name: string;
+  item: AnyItem;
   quantity: number;
-  description: string;
-  value: number; // Nilai dasar dalam keping emas
 }
 
-// Item yang dijual di toko, bisa jadi sama dengan InventoryItem
+// Item yang dijual di toko
 export type ShopItem = InventoryItem;
+
+export type Equipment = {
+  [key in ItemSlot]?: EquippableItem;
+};
 
 export interface Character {
   id: string;
@@ -38,7 +96,9 @@ export interface Character {
   characterClass: string;
   backstory: string;
   stats: Stats;
+  baseStats: Omit<Stats, 'armorClass'>; // Stats tanpa modifikasi item
   inventory: InventoryItem[];
+  equipment: Equipment;
   reputation: number;
   gold: number;
 }
@@ -57,14 +117,13 @@ export interface NPC {
     name: string;
     description: string;
     attitude: 'Ramah' | 'Netral' | 'Curiga' | 'Bermusuhan';
-    inventory?: InventoryItem[]; // Inventaris barang dagangan NPC
 }
 
 export interface Scene {
     location: string;
     description: string;
     npcs: NPC[];
-    availableShopIds?: string[]; // ID toko yang tersedia di lokasi ini
+    availableShopIds?: string[];
 }
 
 export interface StoryEntry {
@@ -105,11 +164,10 @@ export interface GameTurnResponse {
     partyTerbaru?: Omit<Character, 'id'>[];
     sceneUpdate: Scene;
     skillCheck?: SkillCheckResult;
-    notifications?: string[];
     memorySummary?: string; 
     questsUpdate?: Quest[];
     worldEventsUpdate?: Omit<WorldEvent, 'id' | 'turn'>[];
-    marketplaceUpdate?: Marketplace; // Pembaruan inventaris pedagang
+    marketplaceUpdate?: Marketplace;
 }
 
 export interface AppNotification {
@@ -122,7 +180,7 @@ export interface TransactionLogEntry {
   type: 'buy' | 'sell';
   itemName: string;
   quantity: number;
-  goldAmount: number; // positif untuk jual, negatif untuk beli
+  goldAmount: number;
 }
 
 export interface SavedCharacter {
