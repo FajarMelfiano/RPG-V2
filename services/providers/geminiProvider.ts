@@ -232,7 +232,7 @@ Tugas Anda:
 4.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: prompt,
             config: { responseMimeType: "application/json", responseSchema: worldGenerationSchema }
         });
@@ -257,7 +257,7 @@ Tugas Anda:
 7.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: prompt,
             config: { responseMimeType: "application/json", responseSchema: characterGenerationSchema }
         });
@@ -288,7 +288,7 @@ Tugas Anda:
 7.  **Format Respons**: Pastikan output sesuai dengan skema JSON.`;
         
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: prompt,
             config: { responseMimeType: "application/json", responseSchema: gameTurnSchema }
         });
@@ -306,7 +306,7 @@ Konteks Cerita:
 Jawaban Anda (sebagai GM):`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: prompt,
         });
         return response.text;
