@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppNotification } from '../types';
-import { ChestIcon, CoinIcon, ReputationIcon } from './icons';
+import { ChestIcon, CoinIcon, ReputationIcon, ScrollIcon } from './icons';
 
 const NotificationToast: React.FC<{ message: string }> = ({ message }) => {
     const lowerCaseMessage = message.toLowerCase();
@@ -11,6 +11,9 @@ const NotificationToast: React.FC<{ message: string }> = ({ message }) => {
         }
         if (lowerCaseMessage.includes('reputasi')) {
             return <ReputationIcon className="w-6 h-6 text-amber-200 flex-shrink-0" />;
+        }
+        if (lowerCaseMessage.includes('misi ') || lowerCaseMessage.includes('kabar dunia')) {
+             return <ScrollIcon className="w-6 h-6 text-sky-300 flex-shrink-0" />;
         }
         // A generic icon for other notifications like items found
         return <ChestIcon className="w-6 h-6 text-green-400 flex-shrink-0" />;

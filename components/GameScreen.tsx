@@ -1,54 +1,50 @@
 import React, { useState } from 'react';
-import { Character, StoryEntry, Scene } from '../types';
+import { World, SavedCharacter } from '../types';
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
-import SceneDisplay from './SceneDisplay';
 import SidePanel from './SidePanel';
-import { ShieldIcon } from './icons';
+import { BookOpenIcon } from './icons';
 
 interface GameScreenProps {
-  character: Character;
-  party: Character[];
-  scene: Scene;
-  storyHistory: StoryEntry[];
+  world: World;
+  savedCharacter: SavedCharacter;
   onPlayerAction: (action: string) => void;
   isLoading: boolean;
   error: string | null;
-  notes: string;
   onNotesChange: (notes: string) => void;
 }
 
-const GameScreen: React.FC<GameScreenProps> = ({ character, party, scene, storyHistory, onPlayerAction, isLoading, error, notes, onNotesChange }) => {
+const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayerAction, isLoading, error, onNotesChange }) => {
   const [actionText, setActionText] = useState('');
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
+  const [isJournalOpen, setIsJournalOpen] = useState(false);
 
   const handleNpcInteract = (npcName: string) => {
     setActionText(`Bicara dengan ${npcName}`);
   };
 
-  return (
-    <div className="w-full max-w-7xl mx-auto h-[95vh] flex flex-row gap-4 p-1">
-      {/* Mobile drawer toggle */}
-      <button
-        onClick={() => setIsSidePanelOpen(true)}
-        className="md:hidden fixed top-4 right-4 z-30 bg-amber-600/90 text-white p-3 rounded-full shadow-lg backdrop-blur-sm"
-        aria-label="Tampilkan panel karakter"
-      >
-        <ShieldIcon className="w-6 h-6" />
-      </button>
+  const { character, party, scene, storyHistory, notes } = savedCharacter;
+  const { quests, worldEvents } = world;
 
+  return (
+    <div className="w-full max-w-[1600px] mx-auto h-[95vh] flex flex-row gap-4 sm:gap-6 p-1 sm:p-2">
+      
       <SidePanel
         character={character}
         party={party}
         notes={notes}
         onNotesChange={onNotesChange}
-        isOpen={isSidePanelOpen}
-        onClose={() => setIsSidePanelOpen(false)}
+        quests={quests}
+        worldEvents={worldEvents}
+        isOpen={isJournalOpen}
+        onClose={() => setIsJournalOpen(false)}
       />
       
-      <div className="flex-1 h-full flex flex-col min-h-0 bg-slate-800/70 rounded-xl shadow-lg border border-slate-700 backdrop-blur-sm">
-        <SceneDisplay scene={scene} onNpcInteract={handleNpcInteract} />
-        <StoryLog storyHistory={storyHistory} />
+      <main className="flex-1 h-full flex flex-col min-h-0 relative">
+        <StoryLog 
+          storyHistory={storyHistory} 
+          scene={scene}
+          onNpcInteract={handleNpcInteract}
+        />
         <ActionInput 
           onAction={onPlayerAction} 
           isLoading={isLoading} 
@@ -56,11 +52,20 @@ const GameScreen: React.FC<GameScreenProps> = ({ character, party, scene, storyH
           setActionText={setActionText}
         />
         {error && (
-            <div className="p-2 text-center text-red-300 bg-red-900/60 rounded-b-xl text-sm">
+            <div className="absolute bottom-24 left-4 right-4 p-2 text-center text-red-300 bg-red-900/80 rounded-lg text-sm shadow-lg backdrop-blur-sm border border-red-700">
                 {error}
             </div>
         )}
-      </div>
+      </main>
+
+       <button
+        onClick={() => setIsJournalOpen(true)}
+        className="md:hidden fixed top-4 right-4 z-30 bg-stone-800/80 text-amber-300 p-3 rounded-full shadow-lg backdrop-blur-sm border border-amber-800/50"
+        aria-label="Buka Jurnal"
+      >
+        <BookOpenIcon className="w-6 h-6" />
+      </button>
+
     </div>
   );
 };

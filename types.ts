@@ -1,5 +1,7 @@
 export enum GameState {
   START,
+  CREATING_WORLD,
+  WORLD_LOBBY,
   CREATING_CHARACTER,
   PLAYING,
   GAME_OVER,
@@ -67,6 +69,21 @@ export interface StoryEntry {
     rollDetails?: SkillCheckResult;
 }
 
+export interface Quest {
+  id: string;
+  title: string;
+  description: string;
+  status: 'Aktif' | 'Selesai';
+}
+
+export interface WorldEvent {
+  id: string;
+  turn: number;
+  title: string;
+  description: string;
+  type: 'Sejarah' | 'Berita' | 'Ramalan';
+}
+
 export interface GameTurnResponse {
     narasiBaru: string;
     karakterTerbaru: Omit<Character, 'id'>;
@@ -75,6 +92,8 @@ export interface GameTurnResponse {
     skillCheck?: SkillCheckResult;
     notifications?: string[];
     memorySummary?: string; // Ringkasan satu kalimat untuk ingatan jangka panjang AI
+    questsUpdate?: Quest[]; // Pembaruan atau penambahan misi
+    worldEventsUpdate?: Omit<WorldEvent, 'id' | 'turn'>[]; // Penambahan peristiwa dunia baru
 }
 
 export interface AppNotification {
@@ -82,13 +101,24 @@ export interface AppNotification {
     message: string;
 }
 
-export interface SavedGame {
-  id: string;
+// Menyimpan data progres spesifik untuk satu karakter di dalam sebuah dunia
+export interface SavedCharacter {
   character: Character;
   party: Character[];
   scene: Scene;
   storyHistory: StoryEntry[];
-  longTermMemory: string[]; // Menyimpan memori jangka panjang AI
-  notes: string; // Menyimpan catatan pemain
-  lastSaved: string; // ISO Date string
+  notes: string;
+  turnCount: number;
+  lastPlayed: string; // ISO Date string
+}
+
+// Entitas penyimpanan utama yang baru
+export interface World {
+  id: string;
+  name: string;
+  description: string;
+  longTermMemory: string[];
+  worldEvents: WorldEvent[];
+  quests: Quest[];
+  characters: SavedCharacter[];
 }

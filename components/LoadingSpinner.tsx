@@ -1,9 +1,10 @@
 import React from 'react';
+import { DiceIcon } from './icons';
 
 const LoadingSpinner: React.FC = () => {
   return (
     <div className="flex items-center justify-center gap-2">
-      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+      <DiceIcon className="animate-spin h-5 w-5 text-white" />
       <span className="text-white">Berpikir...</span>
     </div>
   );

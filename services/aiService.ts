@@ -1,12 +1,17 @@
-import { Character, GameTurnResponse, Scene, StoryEntry } from '../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent } from '../types';
 import { geminiProvider } from './providers/geminiProvider';
 import { openAiProvider } from './providers/openAIProvider';
 
-// "Kontrak" yang harus dipatuhi oleh setiap penyedia AI.
-// Ini memastikan bahwa aplikasi dapat berinteraksi dengan AI apa pun
-// dengan cara yang konsisten.
 export interface IAiDungeonMasterService {
-  generateCharacter(characterData: { concept: string; background: string }): Promise<{
+  generateWorld(worldData: { concept: string; factions: string; conflict: string }): Promise<{
+    name: string;
+    description: string;
+  }>;
+
+  generateCharacter(
+    characterData: { concept: string; background: string },
+    worldContext: string
+  ): Promise<{
     character: Omit<Character, 'id'>;
     initialScene: Scene;
     introStory: string;
@@ -19,6 +24,9 @@ export interface IAiDungeonMasterService {
     history: StoryEntry[],
     longTermMemory: string[],
     notes: string,
+    quests: Quest[],
+    worldEvents: WorldEvent[],
+    turnCount: number,
     playerAction: string
   ): Promise<GameTurnResponse>;
 
@@ -29,24 +37,17 @@ export interface IAiDungeonMasterService {
   ): Promise<string>;
 }
 
-// Enum untuk mendefinisikan penyedia AI yang tersedia.
-// Untuk menambahkan AI baru, tambahkan nilainya di sini.
 enum AiProvider {
     GEMINI = 'GEMINI',
     OPENAI = 'OPENAI',
 }
 
-// Konfigurasi pusat. Developer hanya perlu mengubah string di sini
-// untuk mengganti model AI yang digunakan di seluruh aplikasi.
 const aiConfig = {
-    provider: AiProvider.GEMINI // Ubah ke AiProvider.OPENAI untuk menggunakan OpenAI
+    provider: AiProvider.GEMINI
 };
 
 let DungeonMaster: IAiDungeonMasterService;
 
-// Berdasarkan konfigurasi, pilih penyedia AI yang sesuai.
-// Pola ini memungkinkan untuk menukar "otak" AI dengan mudah
-// tanpa mengubah kode aplikasi lainnya.
 switch (aiConfig.provider) {
     case AiProvider.GEMINI:
         DungeonMaster = geminiProvider;
@@ -55,8 +56,6 @@ switch (aiConfig.provider) {
         DungeonMaster = openAiProvider;
         break;
     default:
-        // Jika penyedia tidak dikonfigurasi dengan benar, gunakan Gemini sebagai default
-        // dan berikan peringatan di konsol.
         console.warn(`Penyedia AI tidak dikenal: ${aiConfig.provider}. Menggunakan Gemini sebagai default.`);
         DungeonMaster = geminiProvider;
         break;
