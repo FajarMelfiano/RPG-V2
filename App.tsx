@@ -1,7 +1,7 @@
 
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload } from './types';
+import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory } from './types';
 import StartScreen from './components/StartScreen';
 import WorldCreationScreen from './components/WorldCreationScreen';
 import WorldLobbyScreen from './components/WorldLobbyScreen';
@@ -27,7 +27,23 @@ const App: React.FC = () => {
     try {
       const savedData = localStorage.getItem(SAVE_GAME_KEY);
       if (savedData) {
-        setWorlds(JSON.parse(savedData));
+        const loadedWorlds: World[] = JSON.parse(savedData);
+        // Migrasi data lama ke struktur memori baru untuk kompatibilitas mundur
+        const migratedWorlds = loadedWorlds.map(world => {
+          if (Array.isArray(world.longTermMemory) || typeof world.longTermMemory !== 'object') {
+            console.log(`Migrasi memori untuk dunia: ${world.name}`);
+            return {
+              ...world,
+              longTermMemory: {
+                keyEvents: Array.isArray(world.longTermMemory) ? world.longTermMemory : [],
+                keyCharacters: [],
+                worldStateSummary: world.description || "Sejarah dunia ini diselimuti misteri."
+              }
+            };
+          }
+          return world;
+        });
+        setWorlds(migratedWorlds);
       }
     } catch (e) {
       console.error("Gagal memuat dunia yang tersimpan:", e);
@@ -78,7 +94,11 @@ const App: React.FC = () => {
             name,
             description,
             theme,
-            longTermMemory: [],
+            longTermMemory: {
+              keyEvents: [`Dunia ${name} diciptakan.`],
+              keyCharacters: [],
+              worldStateSummary: description
+            },
             worldEvents: [],
             quests: [],
             characters: [],
@@ -445,7 +465,9 @@ const App: React.FC = () => {
       }
 
       let updatedWorld = { ...activeWorld };
-      updatedWorld.longTermMemory = response.memorySummary ? [...updatedWorld.longTermMemory, response.memorySummary] : updatedWorld.longTermMemory;
+      if (response.memoryUpdate) {
+          updatedWorld.longTermMemory = response.memoryUpdate;
+      }
 
       if (response.marketplaceUpdate) {
         updatedWorld.marketplace = response.marketplaceUpdate;

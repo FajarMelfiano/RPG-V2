@@ -152,12 +152,18 @@ export interface CharacterUpdatePayload {
   keluargaDiperbarui?: FamilyMember[];
 }
 
+export interface WorldMemory {
+  keyEvents: string[];
+  keyCharacters: string[];
+  worldStateSummary: string;
+}
+
 export interface GameTurnResponse {
     narasiBaru: string;
     pembaruanKarakter?: CharacterUpdatePayload;
     sceneUpdate: Scene;
     skillCheck?: SkillCheckResult;
-    memorySummary?: string; 
+    memoryUpdate?: WorldMemory;
     questsUpdate?: Quest[];
     worldEventsUpdate?: Omit<WorldEvent, 'id' | 'turn'>[];
     marketplaceUpdate?: Marketplace;
@@ -194,7 +200,7 @@ export interface World {
   name: string;
   description: string;
   theme: WorldTheme;
-  longTermMemory: string[];
+  longTermMemory: WorldMemory;
   worldEvents: WorldEvent[];
   quests: Quest[];
   characters: SavedCharacter[];

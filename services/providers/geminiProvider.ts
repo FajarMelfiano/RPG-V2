@@ -1,6 +1,6 @@
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot, WorldTheme, FamilyMember } from '../../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot, WorldTheme, FamilyMember, WorldMemory } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 import { apiKeyManager } from "../apiKeyManager";
 
@@ -229,6 +229,16 @@ const characterUpdateSchema = {
     }
 };
 
+const worldMemorySchema = {
+    type: Type.OBJECT,
+    properties: {
+        keyEvents: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Daftar peristiwa paling penting dalam cerita, yang membentuk dunia." },
+        keyCharacters: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Daftar karakter (NPC) paling penting dan peran mereka." },
+        worldStateSummary: { type: Type.STRING, description: "Ringkasan status dunia saat ini, termasuk konflik utama dan atmosfer umum." }
+    },
+    required: ["keyEvents", "keyCharacters", "worldStateSummary"]
+};
+
 const gameTurnSchema = {
     type: Type.OBJECT,
     properties: {
@@ -246,7 +256,7 @@ const gameTurnSchema = {
                 success: { type: Type.BOOLEAN }
             }
         },
-        memorySummary: { type: Type.STRING, description: "Jika terjadi peristiwa yang SANGAT PENTING, rangkum dalam satu kalimat di sini. Jika tidak, kosongkan." },
+        memoryUpdate: worldMemorySchema,
         questsUpdate: { type: Type.ARRAY, items: questSchema },
         worldEventsUpdate: { type: Type.ARRAY, items: worldEventSchema },
         marketplaceUpdate: marketplaceSchema,
@@ -273,7 +283,7 @@ Tugas Anda:
 5.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: worldGenerationSchema }
         });
@@ -298,67 +308,69 @@ Tugas Anda:
 7.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: characterGenerationSchema }
         });
         return JSON.parse(response.text);
     }
 
-    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace): Promise<GameTurnResponse> {
-        const marketplaceContext = `DAFTAR TOKO DUNIA: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}`;
+    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: WorldMemory, notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace): Promise<GameTurnResponse> {
         
-        const prompt = `Anda adalah Dungeon Master AI. Lanjutkan cerita. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
+        const prompt = `Anda adalah Dungeon Master (DM) AI yang logis dan konsisten. Misi utama Anda adalah menjaga kontinuitas cerita. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
 
-**ATURAN UTAMA: ANDA TIDAK LAGI MENGIRIM STATUS LENGKAP KARAKTER. ANDA HANYA MELAPORKAN PERUBAHAN.**
+**ATURAN INTI & PRINSIP:**
+1.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Karakter (NPC dan pemain) harus bertindak sesuai dengan kepribadian dan motivasi mereka. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'.
+2.  **Laporan Perubahan, Bukan Status Penuh**: Anda HANYA melaporkan perubahan status karakter melalui \`pembaruanKarakter\`.
+3.  **Manajemen Memori Aktif**: Anda tidak hanya menambahkan ke memori; Anda mengelolanya.
 
-Giliran Saat Ini: ${turnCount}
-Konteks Dunia:
-- ${marketplaceContext}
-- KELUARGA PEMAIN: ${JSON.stringify(character.family)}
-- LOG TRANSAKSI TERBARU: ${transactionLog.length > 0 ? transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n') : 'Tidak ada.'}
-- CATATAN PEMAIN: ${notes || 'Tidak ada.'}
-- MEMORI JANGKA PANJANG: ${longTermMemory.join('\n- ')}
-- MISI AKTIF: ${quests.filter(q => q.status === 'Aktif').map(q => q.title).join(', ') || 'Tidak ada.'}
+**KONTEKS SAAT INI (Kebenaran Dasar):**
+-   **Giliran Saat Ini**: ${turnCount}
+-   **MEMORI DUNIA (Baca Ini Dulu)**: ${JSON.stringify(longTermMemory)}
+-   **KARAKTER PEMAIN**:
+    -   **Latar Belakang Asli**: ${character.backstory}
+    -   **Status Saat Ini**: ${JSON.stringify({ name: character.name, stats: character.stats, gold: character.gold, inventory: character.inventory.map(i => `${i.item.name} (x${i.quantity})`) })}
+    -   **Keluarga**: ${JSON.stringify(character.family)}
+-   **MISI AKTIF**: ${quests.filter(q => q.status === 'Aktif').map(q => q.title).join(', ') || 'Tidak ada.'}
+-   **ADEGAN SAAT INI**: ${JSON.stringify(scene)}
+-   **AKSI PEMAIN**: "${playerAction}"
 
-Kondisi Saat Ini:
-- Karakter Pemain: ${JSON.stringify({ name: character.name, stats: character.stats, gold: character.gold, inventory: character.inventory.map(i => `${i.item.name} (x${i.quantity})`) })}
-- Adegan: ${JSON.stringify(scene, null, 2)}
-- Aksi Pemain: "${playerAction}"
-
-Tugas Anda:
-1.  **Pemeriksaan Keterampilan (ATURAN KRITIS)**: Jika aksi pemain memiliki kemungkinan untuk gagal (misalnya menyerang, menyelinap, membujuk, menyelidiki, meretas), Anda **HARUS** membuat \`skillCheck\`. Jangan pernah mengasumsikan keberhasilan otomatis untuk tindakan berisiko.
-2.  **Narasikan Hasil**: Lanjutkan cerita berdasarkan aksi pemain DAN hasil dari \`skillCheck\` (jika ada).
-3.  **LAPORKAN PERUBAHAN STATUS (WAJIB)**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah.
-    *   **HP/Mana/Emas/Item**: Isi ini seperti biasa.
-    *   **Keluarga**: Gunakan konteks 'KELUARGA PEMAIN' sebagai inspirasi naratif. Jika status anggota keluarga berubah (misalnya dari 'Hidup' menjadi 'Dalam bahaya' karena sebuah peristiwa), laporkan SELURUH daftar keluarga yang diperbarui di \`pembaruanKarakter.keluargaDiperbarui\`.
-    *   **PENTING**: Jika tidak ada perubahan pada suatu stat, JANGAN sertakan field-nya. Jika tidak ada perubahan status sama sekali, kosongkan \`pembaruanKarakter\`.
-4.  **Ketersediaan Toko (SANGAT PENTING)**: Berdasarkan deskripsi lokasi dan NPC yang Anda tempatkan di \`sceneUpdate\`, tentukan toko mana dari 'DAFTAR TOKO DUNIA' yang dapat diakses. Isi array \`availableShopIds\` dengan ID yang sesuai. Jika tidak ada toko, biarkan array kosong.
-5.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
-6.  **Perkembangan Dunia**: Secara berkala, pertimbangkan untuk memperkenalkan \`questsUpdate\` atau \`worldEventsUpdate\` baru, mungkin terkait dengan keluarga pemain.
-7.  **Memori & Perkembangan**: Jika terjadi peristiwa penting (terutama terkait keluarga), rangkum dalam \`memorySummary\`.
-8.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON yang disediakan.`;
+**TUGAS ANDA (Ikuti Secara Berurutan):**
+1.  **Analisis & Kontekstualisasi**: Baca SEMUA informasi di atas. Pahami aksi pemain dalam konteks MEMORI DUNIA, latar belakang karakter, dan situasi saat ini.
+2.  **Pemeriksaan Keterampilan (Jika Perlu)**: Jika aksi pemain memiliki kemungkinan untuk gagal (misalnya menyerang, menyelinap, membujuk, meretas), Anda **WAJIB** membuat \`skillCheck\`.
+3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain, hasil \`skillCheck\`, dan konteks yang ada.
+4.  **Perbarui Status & Dunia**:
+    *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, atau status keluarga di \`pembaruanKarakter\`.
+    *   **Pembaruan Adegan**: Perbarui \`sceneUpdate\` dengan lokasi, deskripsi, dan status NPC yang baru.
+    *   **Ketersediaan Toko**: Berdasarkan lokasi baru di \`sceneUpdate\`, isi \`availableShopIds\` dengan benar.
+    *   **Perkembangan Dunia**: Jika relevan, perbarui misi (\`questsUpdate\`) atau picu peristiwa dunia baru (\`worldEventsUpdate\`).
+5.  **KONSOLIDASI MEMORI (Tugas Kritis)**:
+    *   Baca kembali \`MEMORI DUNIA\` yang lama.
+    *   Sintesiskan peristiwa-peristiwa PENTING dari giliran ini ke dalam memori tersebut.
+    *   **TULIS ULANG** seluruh objek memori menjadi versi yang lebih baik dan lebih koheren. Jangan hanya menambahkan.
+    *   Keluarkan objek memori yang telah diperbarui dan disempurnakan ini di \`memoryUpdate\`. Jika tidak ada perubahan signifikan, kembalikan objek memori yang sama.
+6.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON.`;
         
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: gameTurnSchema }
         });
         return JSON.parse(response.text) as GameTurnResponse;
     }
 
-    async askOOCQuestion(history: StoryEntry[], longTermMemory: string[], question: string): Promise<string> {
+    async askOOCQuestion(history: StoryEntry[], longTermMemory: WorldMemory, question: string): Promise<string> {
         const prompt = `Anda adalah seorang Game Master (GM) yang membantu. Jawab pertanyaan OOC pemain dengan jelas dan singkat dalam Bahasa Indonesia, berdasarkan konteks cerita yang ada.
 
 Konteks Cerita:
-- Memori Jangka Panjang: ${longTermMemory.join('\n- ')}
+- Memori Dunia: ${JSON.stringify(longTermMemory)}
 - Dialog Terbaru: ${history.slice(-10).map(e => `${e.type}: ${e.content}`).join('\n')}
 - Pertanyaan OOC Pemain: "${question}"
 
 Jawaban Anda (sebagai GM):`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
         });
         return response.text;

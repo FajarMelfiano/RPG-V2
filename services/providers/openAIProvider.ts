@@ -2,7 +2,7 @@
 
 import OpenAI from 'openai';
 // FIX: Added WorldTheme to imports to support theme generation.
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme } from '../../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 
 if (!process.env.API_KEY) {
@@ -115,7 +115,7 @@ Masukan Pemain untuk Karakter:
         return JSON.parse(jsonString);
     }
 
-    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace): Promise<GameTurnResponse> {
+    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: WorldMemory, notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace): Promise<GameTurnResponse> {
         const recentHistory = history.slice(-5).map(entry => {
             if(entry.type === 'action') return `Pemain: ${entry.content}`;
             if(entry.type === 'narrative') return `DM: ${entry.content}`;
@@ -125,33 +125,28 @@ Masukan Pemain untuk Karakter:
         const systemPrompt = `Anda adalah Dungeon Master (DM) AI yang logis. Lanjutkan cerita. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
 
 Aturan Utama:
-1.  **Kesadaran Naratif Perlengkapan**: Baca 'LOG TRANSAKSI' dan 'Karakter Pemain' (termasuk perlengkapan). Narasi Anda HARUS mencerminkan ini secara deskriptif.
-2.  **Ketersediaan Toko Kontekstual (SANGAT PENTING)**: Gunakan data 'DAFTAR TOKO DUNIA' yang disediakan untuk mengisi \`availableShopIds\` secara logis berdasarkan lokasi baru di \`sceneUpdate\`.
-3.  **Pedagang Keliling Dinamis**: Setiap 20-25 giliran, segarkan inventaris 'traveling_merchant' di \`marketplaceUpdate\`.
-4.  **Sikap NPC Dinamis**: Sikap NPC dalam \`sceneUpdate\` HARUS diperbarui secara logis.
-5.  **Loot Bermakna**: Jika pemain menemukan loot, item baru di \`karakterTerbaru.inventory\` HARUS memiliki ID unik dan deskripsi yang menarik.
+1.  **Konsistensi Naratif**: Baca 'MEMORI DUNIA' dan 'Latar Belakang Karakter'. Cerita Anda HARUS konsisten dengan informasi ini.
+2.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
+3.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
 
 Struktur JSON yang DIWAJIBKAN:
 {
   "narasiBaru": "string",
-  "karakterTerbaru": { ... },
-  "partyTerbaru": [ ... ],
+  "pembaruanKarakter": { ... },
   "sceneUpdate": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] },
   "skillCheck": { ... },
-  "memorySummary": "string",
+  "memoryUpdate": { "keyEvents": ["string"], "keyCharacters": ["string"], "worldStateSummary": "string" },
   "questsUpdate": [ { ... } ],
   "worldEventsUpdate": [ { ... } ],
   "marketplaceUpdate": { "shops": [{...}] }
 }`;
 
         const userPrompt = `Giliran Saat Ini: ${turnCount}
-DAFTAR TOKO DUNIA:
-${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}
-LOG TRANSAKSI TERBARU:
-${transactionLog.length > 0 ? transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n') : 'Belum ada.'}
+MEMORI DUNIA: ${JSON.stringify(longTermMemory)}
+Latar Belakang Karakter: ${character.backstory}
 
 Kondisi Saat Ini:
-- Karakter Pemain: ${JSON.stringify(character, null, 2)}
+- Karakter Pemain: ${JSON.stringify({name: character.name, stats: character.stats})}
 - Adegan: ${JSON.stringify(scene, null, 2)}
 - Aksi Pemain: "${playerAction}"`;
 
@@ -166,7 +161,7 @@ Kondisi Saat Ini:
         return JSON.parse(jsonString) as GameTurnResponse;
     }
 
-    async askOOCQuestion(history: StoryEntry[], longTermMemory: string[], question: string): Promise<string> {
+    async askOOCQuestion(history: StoryEntry[], longTermMemory: WorldMemory, question: string): Promise<string> {
         const recentHistory = history.slice(-10).map(entry => {
             if(entry.type === 'action' || entry.type === 'ooc_query') return `Pemain: ${entry.content}`;
             if(entry.type === 'narrative' || entry.type === 'ooc_response') return `GM: ${entry.content}`;
@@ -176,8 +171,8 @@ Kondisi Saat Ini:
         const systemPrompt = `Anda adalah Game Master (GM) yang membantu. Pemain mengajukan pertanyaan di luar karakter (OOC). Jawab dengan jelas dan singkat berdasarkan konteks cerita.`;
 
         const userPrompt = `Konteks Cerita:
-MEMORI JANGKA PANJANG:
-- ${longTermMemory.join('\n- ')}
+MEMORI DUNIA:
+- ${JSON.stringify(longTermMemory)}
 DIALOG TERBARU:
 ${recentHistory}
 

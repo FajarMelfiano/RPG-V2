@@ -1,6 +1,6 @@
 
 
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme } from '../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory } from '../types';
 import { geminiProvider } from './providers/geminiProvider';
 import { openAiProvider } from './providers/openAIProvider';
 
@@ -26,7 +26,7 @@ export interface IAiDungeonMasterService {
     party: Character[],
     scene: Scene,
     history: StoryEntry[],
-    longTermMemory: string[],
+    longTermMemory: WorldMemory,
     notes: string,
     quests: Quest[],
     worldEvents: WorldEvent[],
@@ -38,7 +38,7 @@ export interface IAiDungeonMasterService {
 
   askOOCQuestion(
     history: StoryEntry[],
-    longTermMemory: string[],
+    longTermMemory: WorldMemory,
     question: string
   ): Promise<string>;
 }
