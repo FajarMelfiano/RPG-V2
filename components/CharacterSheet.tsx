@@ -24,7 +24,7 @@ const DecorativeSeparator: React.FC = () => (
 
 
 const CharacterSheet: React.FC<{ character: Character }> = ({ character }) => {
-    const { name, race, characterClass, stats, backstory, gold } = character;
+    const { name, race, characterClass, stats, backstory, gold, age, height, appearance } = character;
     const healthPercentage = stats.maxHealth > 0 ? (stats.health / stats.maxHealth) * 100 : 0;
     const manaPercentage = stats.maxMana > 0 ? (stats.mana / stats.maxMana) * 100 : 0;
     
@@ -40,6 +40,7 @@ const CharacterSheet: React.FC<{ character: Character }> = ({ character }) => {
       <div className="text-center mb-4">
         <h2 className="text-3xl font-cinzel text-[var(--color-text-header)] text-glow">{name}</h2>
         <p className="text-stone-400">{`Level ${stats.level} ${race} ${characterClass}`}</p>
+        <p className="text-sm text-stone-500">{`${age} tahun, Tinggi ${height}`}</p>
         <div className="inline-flex items-center gap-2 mt-2 bg-stone-950/50 px-3 py-1 rounded-full border border-stone-700">
             <CoinIcon className="w-5 h-5 text-[var(--color-accent)]" />
             <span className="font-bold text-lg text-stone-200">{gold}</span>
@@ -67,7 +68,20 @@ const CharacterSheet: React.FC<{ character: Character }> = ({ character }) => {
             </div>
           </div>
       )}
+      
+      <DecorativeSeparator />
+      
+      <div>
+        <h3 className="font-cinzel text-xl text-[var(--color-text-header)] mb-3 text-glow">Penampilan & Latar Belakang</h3>
+        <div className="bg-stone-950/30 rounded-md p-3 border border-stone-700 space-y-3 text-sm italic text-stone-300">
+            <p>{appearance}</p>
+            <p>{backstory}</p>
+        </div>
+      </div>
 
+      <DecorativeSeparator />
+
+      <h3 className="font-cinzel text-xl text-[var(--color-text-header)] mb-3 text-glow">Atribut Utama</h3>
       <div className="flex flex-wrap gap-2 mb-4">
         <StatDisplay label="KEK" value={`${stats.strength} (${getModifier(stats.strength)})`} icon={<SwordIcon className="w-4 h-4 text-red-400" />} />
         <StatDisplay label="TKS" value={`${stats.dexterity} (${getModifier(stats.dexterity)})`} icon={<ShieldIcon className="w-4 h-4 text-green-400" />} />
@@ -79,24 +93,14 @@ const CharacterSheet: React.FC<{ character: Character }> = ({ character }) => {
 
       <DecorativeSeparator />
 
-      <h3 className="font-cinzel text-xl text-[var(--color-text-header)] mb-3 text-glow">Statistik Rinci</h3>
+      <h3 className="font-cinzel text-xl text-[var(--color-text-header)] mb-3 text-glow">Statistik Tempur</h3>
       <div className="flex flex-wrap gap-2 mb-4">
         <StatDisplay label="Armor Class" value={10 + dexModifierValue} icon={<ShieldIcon className="w-4 h-4 text-stone-400" />} />
         <StatDisplay label="Inisiatif" value={getModifier(stats.dexterity)} icon={<SparklesIcon className="w-4 h-4 text-yellow-400" />} />
         <StatDisplay label="Srgn. Melee" value={getModifier(stats.strength)} icon={<SwordIcon className="w-4 h-4 text-red-500" />} />
         <StatDisplay label="Srgn. Jauh" value={getModifier(stats.dexterity)} icon={<ChevronsRightIcon className="w-4 h-4 text-green-500" />} />
       </div>
-      
-      <DecorativeSeparator />
-      
-      <div className="flex-grow min-h-0">
-        <h3 className="font-cinzel text-xl text-[var(--color-text-header)] mb-2 text-glow">Latar Belakang</h3>
-        <div className="bg-stone-950/30 rounded-md p-3 border border-stone-700">
-            <p className="text-sm italic text-stone-300">
-                {backstory}
-            </p>
-        </div>
-      </div>
+
     </div>
     );
 };

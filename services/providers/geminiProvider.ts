@@ -121,6 +121,9 @@ const characterSchema = {
     name: { type: Type.STRING },
     race: { type: Type.STRING },
     characterClass: { type: Type.STRING },
+    age: { type: Type.INTEGER, description: "Umur karakter, ditentukan secara logis berdasarkan ras dan latar belakang." },
+    height: { type: Type.STRING, description: "Tinggi badan karakter dalam cm (misal: '180 cm')." },
+    appearance: { type: Type.STRING, description: "Deskripsi penampilan fisik yang detail dan kaya (2-3 kalimat), termasuk fitur wajah, rambut, mata, dan tanda unik seperti bekas luka atau tato." },
     backstory: { type: Type.STRING },
     stats: statsSchema,
     inventory: { type: Type.ARRAY, items: inventoryItemSchema },
@@ -129,7 +132,7 @@ const characterSchema = {
     gold: { type: Type.INTEGER },
     family: { type: Type.ARRAY, items: familyMemberSchema }
   },
-  required: ["name", "race", "characterClass", "backstory", "stats", "inventory", "equipment", "reputation", "gold", "family"]
+  required: ["name", "race", "characterClass", "age", "height", "appearance", "backstory", "stats", "inventory", "equipment", "reputation", "gold", "family"]
 };
 
 const sceneSchema = {
@@ -308,15 +311,19 @@ Masukan Pemain:
 
 Tugas Anda:
 1.  **Integrasi Dunia**: Karakter harus terasa seperti bagian dari dunia ini.
-2.  **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga untuk karakter ini. Tentukan \`name\`, \`relationship\`, \`status\` ('Hidup', 'Hilang', 'Meninggal', 'Dalam bahaya'), dan \`description\` singkat yang bisa menjadi pemicu plot. Ini membuat karakter terasa terhubung dengan dunia.
-3.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
-4.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`. Fokus pada deskripsi item, bukan statistik numerik.
-5.  **ID ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID).
-6.  **Adegan Awal & NPC Unik**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan.
+2.  **Ciptakan Detail Fisik (WAJIB)**: Berdasarkan ras, kelas, dan latar belakang, ciptakan:
+    *   \`age\`: Umur yang realistis (misal: Elf berumur 150 tahun, Manusia 25 tahun).
+    *   \`height\`: Tinggi badan yang sesuai (misal: '190 cm').
+    *   \`appearance\`: Deskripsi penampilan yang kaya (2-3 kalimat), mencakup rambut, mata, fitur wajah, dan tanda unik (bekas luka, tato, dll.).
+3.  **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga untuk karakter ini. Tentukan \`name\`, \`relationship\`, \`status\` ('Hidup', 'Hilang', 'Meninggal', 'Dalam bahaya'), dan \`description\` singkat yang bisa menjadi pemicu plot.
+4.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
+5.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`. Fokus pada deskripsi item, bukan statistik numerik.
+6.  **ID ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID).
+7.  **Adegan Awal & NPC Unik**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan.
     *   **Aturan Nama NPC**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia**. Hindari nama-nama generik. Gunakan konteks dunia sebagai inspirasi.
     *   Tentukan \`availableShopIds\` secara logis berdasarkan lokasi. 
     *   Sikap NPC HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
-7.  **Format JSON**: Pastikan output sesuai dengan skema.`;
+8.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await generateContentWithRotation({
             model: "gemini-2.0-flash",
@@ -332,18 +339,21 @@ Tugas Anda:
 
 **ATURAN INTI & PRINSIP:**
 1.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Karakter (NPC dan pemain) harus bertindak sesuai dengan kepribadian dan motivasi mereka. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'.
-2.  **Aturan Percakapan (SANGAT PENTING)**: Jika aksi pemain adalah memulai percakapan atau mengajukan pertanyaan kepada NPC, narasi Anda **HARUS** menyertakan respons atau reaksi dari NPC tersebut. Selesaikan interaksi dalam giliran yang sama. Jangan hanya menarasikan pemain yang berbicara.
-3.  **Manajemen Party**: Jika seorang NPC setuju untuk bergabung dengan party, Anda **WAJIB** mengisi objek \`partyUpdate.join\` dengan data karakter lengkap untuk NPC tersebut. Buatlah statistik dan inventaris awal yang sesuai untuk mereka. Jika seorang anggota party pergi, isi \`partyUpdate.leave\` dengan nama mereka.
-4.  **Laporan Perubahan, Bukan Status Penuh**: Anda HANYA melaporkan perubahan status karakter pemain melalui \`pembaruanKarakter\`.
-5.  **Manajemen Memori Aktif**: Anda tidak hanya menambahkan ke memori; Anda mengelolanya.
+2.  **Aturan Kesadaran Penampilan**: Gunakan deskripsi fisik pemain (\`appearance\`) dalam narasi Anda. Buat NPC bereaksi terhadapnya untuk meningkatkan imersi.
+3.  **Aturan Percakapan (SANGAT PENTING)**: Jika aksi pemain adalah memulai percakapan atau mengajukan pertanyaan kepada NPC, narasi Anda **HARUS** menyertakan respons atau reaksi dari NPC tersebut. Selesaikan interaksi dalam giliran yang sama. Jangan hanya menarasikan pemain yang berbicara.
+4.  **Manajemen Party**: Jika seorang NPC setuju untuk bergabung dengan party, Anda **WAJIB** mengisi objek \`partyUpdate.join\` dengan data karakter lengkap untuk NPC tersebut. Buatlah statistik dan inventaris awal yang sesuai untuk mereka. Jika seorang anggota party pergi, isi \`partyUpdate.leave\` dengan nama mereka.
+5.  **Laporan Perubahan, Bukan Status Penuh**: Anda HANYA melaporkan perubahan status karakter pemain melalui \`pembaruanKarakter\`.
+6.  **Manajemen Memori Aktif**: Anda tidak hanya menambahkan ke memori; Anda mengelolanya.
 
 **KONTEKS SAAT INI (Kebenaran Dasar):**
 -   **Giliran Saat Ini**: ${turnCount}
 -   **MEMORI DUNIA (Baca Ini Dulu)**: ${JSON.stringify(longTermMemory)}
 -   **KARAKTER PEMAIN**:
+    -   **Penampilan Fisik**: ${character.appearance}
     -   **Latar Belakang Asli**: ${character.backstory}
     -   **Status Saat Ini**: ${JSON.stringify({ name: character.name, stats: character.stats, gold: character.gold, inventory: character.inventory.map(i => `${i.item.name} (x${i.quantity})`) })}
     -   **Keluarga**: ${JSON.stringify(character.family)}
+-   **DAFTAR SEMUA TOKO DI DUNIA (Untuk Referensi)**: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}
 -   **MISI AKTIF**: ${quests.filter(q => q.status === 'Aktif').map(q => q.title).join(', ') || 'Tidak ada.'}
 -   **ADEGAN SAAT INI**: ${JSON.stringify(scene)}
 -   **AKSI PEMAIN**: "${playerAction}"
@@ -351,12 +361,12 @@ Tugas Anda:
 **TUGAS ANDA (Ikuti Secara Berurutan):**
 1.  **Analisis & Kontekstualisasi**: Baca SEMUA informasi di atas. Pahami aksi pemain dalam konteks MEMORI DUNIA, latar belakang karakter, dan situasi saat ini.
 2.  **Pemeriksaan Keterampilan (Jika Perlu)**: Jika aksi pemain memiliki kemungkinan untuk gagal (misalnya menyerang, menyelinap, membujuk, meretas, merekrut), Anda **WAJIB** membuat \`skillCheck\`.
-3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain, hasil \`skillCheck\`, dan konteks yang ada. Ingat **Aturan Percakapan**.
+3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain, hasil \`skillCheck\`, dan konteks yang ada. Ingat **Aturan Percakapan** dan **Aturan Kesadaran Penampilan**.
 4.  **Perbarui Status & Dunia**:
     *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, atau status keluarga di \`pembaruanKarakter\`.
     *   **Pembaruan Party**: Jika ada perubahan party, isi \`partyUpdate\` sesuai **Aturan Manajemen Party**.
     *   **Pembaruan Adegan & NPC Unik**: Perbarui \`sceneUpdate\` dengan lokasi, deskripsi, dan status NPC yang baru. **Aturan Nama NPC Baru**: Jika Anda memperkenalkan NPC BARU, berikan mereka nama yang **unik, bervariasi, dan sesuai dengan tema dunia**. Gunakan 'MEMORI DUNIA' untuk memeriksa nama-nama yang sudah ada dan **HINDARI PENGULANGAN**.
-    *   **Ketersediaan Toko**: Berdasarkan lokasi baru di \`sceneUpdate\`, isi \`availableShopIds\` dengan benar.
+    *   **ATURAN WAJIB PEMBARUAN TOKO**: Setelah Anda menentukan NPC di \`sceneUpdate\`, Anda **WAJIB** mengisi \`availableShopIds\`. Caranya: Lihat setiap NPC di adegan. Jika nama NPC cocok dengan nama toko dari 'DAFTAR SEMUA TOKO DI DUNIA', tambahkan ID toko tersebut ke \`availableShopIds\`. Jika tidak ada pedagang, array ini HARUS kosong. Ini sangat penting untuk konsistensi UI.
     *   **Perkembangan Dunia**: Jika relevan, perbarui misi (\`questsUpdate\`) atau picu peristiwa dunia baru (\`worldEventsUpdate\`).
 5.  **KONSOLIDASI MEMORI (Tugas Kritis)**:
     *   Baca kembali \`MEMORI DUNIA\` yang lama.
@@ -384,7 +394,7 @@ Konteks Cerita:
 Jawaban Anda (sebagai GM):`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gem-2.5-flash",
             contents: { parts: [{ text: prompt }] },
         });
         return response.text;

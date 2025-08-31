@@ -76,6 +76,9 @@ export interface Character {
   name: string;
   race: string;
   characterClass: string;
+  age: number;
+  height: string;
+  appearance: string;
   backstory: string;
   stats: Stats;
   inventory: InventoryItem[];

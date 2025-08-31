@@ -74,6 +74,7 @@ Struktur JSON yang DIWAJIBKAN:
         const systemPrompt = `Anda adalah Dungeon Master (DM) AI. Ciptakan karakter yang logis untuk dunia yang ada. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
         
 Aturan Penting:
+- **Ciptakan Detail Fisik (WAJIB)**: Hasilkan \`age\`, \`height\`, dan \`appearance\` yang realistis dan deskriptif.
 - **Level Awal Dinamis**: Analisis 'Latar Belakang & Pengalaman' untuk menentukan level awal (1-5).
 - **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga dalam array \`family\`.
 - **Nama NPC Unik**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia** (dapat disimpulkan dari konteks). Hindari nama-nama generik.
@@ -84,6 +85,7 @@ Struktur JSON yang DIWAJIBKAN:
 {
   "character": {
     "name": "string", "race": "string", "characterClass": "string",
+    "age": "integer", "height": "string", "appearance": "string",
     "backstory": "string",
     "family": [{ "name": "string", "relationship": "string", "status": "string", "description": "string" }],
     "stats": { "level": "integer", "health": "integer", "maxHealth": "integer", "mana": "integer", "maxMana": "integer", "strength": "integer", "dexterity": "integer", "constitution": "integer", "intelligence": "integer", "wisdom": "integer", "charisma": "integer" },
@@ -127,15 +129,16 @@ Masukan Pemain untuk Karakter:
 
 Aturan Utama:
 1.  **Konsistensi Naratif**: Baca 'MEMORI DUNIA' dan 'Latar Belakang Karakter'. Cerita Anda HARUS konsisten dengan informasi ini.
-2.  **Nama NPC Unik**: Jika Anda memperkenalkan NPC BARU dalam \`sceneUpdate\`, berikan nama yang unik, bervariasi, dan sesuai tema. Periksa 'MEMORI DUNIA' untuk menghindari pengulangan nama.
-3.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
-4.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
+2.  **Gunakan Penampilan Karakter**: Rujuk detail dari \`character.appearance\` dalam narasi Anda untuk imersi.
+3.  **Nama NPC Unik**: Jika Anda memperkenalkan NPC BARU dalam \`sceneUpdate\`, berikan nama yang unik, bervariasi, dan sesuai tema. Periksa 'MEMORI DUNIA' untuk menghindari pengulangan nama.
+4.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
+5.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
 
 Struktur JSON yang DIWAJIBKAN:
 {
   "narasiBaru": "string",
   "pembaruanKarakter": { ... },
-  "sceneUpdate": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] },
+  "sceneUpdate": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] }, // WAJIB: Isi availableShopIds berdasarkan NPC pedagang yang ada di adegan dan 'DAFTAR TOKO DUNIA'.
   "skillCheck": { ... },
   "memoryUpdate": { "keyEvents": ["string"], "keyCharacters": ["string"], "worldStateSummary": "string" },
   "questsUpdate": [ { ... } ],
@@ -146,9 +149,10 @@ Struktur JSON yang DIWAJIBKAN:
         const userPrompt = `Giliran Saat Ini: ${turnCount}
 MEMORI DUNIA: ${JSON.stringify(longTermMemory)}
 Latar Belakang Karakter: ${character.backstory}
+DAFTAR TOKO DUNIA: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}
 
 Kondisi Saat Ini:
-- Karakter Pemain: ${JSON.stringify({name: character.name, stats: character.stats})}
+- Karakter Pemain: ${JSON.stringify({name: character.name, appearance: character.appearance, stats: character.stats})}
 - Adegan: ${JSON.stringify(scene, null, 2)}
 - Aksi Pemain: "${playerAction}"`;
 
