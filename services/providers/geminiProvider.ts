@@ -1,6 +1,7 @@
 
 
 
+
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot } from '../../types';
@@ -289,12 +290,15 @@ Tugas Anda:
     }
 
     async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace): Promise<GameTurnResponse> {
+        const marketplaceContext = `DAFTAR TOKO DUNIA: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}`;
+        
         const prompt = `Anda adalah Dungeon Master AI. Lanjutkan cerita. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
 
 **ATURAN UTAMA: ANDA TIDAK LAGI MENGIRIM STATUS LENGKAP KARAKTER. ANDA HANYA MELAPORKAN PERUBAHAN.**
 
 Giliran Saat Ini: ${turnCount}
 Konteks Dunia:
+- ${marketplaceContext}
 - LOG TRANSAKSI TERBARU: ${transactionLog.length > 0 ? transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n') : 'Tidak ada.'}
 - CATATAN PEMAIN: ${notes || 'Tidak ada.'}
 - MEMORI JANGKA PANJANG: ${longTermMemory.join('\n- ')}
@@ -312,10 +316,11 @@ Tugas Anda:
     *   **Item Diterima**: Jika pemain menemukan 'Ramuan Kesehatan' dari rampasan, tambahkan objek item lengkap ke \`itemDiterima\`. JANGAN laporkan item yang dibeli di sini.
     *   **Item Dihapus**: Jika pemain menggunakan 'Obor', tambahkan \`{ "name": "Obor", "quantity": 1 }\` ke \`itemDihapus\`. JANGAN laporkan item yang dijual di sini.
     *   **PENTING**: Jika tidak ada perubahan pada suatu stat, JANGAN sertakan field-nya. Jika tidak ada perubahan status sama sekali, kosongkan \`pembaruanKarakter\`.
-3.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
-4.  **Perkembangan Dunia**: Secara berkala, pertimbangkan untuk memperkenalkan \`questsUpdate\` atau \`worldEventsUpdate\` baru.
-5.  **Memori & Ekonomi**: Jika terjadi peristiwa penting, rangkum dalam \`memorySummary\`. Jika \`turnCount\` kelipatan 20, segarkan inventaris 'traveling_merchant' dalam \`marketplaceUpdate\`.
-6.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON yang disediakan.`;
+3.  **Ketersediaan Toko (SANGAT PENTING)**: Berdasarkan deskripsi lokasi dan NPC yang Anda tempatkan di \`sceneUpdate\`, tentukan toko mana dari 'DAFTAR TOKO DUNIA' yang dapat diakses. Isi array \`availableShopIds\` dengan ID yang sesuai. Jika tidak ada toko, biarkan array kosong.
+4.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
+5.  **Perkembangan Dunia**: Secara berkala, pertimbangkan untuk memperkenalkan \`questsUpdate\` atau \`worldEventsUpdate\` baru.
+6.  **Memori & Ekonomi**: Jika terjadi peristiwa penting, rangkum dalam \`memorySummary\`. Jika \`turnCount\` kelipatan 20, segarkan inventaris 'traveling_merchant' dalam \`marketplaceUpdate\`.
+7.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON yang disediakan.`;
         
         const response = await generateContentWithRotation({
             model: "gemini-2.5-flash",
