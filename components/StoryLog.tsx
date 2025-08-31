@@ -27,10 +27,10 @@ const NpcCard: React.FC<{ npc: NPC; onInteract: (name: string) => void; onInspec
     const attitudeTooltip = getAttitudeTooltip(npc.attitude);
 
     return (
-        <div className="bg-stone-950/40 p-3 rounded-lg border border-stone-700/50 flex-grow basis-full md:basis-[48%] transition-all duration-300 hover:border-amber-600 hover:shadow-lg hover:shadow-amber-900/20">
+        <div className="bg-stone-950/40 p-3 rounded-lg border border-stone-700/50 flex-grow basis-full md:basis-[48%] transition-all duration-300 hover:border-[var(--color-primary-hover)] hover:shadow-lg hover:shadow-[var(--border-color-strong)]/20">
             <div className="flex justify-between items-start gap-2">
                 <div className="flex-grow">
-                    <button onClick={() => onInteract(npc.name)} className="font-bold text-amber-300 text-left hover:underline text-glow">
+                    <button onClick={() => onInteract(npc.name)} className="font-bold text-[var(--color-text-header)] text-left hover:underline text-glow">
                         {npc.name}
                     </button>
                     <p className="text-xs text-stone-400 italic mt-1">{npc.description}</p>
@@ -44,7 +44,7 @@ const NpcCard: React.FC<{ npc: NPC; onInteract: (name: string) => void; onInspec
                     </span>
                     <button 
                         onClick={() => onInspect(npc.name)}
-                        className="text-stone-400 hover:text-amber-300 transition-colors"
+                        className="text-stone-400 hover:text-[var(--color-accent)] transition-colors"
                         title={`Periksa ${npc.name}`}
                         aria-label={`Periksa ${npc.name}`}
                     >
@@ -58,8 +58,8 @@ const NpcCard: React.FC<{ npc: NPC; onInteract: (name: string) => void; onInspec
 
 
 const StoryHeader: React.FC<{ scene: Scene; onNpcInteract: (npcName: string) => void; onNpcInspect: (npcName: string) => void; }> = ({ scene, onNpcInteract, onNpcInspect }) => (
-    <div className="p-4 border-b-2 border-amber-900/50 bg-black/20 flex-shrink-0 sticky top-0 z-10 backdrop-blur-sm">
-      <h2 className="text-xl font-cinzel text-amber-300 text-glow">{scene.location}</h2>
+    <div className="p-4 border-b-2 border-[var(--border-color-strong)]/50 bg-black/20 flex-shrink-0 sticky top-0 z-10 backdrop-blur-sm">
+      <h2 className="text-xl font-cinzel text-[var(--color-text-header)] text-glow">{scene.location}</h2>
       <p className="text-sm text-stone-400 italic mb-3">{scene.description}</p>
       {scene.npcs.length > 0 && (
           <div className="flex flex-wrap gap-2">
@@ -83,7 +83,7 @@ const renderSkillCheck = (details: SkillCheckResult) => {
         <div className="bg-stone-950/50 rounded-lg p-3 my-2 text-sm border border-stone-700 shadow-lg">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                 <div className="flex-grow w-full">
-                    <p className="font-bold text-amber-300 text-glow">
+                    <p className="font-bold text-[var(--color-text-header)] text-glow">
                         Pemeriksaan {details.skill} ({details.attribute})
                     </p>
                     <p className="text-xs text-stone-400">
@@ -130,8 +130,8 @@ const StoryLog: React.FC<{
 
               if (entry.type === 'action') {
                 return (
-                  <div key={index} className="pt-4 mt-4 border-t border-amber-900/30">
-                     <p className="text-amber-200 italic font-handwriting text-2xl text-center">{entry.content}</p>
+                  <div key={index} className="pt-4 mt-4 border-t border-[var(--border-color-strong)]/30">
+                     <p className="text-[var(--color-accent)] italic font-handwriting text-2xl text-center">{entry.content}</p>
                   </div>
                 );
               }
@@ -156,7 +156,7 @@ const StoryLog: React.FC<{
               
               if (entry.type === 'ooc_response') {
                 return (
-                    <div key={index} className="bg-stone-950/30 rounded-lg p-3 border-l-2 border-amber-700">
+                    <div key={index} className="bg-stone-950/30 rounded-lg p-3 border-l-2 border-[var(--color-primary-dark)]">
                         <p className="text-sm italic text-stone-400 whitespace-pre-wrap">
                         <span className="font-semibold">[GM]:</span> {entry.content}
                         </p>

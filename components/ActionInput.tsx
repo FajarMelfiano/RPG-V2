@@ -19,14 +19,14 @@ const ActionInput: React.FC<ActionInputProps> = ({ onAction, isLoading, actionTe
   };
 
   return (
-    <div className="p-4 border-t-2 border-amber-900/50 bg-stone-950/50 flex-shrink-0">
+    <div className="p-4 border-t-2 border-[var(--border-color-strong)]/50 bg-stone-950/50 flex-shrink-0">
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
           type="text"
           value={actionText}
           onChange={(e) => setActionText(e.target.value)}
           placeholder="Apa yang akan kamu lakukan selanjutnya?"
-          className="flex-grow bg-stone-950/70 border border-stone-600 rounded-lg p-3 text-stone-200 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all disabled:bg-stone-800 focus:border-amber-500 focus:shadow-[0_0_10px_rgba(253,224,71,0.3)]"
+          className="flex-grow bg-stone-950/70 border border-stone-600 rounded-lg p-3 text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all disabled:bg-stone-800 focus:border-[var(--color-primary)] focus:shadow-[0_0_10px_var(--color-accent-glow)]"
           disabled={isLoading}
         />
         <button

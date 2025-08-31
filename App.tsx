@@ -399,7 +399,6 @@ const App: React.FC = () => {
 
       const finalHistory = [...currentHistory, ...newEntries];
       
-      // --- START: New Delta Update Logic ---
       let updatedCharacter = { ...activeCharacter.character };
       const updates = response.pembaruanKarakter;
 
@@ -439,8 +438,11 @@ const App: React.FC = () => {
             });
             updatedCharacter.inventory = inventoryAfterRemoval;
         }
+        if (updates.keluargaDiperbarui) {
+            updatedCharacter.family = updates.keluargaDiperbarui;
+            addNotification('Hubungan keluarga diperbarui.', 'event');
+        }
       }
-      // --- END: New Delta Update Logic ---
 
       let updatedWorld = { ...activeWorld };
       updatedWorld.longTermMemory = response.memorySummary ? [...updatedWorld.longTermMemory, response.memorySummary] : updatedWorld.longTermMemory;

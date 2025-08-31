@@ -75,6 +75,7 @@ Struktur JSON yang DIWAJIBKAN:
         
 Aturan Penting:
 - **Level Awal Dinamis**: Analisis 'Latar Belakang & Pengalaman' untuk menentukan level awal (1-5).
+- **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga dalam array \`family\`.
 - **Perlengkapan & Item**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik. Fokus pada deskripsi, bukan statistik.
 - Adegan awal ('initialScene') HARUS menyertakan \`availableShopIds\` yang logis.
 
@@ -83,6 +84,7 @@ Struktur JSON yang DIWAJIBKAN:
   "character": {
     "name": "string", "race": "string", "characterClass": "string",
     "backstory": "string",
+    "family": [{ "name": "string", "relationship": "string", "status": "string", "description": "string" }],
     "stats": { "level": "integer", "health": "integer", "maxHealth": "integer", "mana": "integer", "maxMana": "integer", "strength": "integer", "dexterity": "integer", "constitution": "integer", "intelligence": "integer", "wisdom": "integer", "charisma": "integer" },
     "inventory": [{ "item": { "id": "string", "name": "string", ... }, "quantity": "integer" }],
     "equipment": { "mainHand": { "id": "string", ... }, "chest": { "id": "string", ... } },

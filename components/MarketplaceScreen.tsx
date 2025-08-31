@@ -79,7 +79,7 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
 
     return (
         <div className="p-1 flex flex-col h-full">
-            <h3 className="font-cinzel text-xl text-amber-300 mb-3 border-b-2 border-amber-900/50 pb-2 flex items-center gap-2 text-glow">
+            <h3 className="font-cinzel text-xl text-[var(--color-text-header)] mb-3 border-b-2 border-[var(--border-color-strong)]/50 pb-2 flex items-center gap-2 text-glow">
                 <StoreIcon className="w-5 h-5" />
                 <span>Pasar</span>
             </h3>
@@ -87,19 +87,19 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
             {activeShop ? (
                 <div>
                     <div className="mb-4 text-center">
-                        <button onClick={() => setActiveShopId(null)} disabled={isLoading} className="text-xs text-stone-400 hover:text-amber-300 mb-2 disabled:opacity-50">&larr; Kembali ke Daftar Toko</button>
-                        <h4 className="font-cinzel text-lg text-amber-200">{activeShop.name}</h4>
+                        <button onClick={() => setActiveShopId(null)} disabled={isLoading} className="text-xs text-stone-400 hover:text-[var(--color-accent)] mb-2 disabled:opacity-50">&larr; Kembali ke Daftar Toko</button>
+                        <h4 className="font-cinzel text-lg text-[var(--color-text-header)]">{activeShop.name}</h4>
                         <p className="text-xs text-stone-400 italic">{activeShop.description}</p>
                     </div>
 
                     <div className="flex bg-stone-950/50 rounded-lg p-1 mb-4 border border-stone-700">
-                        <button onClick={() => setMode('buy')} disabled={isLoading} className={`flex-1 py-2 text-sm font-bold rounded-md transition-colors ${mode === 'buy' ? 'bg-amber-800/70 text-white' : 'hover:bg-stone-800/50 text-stone-300'} disabled:opacity-50`}>Beli</button>
-                        <button onClick={() => setMode('sell')} disabled={isLoading} className={`flex-1 py-2 text-sm font-bold rounded-md transition-colors ${mode === 'sell' ? 'bg-amber-800/70 text-white' : 'hover:bg-stone-800/50 text-stone-300'} disabled:opacity-50`}>Jual</button>
+                        <button onClick={() => setMode('buy')} disabled={isLoading} className={`flex-1 py-2 text-sm font-bold rounded-md transition-colors ${mode === 'buy' ? 'bg-[var(--color-primary-dark)]/70 text-white' : 'hover:bg-stone-800/50 text-stone-300'} disabled:opacity-50`}>Beli</button>
+                        <button onClick={() => setMode('sell')} disabled={isLoading} className={`flex-1 py-2 text-sm font-bold rounded-md transition-colors ${mode === 'sell' ? 'bg-[var(--color-primary-dark)]/70 text-white' : 'hover:bg-stone-800/50 text-stone-300'} disabled:opacity-50`}>Jual</button>
                     </div>
 
-                    <div className="flex justify-end items-center text-yellow-400 mb-2" title="Emas Anda">
+                    <div className="flex justify-end items-center text-[var(--color-accent)] mb-2" title="Emas Anda">
                         <div className="flex items-center gap-2">
-                            <span className="text-sm">Emas Anda:</span>
+                            <span className="text-sm text-stone-300">Emas Anda:</span>
                             <CoinIcon className="w-5 h-5" />
                             <span className="font-bold text-lg">{character.gold}</span>
                         </div>
@@ -117,7 +117,7 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
                                 key={shop.id}
                                 onClick={() => handleSelectShop(shop.id)}
                                 disabled={isLoading}
-                                className="w-full text-left bg-stone-950/40 p-3 rounded-md border border-stone-700/50 hover:bg-stone-800/70 hover:border-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full text-left bg-stone-950/40 p-3 rounded-md border border-stone-700/50 hover:bg-stone-800/70 hover:border-[var(--color-primary-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <p className="font-bold text-stone-200">{shop.name}</p>
                                 <p className="text-xs text-stone-400 italic">{shop.description}</p>

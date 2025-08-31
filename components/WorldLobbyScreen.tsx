@@ -13,10 +13,10 @@ interface WorldLobbyScreenProps {
 const WorldLobbyScreen: React.FC<WorldLobbyScreenProps> = ({ world, onNewCharacter, onContinueCharacter, onDeleteCharacter, onBack }) => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl w-full mx-auto journal-panel">
-      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-amber-300 mb-4 text-center tracking-wider text-glow">
+      <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[var(--color-text-header)] mb-4 text-center tracking-wider text-glow">
         {world.name}
       </h1>
-      <div className="mb-8 p-4 bg-black/20 rounded-lg border border-amber-900/50 max-h-40 overflow-y-auto">
+      <div className="mb-8 p-4 bg-black/20 rounded-lg border border-[var(--border-color-strong)]/50 max-h-40 overflow-y-auto">
         <p className="text-stone-300 italic text-center">{world.description}</p>
       </div>
 
@@ -30,8 +30,8 @@ const WorldLobbyScreen: React.FC<WorldLobbyScreenProps> = ({ world, onNewCharact
       </div>
       
       {world.characters && world.characters.length > 0 && (
-        <div className="pt-8 border-t-2 border-amber-900/50">
-          <h3 className="text-2xl sm:text-3xl font-cinzel text-amber-300 mb-6 text-glow flex items-center justify-center gap-3">
+        <div className="pt-8 border-t-2 border-[var(--border-color-strong)]/50">
+          <h3 className="text-2xl sm:text-3xl font-cinzel text-[var(--color-text-header)] mb-6 text-glow flex items-center justify-center gap-3">
             <UsersIcon className="w-8 h-8"/>
             <span>Para Petualang</span>
           </h3>
@@ -39,7 +39,7 @@ const WorldLobbyScreen: React.FC<WorldLobbyScreenProps> = ({ world, onNewCharact
             {world.characters
               .sort((a, b) => new Date(b.lastPlayed).getTime() - new Date(a.lastPlayed).getTime())
               .map(savedChar => (
-                <div key={savedChar.character.id} className="bg-stone-950/30 p-4 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 text-left border border-stone-700 hover:border-amber-500 transition-all shadow-md hover:shadow-amber-500/10">
+                <div key={savedChar.character.id} className="bg-stone-950/30 p-4 rounded-lg flex flex-col md:flex-row items-center justify-between gap-4 text-left border border-stone-700 hover:border-[var(--color-primary)] transition-all shadow-md hover:shadow-[var(--color-primary)]/10">
                   <div className="flex-grow">
                     <p className="font-bold text-lg sm:text-xl text-stone-200">{savedChar.character.name}</p>
                     <p className="text-sm text-stone-400">
@@ -70,7 +70,7 @@ const WorldLobbyScreen: React.FC<WorldLobbyScreenProps> = ({ world, onNewCharact
       )}
 
       <div className="mt-10 text-center">
-         <button onClick={onBack} className="text-stone-400 hover:text-amber-300 transition-colors">
+         <button onClick={onBack} className="text-stone-400 hover:text-[var(--color-accent)] transition-colors">
             &larr; Kembali ke Daftar Dunia
          </button>
       </div>

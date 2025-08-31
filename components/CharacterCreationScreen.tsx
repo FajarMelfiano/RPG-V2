@@ -36,30 +36,30 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ world
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl w-full mx-auto journal-panel">
-      <h1 className="text-3xl md:text-4xl font-bold text-amber-300 mb-2 text-center text-glow">Ciptakan Pahlawanmu</h1>
+      <h1 className="text-3xl md:text-4xl font-bold text-[var(--color-text-header)] mb-2 text-center text-glow">Ciptakan Pahlawanmu</h1>
       <p className="text-stone-400 mb-4 text-center text-xs sm:text-sm italic">
         Anda sedang menciptakan karakter di dunia ini.
       </p>
-      <div className="mb-6 p-3 bg-black/20 rounded-lg border border-amber-900/50 max-h-24 overflow-y-auto">
+      <div className="mb-6 p-3 bg-black/20 rounded-lg border border-[var(--border-color-strong)]/50 max-h-24 overflow-y-auto">
         <p className="text-sm text-stone-300 italic">"{worldContext}"</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-            <label htmlFor="concept" className="block text-amber-300 font-bold mb-2 text-glow">Konsep Inti</label>
-            <input id="concept" name="concept" type="text" value={formData.concept} onChange={handleInputChange} placeholder="Contoh: Prajurit kurcaci tangguh dengan kapak raksasa" className="w-full p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all focus:border-amber-500 focus:shadow-[0_0_10px_rgba(253,224,71,0.3)]" disabled={isLoading} />
+            <label htmlFor="concept" className="block text-[var(--color-text-header)] font-bold mb-2 text-glow">Konsep Inti</label>
+            <input id="concept" name="concept" type="text" value={formData.concept} onChange={handleInputChange} placeholder="Contoh: Prajurit kurcaci tangguh dengan kapak raksasa" className="w-full p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all focus:border-[var(--color-primary)] focus:shadow-[0_0_10px_var(--color-accent-glow)]" disabled={isLoading} />
         </div>
         <div>
-            <label htmlFor="background" className="block text-amber-300 font-bold mb-2 text-glow">Latar Belakang & Pengalaman</label>
-            <textarea id="background" name="background" value={formData.background} onChange={handleInputChange} placeholder="Contoh: Dikenal sebagai 'Pahlawan Grimsbane' setelah mengusir kultus dari desaku. Aku selalu membawa belati perak milik ibuku untuk keberuntungan." className="w-full h-32 p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all resize-none focus:border-amber-500 focus:shadow-[0_0_10px_rgba(253,224,71,0.3)]" disabled={isLoading} />
+            <label htmlFor="background" className="block text-[var(--color-text-header)] font-bold mb-2 text-glow">Latar Belakang & Pengalaman</label>
+            <textarea id="background" name="background" value={formData.background} onChange={handleInputChange} placeholder="Contoh: Dikenal sebagai 'Pahlawan Grimsbane' setelah mengusir kultus dari desaku. Aku selalu membawa belati perak milik ibuku untuk keberuntungan." className="w-full h-32 p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all resize-none focus:border-[var(--color-primary)] focus:shadow-[0_0_10px_var(--color-accent-glow)]" disabled={isLoading} />
         </div>
         
-        <div className="pt-6 mt-6 border-t-2 border-amber-900/50">
-            <h3 className="text-amber-300 font-bold mb-4 text-center text-glow">Atau, Pilih Arketipe</h3>
+        <div className="pt-6 mt-6 border-t-2 border-[var(--border-color-strong)]/50">
+            <h3 className="text-[var(--color-text-header)] font-bold mb-4 text-center text-glow">Atau, Pilih Arketipe</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {templates.map((template, i) => (
-                    <button key={i} type="button" onClick={() => setFormData({concept: template.concept, background: template.background})} disabled={isLoading} className="text-left bg-stone-800/50 hover:bg-stone-800/90 hover:border-amber-500 border border-stone-700 text-stone-300 p-4 rounded-lg transition-all transform hover:scale-105 shadow-lg">
-                        <span className="font-bold font-cinzel text-amber-400">{template.archetype}</span>
+                    <button key={i} type="button" onClick={() => setFormData({concept: template.concept, background: template.background})} disabled={isLoading} className="text-left bg-stone-800/50 hover:bg-stone-800/90 hover:border-[var(--color-primary)] border border-stone-700 text-stone-300 p-4 rounded-lg transition-all transform hover:scale-105 shadow-lg">
+                        <span className="font-bold font-cinzel text-[var(--color-accent)]">{template.archetype}</span>
                         <p className="text-xs text-stone-400 mt-2 italic">{template.background}</p>
                     </button>
                 ))}

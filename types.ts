@@ -62,6 +62,15 @@ export type Equipment = {
   [key in ItemSlot]?: EquippableItem;
 };
 
+export type FamilyStatus = 'Hidup' | 'Hilang' | 'Meninggal' | 'Dalam bahaya';
+
+export interface FamilyMember {
+  name: string;
+  relationship: string;
+  status: FamilyStatus;
+  description: string;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -73,6 +82,7 @@ export interface Character {
   equipment: Equipment;
   reputation: number;
   gold: number;
+  family: FamilyMember[];
 }
 
 export interface SkillCheckResult {
@@ -139,6 +149,7 @@ export interface CharacterUpdatePayload {
     name: string;
     quantity: number;
   }[];
+  keluargaDiperbarui?: FamilyMember[];
 }
 
 export interface GameTurnResponse {

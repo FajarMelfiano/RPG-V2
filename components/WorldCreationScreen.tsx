@@ -31,7 +31,7 @@ const WorldCreationScreen: React.FC<WorldCreationScreenProps> = ({ onCreate, onB
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl w-full mx-auto journal-panel">
-      <h1 className="text-3xl md:text-4xl font-bold text-amber-300 mb-4 text-center text-glow">
+      <h1 className="text-3xl md:text-4xl font-bold text-[var(--color-text-header)] mb-4 text-center text-glow">
         Tempa Duniamu
       </h1>
       <p className="text-stone-300 mb-8 text-center text-sm sm:text-base italic">
@@ -40,7 +40,7 @@ const WorldCreationScreen: React.FC<WorldCreationScreenProps> = ({ onCreate, onB
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-            <label htmlFor="concept" className="block text-amber-300 font-bold mb-2 text-glow">Konsep Inti Dunia</label>
+            <label htmlFor="concept" className="block text-[var(--color-text-header)] font-bold mb-2 text-glow">Konsep Inti Dunia</label>
             <input
               id="concept"
               name="concept"
@@ -48,31 +48,31 @@ const WorldCreationScreen: React.FC<WorldCreationScreenProps> = ({ onCreate, onB
               value={formData.concept}
               onChange={handleInputChange}
               placeholder="Contoh: Dunia fantasi gelap di mana sihir sekarat"
-              className="w-full p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all"
+              className="w-full p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all"
               disabled={isLoading}
             />
         </div>
         <div>
-            <label htmlFor="factions" className="block text-amber-300 font-bold mb-2 text-glow">Faksi & Kekuatan Utama</label>
+            <label htmlFor="factions" className="block text-[var(--color-text-header)] font-bold mb-2 text-glow">Faksi & Kekuatan Utama</label>
             <textarea
               id="factions"
               name="factions"
               value={formData.factions}
               onChange={handleInputChange}
               placeholder="Contoh: Kekaisaran Naga yang kejam vs. Aliansi Penyihir pemberontak"
-              className="w-full h-24 p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all resize-none"
+              className="w-full h-24 p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all resize-none"
               disabled={isLoading}
             />
         </div>
         <div>
-            <label htmlFor="conflict" className="block text-amber-300 font-bold mb-2 text-glow">Konflik Saat Ini</label>
+            <label htmlFor="conflict" className="block text-[var(--color-text-header)] font-bold mb-2 text-glow">Konflik Saat Ini</label>
             <textarea
               id="conflict"
               name="conflict"
               value={formData.conflict}
               onChange={handleInputChange}
               placeholder="Contoh: Wabah magis menyebar dari utara, mengubah makhluk hidup menjadi monster kristal"
-              className="w-full h-24 p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all resize-none"
+              className="w-full h-24 p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all resize-none"
               disabled={isLoading}
             />
         </div>

@@ -8,8 +8,9 @@ import NotesPanel from './NotesPanel';
 import InventorySheet from './InventorySheet';
 import QuestLog from './QuestLog';
 import MarketplaceScreen from './MarketplaceScreen';
-import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon } from './icons';
+import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon } from './icons';
 import EquipmentSheet from './EquipmentSheet';
+import FamilySheet from './FamilySheet';
 
 interface SidePanelProps {
     character: Character;
@@ -29,7 +30,7 @@ interface SidePanelProps {
     onUnequipItem: (slot: ItemSlot) => void;
 }
 
-type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes';
+type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family';
 
 const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (props) => {
     const { character, party, notes, onNotesChange, quests, worldEvents, marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, onUnequipItem } = props;
@@ -47,6 +48,8 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
                         <p>Anda sedang bertualang sendirian.</p>
                     </div>
                 );
+            case 'family':
+                 return <FamilySheet family={character.family} />;
             case 'inventory':
                 return <InventorySheet character={character} onEquipItem={onEquipItem} />;
             case 'quests':
@@ -63,8 +66,8 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
     const getTabClass = (tabName: ActiveTab) => {
         return `flex-shrink-0 py-2 px-3 text-xs font-bold rounded-md flex items-center justify-center gap-1.5 transition-all duration-300 transform border-2 min-w-[100px] ${
             activeTab === tabName 
-            ? 'bg-amber-800/50 text-amber-200 border-amber-600 shadow-lg scale-105' 
-            : 'bg-stone-950/50 hover:bg-stone-900/70 text-stone-300 border-transparent hover:border-amber-800'
+            ? 'bg-[var(--color-primary-dark)]/50 text-[var(--color-text-header)] border-[var(--color-primary-hover)] shadow-lg scale-105' 
+            : 'bg-stone-950/50 hover:bg-stone-900/70 text-stone-300 border-transparent hover:border-[var(--color-primary-dark)]'
         }`;
     }
     
@@ -87,6 +90,9 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
                     </button>
                     <button onClick={() => setActiveTab('inventory')} className={getTabClass('inventory')} title="Inventaris">
                         <ChestIcon className="w-5 h-5" /> <span>Inventaris</span>
+                    </button>
+                    <button onClick={() => setActiveTab('family')} className={getTabClass('family')} title="Keluarga">
+                        <HeartIcon className="w-5 h-5" /> <span>Keluarga</span>
                     </button>
                     <button onClick={() => setActiveTab('quests')} className={getTabClass('quests')} title="Misi">
                         <ScrollIcon className="w-5 h-5" /> <span>Misi</span>

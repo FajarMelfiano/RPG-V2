@@ -1,6 +1,6 @@
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot, WorldTheme } from '../../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot, WorldTheme, FamilyMember } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 import { apiKeyManager } from "../apiKeyManager";
 
@@ -104,6 +104,17 @@ const equipmentSchema = {
     }
 };
 
+const familyMemberSchema = {
+    type: Type.OBJECT,
+    properties: {
+        name: { type: Type.STRING },
+        relationship: { type: Type.STRING },
+        status: { type: Type.STRING, enum: ['Hidup', 'Hilang', 'Meninggal', 'Dalam bahaya'] },
+        description: { type: Type.STRING },
+    },
+    required: ["name", "relationship", "status", "description"]
+};
+
 const characterSchema = {
   type: Type.OBJECT,
   properties: {
@@ -115,9 +126,10 @@ const characterSchema = {
     inventory: { type: Type.ARRAY, items: inventoryItemSchema },
     equipment: equipmentSchema,
     reputation: { type: Type.INTEGER },
-    gold: { type: Type.INTEGER }
+    gold: { type: Type.INTEGER },
+    family: { type: Type.ARRAY, items: familyMemberSchema }
   },
-  required: ["name", "race", "characterClass", "backstory", "stats", "inventory", "equipment", "reputation", "gold"]
+  required: ["name", "race", "characterClass", "backstory", "stats", "inventory", "equipment", "reputation", "gold", "family"]
 };
 
 const sceneSchema = {
@@ -208,6 +220,11 @@ const characterUpdateSchema = {
                 },
                 required: ["name", "quantity"]
             }
+        },
+        keluargaDiperbarui: {
+            type: Type.ARRAY,
+            description: "Jika status anggota keluarga berubah (misalnya dari 'Hidup' menjadi 'Dalam bahaya'), laporkan SELURUH daftar keluarga yang diperbarui di sini.",
+            items: familyMemberSchema
         }
     }
 };
@@ -256,7 +273,7 @@ Tugas Anda:
 5.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: worldGenerationSchema }
         });
@@ -273,14 +290,15 @@ Masukan Pemain:
 
 Tugas Anda:
 1.  **Integrasi Dunia**: Karakter harus terasa seperti bagian dari dunia ini.
-2.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
-3.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`. Fokus pada deskripsi item, bukan statistik numerik. PENTING: Karakter HARUS memiliki inventaris dan perlengkapan awal yang sesuai.
-4.  **ID ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID).
-5.  **Adegan Awal**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan. Tentukan \`availableShopIds\` secara logis berdasarkan lokasi. Sikap NPC HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
-6.  **Format JSON**: Pastikan output sesuai dengan skema.`;
+2.  **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga untuk karakter ini. Tentukan \`name\`, \`relationship\`, \`status\` ('Hidup', 'Hilang', 'Meninggal', 'Dalam bahaya'), dan \`description\` singkat yang bisa menjadi pemicu plot. Ini membuat karakter terasa terhubung dengan dunia.
+3.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
+4.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`. Fokus pada deskripsi item, bukan statistik numerik.
+5.  **ID ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID).
+6.  **Adegan Awal**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan. Tentukan \`availableShopIds\` secara logis berdasarkan lokasi. Sikap NPC HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
+7.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: characterGenerationSchema }
         });
@@ -297,6 +315,7 @@ Tugas Anda:
 Giliran Saat Ini: ${turnCount}
 Konteks Dunia:
 - ${marketplaceContext}
+- KELUARGA PEMAIN: ${JSON.stringify(character.family)}
 - LOG TRANSAKSI TERBARU: ${transactionLog.length > 0 ? transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n') : 'Tidak ada.'}
 - CATATAN PEMAIN: ${notes || 'Tidak ada.'}
 - MEMORI JANGKA PANJANG: ${longTermMemory.join('\n- ')}
@@ -308,20 +327,20 @@ Kondisi Saat Ini:
 - Aksi Pemain: "${playerAction}"
 
 Tugas Anda:
-1.  **Narasikan Hasil**: Lanjutkan cerita berdasarkan aksi pemain. Jika perlu, lakukan 'Pemeriksaan Keterampilan' (\`skillCheck\`).
-2.  **LAPORKAN PERUBAHAN STATUS (WAJIB)**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah.
-    *   **HP/Mana/Emas**: Jika HP karakter berkurang 5, isi \`perubahanHp: -5\`. Jika dapat 10 emas, isi \`perubahanEmas: 10\`.
-    *   **Item Diterima**: Jika pemain menemukan 'Ramuan Kesehatan' dari rampasan, tambahkan objek item lengkap ke \`itemDiterima\`. JANGAN laporkan item yang dibeli di sini.
-    *   **Item Dihapus**: Jika pemain menggunakan 'Obor', tambahkan \`{ "name": "Obor", "quantity": 1 }\` ke \`itemDihapus\`. JANGAN laporkan item yang dijual di sini.
+1.  **Pemeriksaan Keterampilan (ATURAN KRITIS)**: Jika aksi pemain memiliki kemungkinan untuk gagal (misalnya menyerang, menyelinap, membujuk, menyelidiki, meretas), Anda **HARUS** membuat \`skillCheck\`. Jangan pernah mengasumsikan keberhasilan otomatis untuk tindakan berisiko.
+2.  **Narasikan Hasil**: Lanjutkan cerita berdasarkan aksi pemain DAN hasil dari \`skillCheck\` (jika ada).
+3.  **LAPORKAN PERUBAHAN STATUS (WAJIB)**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah.
+    *   **HP/Mana/Emas/Item**: Isi ini seperti biasa.
+    *   **Keluarga**: Gunakan konteks 'KELUARGA PEMAIN' sebagai inspirasi naratif. Jika status anggota keluarga berubah (misalnya dari 'Hidup' menjadi 'Dalam bahaya' karena sebuah peristiwa), laporkan SELURUH daftar keluarga yang diperbarui di \`pembaruanKarakter.keluargaDiperbarui\`.
     *   **PENTING**: Jika tidak ada perubahan pada suatu stat, JANGAN sertakan field-nya. Jika tidak ada perubahan status sama sekali, kosongkan \`pembaruanKarakter\`.
-3.  **Ketersediaan Toko (SANGAT PENTING)**: Berdasarkan deskripsi lokasi dan NPC yang Anda tempatkan di \`sceneUpdate\`, tentukan toko mana dari 'DAFTAR TOKO DUNIA' yang dapat diakses. Isi array \`availableShopIds\` dengan ID yang sesuai. Jika tidak ada toko, biarkan array kosong.
-4.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
-5.  **Perkembangan Dunia**: Secara berkala, pertimbangkan untuk memperkenalkan \`questsUpdate\` atau \`worldEventsUpdate\` baru.
-6.  **Memori & Perkembangan**: Jika terjadi peristiwa penting, rangkum dalam \`memorySummary\`. Inventaris toko bersifat konstan dan hanya berubah melalui tindakan pemain (membeli/menjual).
-7.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON yang disediakan.`;
+4.  **Ketersediaan Toko (SANGAT PENTING)**: Berdasarkan deskripsi lokasi dan NPC yang Anda tempatkan di \`sceneUpdate\`, tentukan toko mana dari 'DAFTAR TOKO DUNIA' yang dapat diakses. Isi array \`availableShopIds\` dengan ID yang sesuai. Jika tidak ada toko, biarkan array kosong.
+5.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
+6.  **Perkembangan Dunia**: Secara berkala, pertimbangkan untuk memperkenalkan \`questsUpdate\` atau \`worldEventsUpdate\` baru, mungkin terkait dengan keluarga pemain.
+7.  **Memori & Perkembangan**: Jika terjadi peristiwa penting (terutama terkait keluarga), rangkum dalam \`memorySummary\`.
+8.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON yang disediakan.`;
         
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: gameTurnSchema }
         });
@@ -339,7 +358,7 @@ Konteks Cerita:
 Jawaban Anda (sebagai GM):`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
         });
         return response.text;

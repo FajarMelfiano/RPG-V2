@@ -25,20 +25,20 @@ const InventorySheet: React.FC<InventorySheetProps> = ({ character, onEquipItem 
 
     return (
         <div className="p-1 flex flex-col h-full">
-            <h3 className="font-cinzel text-xl text-amber-300 mb-3 border-b-2 border-amber-900/50 pb-2 flex items-center gap-2 text-glow">
+            <h3 className="font-cinzel text-xl text-[var(--color-text-header)] mb-3 border-b-2 border-[var(--border-color-strong)]/50 pb-2 flex items-center gap-2 text-glow">
                 <ChestIcon className="w-5 h-5" />
                 <span>Inventaris</span>
             </h3>
             <div className="flex justify-between items-center bg-stone-950/40 p-2 rounded-md border border-stone-700/50 mb-4">
                 <span className="text-sm font-bold text-stone-300 uppercase tracking-wider">Emas</span>
-                <div className="flex items-center gap-2 text-yellow-400" title="Emas">
+                <div className="flex items-center gap-2 text-[var(--color-accent)]" title="Emas">
                     <CoinIcon className="w-5 h-5" />
                     <span className="font-bold text-lg">{gold}</span>
                 </div>
             </div>
 
             <div className="flex-grow flex flex-col min-h-0">
-                <h4 className="font-cinzel text-lg text-amber-200 mb-2">Kantong</h4>
+                <h4 className="font-cinzel text-lg text-[var(--color-text-header)] mb-2">Kantong</h4>
                 <ul className="space-y-2 text-sm overflow-y-auto flex-grow pr-1">
                     {inventory.map((invItem) => (
                         <li key={invItem.item.id} className="bg-stone-950/40 p-2 rounded-md border border-stone-700/50 flex flex-col gap-2">
@@ -47,7 +47,7 @@ const InventorySheet: React.FC<InventorySheetProps> = ({ character, onEquipItem 
                                     <p className={`font-bold ${getRarityColor(invItem.item.rarity)}`}>{invItem.item.name} (x{invItem.quantity})</p>
                                     <p className="text-xs text-stone-400 italic mt-1 break-words">{invItem.item.description}</p>
                                 </div>
-                                <span className="text-xs text-yellow-400 flex items-center gap-1 flex-shrink-0 ml-2" title="Nilai"><CoinIcon className="w-3 h-3"/>{invItem.item.value}</span>
+                                <span className="text-xs text-[var(--color-accent)] flex items-center gap-1 flex-shrink-0 ml-2" title="Nilai"><CoinIcon className="w-3 h-3"/>{invItem.item.value}</span>
                             </div>
                             <div className="flex justify-end items-center mt-1">
                                 {isEquippable(invItem.item) && (

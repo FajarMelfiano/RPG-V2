@@ -45,7 +45,7 @@ const PartySheet: React.FC<{ party: Character[] }> = ({ party }) => {
 
     return (
         <div className="p-1">
-            <h3 className="font-cinzel text-xl text-amber-300 mb-3 border-b-2 border-amber-900/50 pb-2 flex items-center gap-2 text-glow">
+            <h3 className="font-cinzel text-xl text-[var(--color-text-header)] mb-3 border-b-2 border-[var(--border-color-strong)]/50 pb-2 flex items-center gap-2 text-glow">
                 <UsersIcon className="w-5 h-5" />
                 <span>Party</span>
             </h3>

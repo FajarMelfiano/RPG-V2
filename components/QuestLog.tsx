@@ -7,25 +7,34 @@ const QuestLog: React.FC<{ quests: Quest[]; worldEvents: WorldEvent[]; }> = ({ q
     const completedQuests = quests.filter(q => q.status === 'Selesai');
     const sortedWorldEvents = [...worldEvents].sort((a, b) => b.turn - a.turn);
 
-    const getEventTypeColor = (type: WorldEvent['type']) => {
+    const getEventTypeBorder = (type: WorldEvent['type']) => {
         switch (type) {
-            case 'Sejarah': return 'border-amber-700 text-amber-300';
-            case 'Berita': return 'border-sky-700 text-sky-300';
-            case 'Ramalan': return 'border-purple-700 text-purple-300';
-            default: return 'border-stone-700 text-stone-300';
+            case 'Sejarah': return 'border-[var(--color-event-history-border)]';
+            case 'Berita': return 'border-[var(--color-event-news-border)]';
+            case 'Ramalan': return 'border-[var(--color-event-prophecy-border)]';
+            default: return 'border-stone-700';
+        }
+    }
+    
+    const getEventTypeText = (type: WorldEvent['type']) => {
+        switch (type) {
+            case 'Sejarah': return 'text-[var(--color-event-history-text)]';
+            case 'Berita': return 'text-[var(--color-event-news-text)]';
+            case 'Ramalan': return 'text-[var(--color-event-prophecy-text)]';
+            default: return 'text-stone-300';
         }
     }
 
     return (
         <div className="p-1 flex flex-col h-full">
-            <h3 className="font-cinzel text-xl text-amber-300 mb-3 border-b-2 border-amber-900/50 pb-2 flex items-center gap-2 text-glow">
+            <h3 className="font-cinzel text-xl text-[var(--color-text-header)] mb-3 border-b-2 border-[var(--border-color-strong)]/50 pb-2 flex items-center gap-2 text-glow">
                 <ScrollIcon className="w-5 h-5" />
                 <span>Misi & Tawarikh</span>
             </h3>
             <div className="flex-grow flex flex-col min-h-0 overflow-y-auto pr-1 space-y-4">
                 
                 <div>
-                    <h4 className="font-cinzel text-lg text-amber-200 mb-2">Misi Aktif</h4>
+                    <h4 className="font-cinzel text-lg text-[var(--color-text-header)] mb-2">Misi Aktif</h4>
                     <ul className="space-y-2 text-sm">
                         {activeQuests.map(quest => (
                             <li key={quest.id} className="bg-stone-950/40 p-2 rounded-md border border-stone-700">
@@ -38,12 +47,12 @@ const QuestLog: React.FC<{ quests: Quest[]; worldEvents: WorldEvent[]; }> = ({ q
                 </div>
                 
                 <div>
-                     <h4 className="font-cinzel text-lg text-amber-200 mb-2">Tawarikh Dunia</h4>
+                     <h4 className="font-cinzel text-lg text-[var(--color-text-header)] mb-2">Tawarikh Dunia</h4>
                      <ul className="space-y-2 text-sm">
                         {sortedWorldEvents.map(event => (
-                             <li key={event.id} className={`bg-stone-950/40 p-2 rounded-md border-l-4 ${getEventTypeColor(event.type)}`}>
+                             <li key={event.id} className={`bg-stone-950/40 p-2 rounded-md border-l-4 ${getEventTypeBorder(event.type)}`}>
                                 <div className="flex justify-between items-center">
-                                    <p className={`font-bold text-sm`}>{event.title} <span className="text-xs font-normal text-stone-500">({event.type})</span></p>
+                                    <p className={`font-bold text-sm ${getEventTypeText(event.type)}`}>{event.title} <span className="text-xs font-normal text-stone-500">({event.type})</span></p>
                                     <p className="text-xs text-stone-600">Giliran {event.turn}</p>
                                 </div>
                                 <p className="text-xs text-stone-400 italic mt-1">{event.description}</p>
