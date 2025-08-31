@@ -1,6 +1,7 @@
 
 
 
+
 import OpenAI from 'openai';
 // FIX: Added WorldMap to imports to support world map generation.
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory, WorldMap } from '../../types';
@@ -86,6 +87,7 @@ Aturan Penting:
 - **Nama NPC Unik**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia** (dapat disimpulkan dari konteks). Hindari nama-nama generik.
 - **Perlengkapan & Item**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik. Fokus pada deskripsi, bukan statistik.
 - Adegan awal ('initialScene') HARUS menyertakan \`availableShopIds\` yang logis.
+- **Tautkan Pedagang**: Jika NPC di adegan awal adalah seorang pedagang, isi bidang \`shopId\` mereka dengan ID toko yang relevan.
 
 Struktur JSON yang DIWAJIBKAN:
 {
@@ -99,7 +101,7 @@ Struktur JSON yang DIWAJIBKAN:
     "equipment": { "mainHand": { "id": "string", ... }, "chest": { "id": "string", ... } },
     "reputation": "integer", "gold": "integer"
   },
-  "initialScene": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] },
+  "initialScene": { "location": "string", "description": "string", "npcs": [{"name": "string", "description": "string", "attitude": "string", "shopId": "string | null"}], "availableShopIds": ["string"] },
   "introStory": "string"
 }`;
 
@@ -135,8 +137,8 @@ Masukan Pemain untuk Karakter:
 
 Aturan Utama:
 1.  **Konsistensi Naratif**: Baca 'MEMORI DUNIA' dan 'Latar Belakang Karakter'. Cerita Anda HARUS konsisten dengan informasi ini.
-2.  **Gunakan Penampilan Karakter**: Rujuk detail dari \`character.appearance\` dalam narasi Anda untuk imersi.
-3.  **Nama NPC Unik**: Jika Anda memperkenalkan NPC BARU dalam \`sceneUpdate\`, berikan nama yang unik, bervariasi, dan sesuai tema. Periksa 'MEMORI DUNIA' untuk menghindari pengulangan nama.
+2.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan 5-10 NPC yang beragam.
+3.  **Tautkan Pedagang**: Jika NPC di adegan adalah seorang pedagang, isi bidang \`shopId\` mereka dengan ID toko yang sesuai dari 'DAFTAR TOKO DUNIA'.
 4.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
 5.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
 
@@ -144,7 +146,7 @@ Struktur JSON yang DIWAJIBKAN:
 {
   "narasiBaru": "string",
   "pembaruanKarakter": { ... },
-  "sceneUpdate": { "location": "string", "description": "string", "npcs": [{...}], "availableShopIds": ["string"] }, // WAJIB: Isi availableShopIds berdasarkan NPC pedagang yang ada di adegan dan 'DAFTAR TOKO DUNIA'.
+  "sceneUpdate": { "location": "string", "description": "string", "npcs": [{"name": "string", "description": "string", "attitude": "string", "shopId": "string | null"}], "availableShopIds": ["string"] },
   "skillCheck": { ... },
   "memoryUpdate": { "keyEvents": ["string"], "keyCharacters": ["string"], "worldStateSummary": "string" },
   "questsUpdate": [ { ... } ],

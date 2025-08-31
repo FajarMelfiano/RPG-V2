@@ -1,8 +1,9 @@
 
 
 
+
 import React, { useState } from 'react';
-import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot } from '../types';
+import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC } from '../types';
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
@@ -26,13 +27,18 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
   const [actionText, setActionText] = useState('');
   const [isJournalOpen, setIsJournalOpen] = useState(false);
   const [isCodexOpen, setIsCodexOpen] = useState(false);
+  const [directShopId, setDirectShopId] = useState<string | null>(null);
 
-  const handleNpcInteract = (npcName: string) => {
-    setActionText(`Bicara dengan ${npcName}`);
-  };
 
-  const handleNpcInspect = (npcName: string) => {
-    setActionText(`Periksa ${npcName}`);
+  const handleNpcClick = (npc: NPC) => {
+    setActionText(`Bicara dengan ${npc.name}`);
+    if (npc.shopId) {
+      setDirectShopId(npc.shopId);
+      // Buka jurnal di perangkat seluler untuk menampilkan toko secara otomatis
+      if (window.innerWidth < 1024) {
+          setIsJournalOpen(true);
+      }
+    }
   };
 
   const { character, party, scene, storyHistory, notes } = savedCharacter;
@@ -48,7 +54,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
       />
 
       <SidePanel
-        // FIX: Added the missing 'world' prop to satisfy SidePanelProps requirements.
         world={world}
         character={character}
         party={party}
@@ -65,14 +70,15 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
         isLoading={isLoading}
         onEquipItem={onEquipItem}
         onUnequipItem={onUnequipItem}
+        directShopId={directShopId}
+        setDirectShopId={setDirectShopId}
       />
       
       <main className="flex-1 h-full flex flex-col min-h-0 relative">
         <StoryLog 
           storyHistory={storyHistory} 
           scene={scene}
-          onNpcInteract={handleNpcInteract}
-          onNpcInspect={handleNpcInspect}
+          onNpcClick={handleNpcClick}
         />
         <ActionInput 
           onAction={onPlayerAction} 

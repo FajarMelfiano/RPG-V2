@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Marketplace, Scene, Character, ShopItem, InventoryItem, ItemRarity, AnyItem } from '../types';
+import React, { useState } from 'react';
+import { Marketplace, Scene, Character, ShopItem, InventoryItem, ItemRarity } from '../types';
 import { StoreIcon, CoinIcon } from './icons';
 
 interface MarketplaceScreenProps {
@@ -9,6 +9,8 @@ interface MarketplaceScreenProps {
     onBuyItem: (item: ShopItem, shopId: string) => void;
     onSellItem: (item: InventoryItem, shopId: string) => void;
     isLoading: boolean;
+    directShopId: string | null;
+    setDirectShopId: (id: string | null) => void;
 }
 
 const getRarityColor = (rarity: ItemRarity) => {
@@ -20,26 +22,16 @@ const getRarityColor = (rarity: ItemRarity) => {
     }
 }
 
-const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scene, character, onBuyItem, onSellItem, isLoading }) => {
-    const [activeShopId, setActiveShopId] = useState<string | null>(null);
+const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scene, character, onBuyItem, onSellItem, isLoading, directShopId, setDirectShopId }) => {
     const [mode, setMode] = useState<'buy' | 'sell'>('buy');
 
     const availableShops = marketplace.shops.filter(shop => scene.availableShopIds?.includes(shop.id));
-    const activeShop = activeShopId ? marketplace.shops.find(shop => shop.id === activeShopId) : null;
-
-    useEffect(() => {
-        if (activeShopId && !availableShops.some(shop => shop.id === activeShopId)) {
-            setActiveShopId(null);
-        }
-    }, [availableShops, activeShopId]);
-
-    const handleSelectShop = (shopId: string) => {
-        setActiveShopId(shopId);
-        setMode('buy');
-    }
-
+    const activeShop = directShopId ? marketplace.shops.find(shop => shop.id === directShopId) : null;
+    
     const renderItemList = () => {
-        const itemsToDisplay = mode === 'buy' ? activeShop?.inventory : character.inventory;
+        if (!activeShop) return null;
+        
+        const itemsToDisplay = mode === 'buy' ? activeShop.inventory : character.inventory;
         if (!itemsToDisplay || itemsToDisplay.length === 0) {
             return <li className="text-stone-500 italic text-center py-4">{mode === 'buy' ? 'Toko ini kehabisan stok.' : 'Anda tidak punya apa-apa untuk dijual.'}</li>;
         }
@@ -87,7 +79,7 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
             {activeShop ? (
                 <div>
                     <div className="mb-4 text-center">
-                        <button onClick={() => setActiveShopId(null)} disabled={isLoading} className="text-xs text-stone-400 hover:text-[var(--color-accent)] mb-2 disabled:opacity-50">&larr; Kembali ke Daftar Toko</button>
+                        <button onClick={() => setDirectShopId(null)} disabled={isLoading} className="text-xs text-stone-400 hover:text-[var(--color-accent)] mb-2 disabled:opacity-50">&larr; Kembali ke Daftar Toko</button>
                         <h4 className="font-cinzel text-lg text-[var(--color-text-header)]">{activeShop.name}</h4>
                         <p className="text-xs text-stone-400 italic">{activeShop.description}</p>
                     </div>
@@ -115,7 +107,10 @@ const MarketplaceScreen: React.FC<MarketplaceScreenProps> = ({ marketplace, scen
                         {availableShops.map(shop => (
                             <button 
                                 key={shop.id}
-                                onClick={() => handleSelectShop(shop.id)}
+                                onClick={() => {
+                                    setDirectShopId(shop.id);
+                                    setMode('buy');
+                                }}
                                 disabled={isLoading}
                                 className="w-full text-left bg-stone-950/40 p-3 rounded-md border border-stone-700/50 hover:bg-stone-800/70 hover:border-[var(--color-primary-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >

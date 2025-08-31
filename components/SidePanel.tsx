@@ -1,8 +1,9 @@
 
 
 
-import React, { useState, useRef } from 'react';
-import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot } from '../types';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot, World } from '../types';
 import CharacterSheet from './CharacterSheet';
 import PartySheet from './PartySheet';
 import NotesPanel from './NotesPanel';
@@ -30,14 +31,22 @@ interface SidePanelProps {
     isLoading: boolean;
     onEquipItem: (itemId: string) => void;
     onUnequipItem: (slot: ItemSlot) => void;
-    world: any; // Simplified for this context
+    world: World;
+    directShopId: string | null;
+    setDirectShopId: (id: string | null) => void;
 }
 
 type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family' | 'map';
 
 const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (props) => {
-    const { character, party, notes, onNotesChange, quests, worldEvents, marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, onUnequipItem, world } = props;
+    const { character, party, notes, onNotesChange, quests, worldEvents, marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, onUnequipItem, world, directShopId, setDirectShopId } = props;
     const [activeTab, setActiveTab] = useState<ActiveTab>('character');
+
+    useEffect(() => {
+        if (directShopId) {
+            setActiveTab('marketplace');
+        }
+    }, [directShopId]);
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -62,7 +71,16 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
             case 'notes':
                 return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
             case 'marketplace':
-                return <MarketplaceScreen marketplace={marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} />;
+                return <MarketplaceScreen 
+                    marketplace={marketplace} 
+                    scene={scene} 
+                    character={character} 
+                    onBuyItem={onBuyItem} 
+                    onSellItem={onSellItem} 
+                    isLoading={isLoading} 
+                    directShopId={directShopId}
+                    setDirectShopId={setDirectShopId}
+                />;
             default:
                 return null;
         }

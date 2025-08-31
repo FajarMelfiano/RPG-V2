@@ -1,76 +1,41 @@
 import React, { useEffect, useRef } from 'react';
 import { StoryEntry, SkillCheckResult, Scene, NPC } from '../types';
-import { DiceIcon, EyeIcon } from './icons';
+import { CoinIcon } from './icons';
 
-const getAttitudeColor = (attitude: NPC['attitude']) => {
-    switch (attitude) {
-        case 'Ramah': return 'text-green-400';
-        case 'Netral': return 'text-stone-400';
-        case 'Curiga': return 'text-yellow-400';
-        case 'Bermusuhan': return 'text-red-400';
-        default: return 'text-stone-500';
-    }
-}
-
-const getAttitudeTooltip = (attitude: NPC['attitude']): string => {
-    switch (attitude) {
-        case 'Ramah': return 'NPC ini bersahabat dan kemungkinan besar akan membantu Anda.';
-        case 'Netral': return 'NPC ini tidak memiliki pendapat kuat tentang Anda. Interaksi akan menentukan sikap mereka.';
-        case 'Curiga': return 'NPC ini waspada terhadap Anda. Pilihlah kata-kata Anda dengan hati-hati.';
-        case 'Bermusuhan': return 'NPC ini secara aktif menentang Anda dan mungkin akan menyerang.';
-        default: return '';
-    }
-}
-
-const NpcCard: React.FC<{ npc: NPC; onInteract: (name: string) => void; onInspect: (name: string) => void }> = ({ npc, onInteract, onInspect }) => {
-    const attitudeColor = getAttitudeColor(npc.attitude);
-    const attitudeTooltip = getAttitudeTooltip(npc.attitude);
-
+const NpcPill: React.FC<{ npc: NPC; onClick: (npc: NPC) => void }> = ({ npc, onClick }) => {
     return (
-        <div className="bg-stone-950/40 p-3 rounded-lg border border-stone-700/50 flex-grow basis-full md:basis-[48%] transition-all duration-300 hover:border-[var(--color-primary-hover)] hover:shadow-lg hover:shadow-[var(--border-color-strong)]/20">
-            <div className="flex justify-between items-start gap-2">
-                <div className="flex-grow">
-                    <button onClick={() => onInteract(npc.name)} className="font-bold text-[var(--color-text-header)] text-left hover:underline text-glow">
-                        {npc.name}
-                    </button>
-                    <p className="text-xs text-stone-400 italic mt-1">{npc.description}</p>
-                </div>
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    <span 
-                        className={`text-xs font-bold py-1 px-2 rounded-md border bg-black/30 ${attitudeColor} border-current`}
-                        title={attitudeTooltip}
-                    >
-                        {npc.attitude}
-                    </span>
-                    <button 
-                        onClick={() => onInspect(npc.name)}
-                        className="text-stone-400 hover:text-[var(--color-accent)] transition-colors"
-                        title={`Periksa ${npc.name}`}
-                        aria-label={`Periksa ${npc.name}`}
-                    >
-                        <EyeIcon className="w-5 h-5"/>
-                    </button>
-                </div>
+        <button 
+            onClick={() => onClick(npc)} 
+            className="flex items-center gap-2 bg-stone-950/60 py-2 px-3 rounded-lg border border-stone-700 hover:border-[var(--color-primary)] transition-all flex-shrink-0 shadow-md hover:shadow-[var(--color-primary)]/10 text-left w-48"
+            // FIX: Replaced the `title` prop on the CoinIcon with a conditional title on the parent button. This resolves a TypeScript error and avoids competing tooltips, improving UX by providing a single, informative tooltip for the entire component.
+            title={npc.shopId ? `Bicara dengan ${npc.name} (Pedagang)` : `Bicara dengan ${npc.name}`}
+        >
+            {npc.shopId && <CoinIcon className="w-4 h-4 text-yellow-400 flex-shrink-0" />}
+            <div className="overflow-hidden">
+                <p className="font-bold text-sm text-stone-200 truncate">{npc.name}</p>
+                <p className="text-xs text-stone-400 italic truncate">{npc.description}</p>
             </div>
-        </div>
+        </button>
     );
 };
 
 
-const StoryHeader: React.FC<{ scene: Scene; onNpcInteract: (npcName: string) => void; onNpcInspect: (npcName: string) => void; }> = ({ scene, onNpcInteract, onNpcInspect }) => (
+const StoryHeader: React.FC<{ scene: Scene; onNpcClick: (npc: NPC) => void; }> = ({ scene, onNpcClick }) => (
     <div className="p-4 border-b-2 border-[var(--border-color-strong)]/50 bg-black/20 flex-shrink-0 sticky top-0 z-10 backdrop-blur-sm">
       <h2 className="text-xl font-cinzel text-[var(--color-text-header)] text-glow">{scene.location}</h2>
-      <p className="text-sm text-stone-400 italic mb-3">{scene.description}</p>
+      <p className="text-sm text-stone-400 italic mb-4">{scene.description}</p>
       {scene.npcs.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-              {scene.npcs.map((npc) => (
-                  <NpcCard 
-                    key={npc.name} 
-                    npc={npc}
-                    onInteract={onNpcInteract}
-                    onInspect={onNpcInspect}
-                  />
-              ))}
+          <div>
+            <h3 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-2">Terlihat di Sekitar:</h3>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mb-2" style={{ scrollbarWidth: 'thin' }}>
+                {scene.npcs.map((npc) => (
+                    <NpcPill
+                      key={npc.name} 
+                      npc={npc}
+                      onClick={onNpcClick}
+                    />
+                ))}
+            </div>
           </div>
       )}
     </div>
@@ -109,9 +74,8 @@ const renderSkillCheck = (details: SkillCheckResult) => {
 const StoryLog: React.FC<{
   storyHistory: StoryEntry[];
   scene: Scene;
-  onNpcInteract: (npcName: string) => void;
-  onNpcInspect: (npcName: string) => void;
-}> = ({ storyHistory, scene, onNpcInteract, onNpcInspect }) => {
+  onNpcClick: (npc: NPC) => void;
+}> = ({ storyHistory, scene, onNpcClick }) => {
   const endOfLogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -120,7 +84,7 @@ const StoryLog: React.FC<{
 
   return (
     <div className="world-panel flex-grow h-full flex flex-col min-h-0 relative">
-        <StoryHeader scene={scene} onNpcInteract={onNpcInteract} onNpcInspect={onNpcInspect}/>
+        <StoryHeader scene={scene} onNpcClick={onNpcClick}/>
         <div className="flex-grow p-4 overflow-y-auto min-h-0" style={{ scrollbarGutter: 'stable' }}>
           <div className="space-y-4">
             {storyHistory.map((entry, index) => {

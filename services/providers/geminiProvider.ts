@@ -171,7 +171,7 @@ const sceneSchema = {
     properties: {
         location: { type: Type.STRING },
         description: { type: Type.STRING },
-        npcs: { 
+        npcs: {
             type: Type.ARRAY,
             items: {
                 type: Type.OBJECT,
@@ -179,6 +179,7 @@ const sceneSchema = {
                     name: { type: Type.STRING },
                     description: { type: Type.STRING },
                     attitude: { type: Type.STRING, enum: ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'] },
+                    shopId: { type: Type.STRING, description: "Jika NPC ini adalah pedagang, sertakan ID toko mereka dari daftar marketplace dunia. Jika tidak, kosongkan." }
                 },
                 required: ["name", "description", "attitude"]
             }
@@ -356,6 +357,7 @@ Tugas Anda:
 7.  **Adegan Awal & NPC Unik**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan.
     *   **ATURAN NAMA LOKASI**: Nama \`initialScene.location\` HARUS SAMA PERSIS dengan nama salah satu node di peta dunia awal.
     *   **Aturan Nama NPC**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia**. Hindari nama-nama generik. Gunakan konteks dunia sebagai inspirasi.
+    *   **Tautkan Pedagang**: Jika NPC di adegan awal adalah seorang pedagang, isi bidang \`shopId\` mereka dengan ID toko yang relevan.
     *   Tentukan \`availableShopIds\` secara logis berdasarkan lokasi. 
     *   Sikap NPC HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
 8.  **Format JSON**: Pastikan output sesuai dengan skema.`;
@@ -377,10 +379,13 @@ Tugas Anda:
 2.  **Aturan Percakapan (SANGAT PENTING)**: Jika aksi pemain adalah memulai percakapan atau mengajukan pertanyaan kepada NPC, narasi Anda **HARUS** menyertakan respons atau reaksi dari NPC tersebut.
 3.  **Manajemen Peta (PENTING)**: Jika pemain berpindah ke lokasi BARU yang belum ada di \`worldMap\`, Anda **WAJIB** membuat \`mapUpdate\`. Tambahkan node baru untuk lokasi tersebut dan edge baru yang menghubungkannya ke lokasi sebelumnya. Kembalikan SELURUH objek peta yang diperbarui.
 4.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di \`mapUpdate\` (atau \`worldMap\` jika tidak ada pembaruan).
+5.  **Populasi Adegan (SANGAT PENTING)**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan **5-10 NPC yang beragam**. Beri mereka nama, deskripsi singkat, dan sikap yang unik.
+6.  **Tautkan Pedagang ke Toko**: Jika salah satu NPC yang Anda tempatkan di adegan adalah seorang pedagang (misalnya, pandai besi, alkemis), Anda **WAJIB** mengisi bidang \`shopId\` mereka dengan ID yang sesuai dari daftar toko di marketplace. Pastikan juga ID toko tersebut ada di \`sceneUpdate.availableShopIds\`.
 
 **KONTEKS SAAT INI (Kebenaran Dasar):**
 -   **Giliran Saat Ini**: ${turnCount}
 -   **PETA DUNIA (Lokasi yang Diketahui)**: ${JSON.stringify(worldMap)}
+-   **DAFTAR TOKO DUNIA (Pedagang yang Ada)**: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name, description: s.description})))}
 -   **MEMORI DUNIA**: ${JSON.stringify(longTermMemory)}
 -   **KARAKTER PEMAIN**: ${JSON.stringify({ name: character.name, stats: character.stats, gold: character.gold, inventory: character.inventory.map(i => `${i.item.name} (x${i.quantity})`) })}
 -   **ADEGAN SAAT INI**: ${JSON.stringify(scene)}
@@ -393,8 +398,8 @@ Tugas Anda:
 4.  **Perbarui Status & Dunia**:
     *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, dll., di \`pembaruanKarakter\`.
     *   **Pembaruan Peta**: Terapkan **Aturan Manajemen Peta**. Jika peta diperbarui, sertakan di \`mapUpdate\`.
-    *   **Pembaruan Adegan**: Perbarui \`sceneUpdate\` dengan lokasi baru. Terapkan **Aturan Konsistensi Lokasi**.
-    *   **ATURAN WAJIB PEMBARUAN TOKO**: Tentukan \`availableShopIds\` berdasarkan NPC pedagang yang ada di adegan baru.
+    *   **Pembaruan Adegan**: Perbarui \`sceneUpdate\` dengan lokasi baru. Terapkan **Aturan Konsistensi Lokasi** dan **Populasi Adegan**.
+    *   **ATURAN WAJIB PEMBARUAN TOKO**: Terapkan **Aturan Tautkan Pedagang ke Toko**.
     *   Jika relevan, perbarui misi (\`questsUpdate\`) atau picu peristiwa dunia (\`worldEventsUpdate\`).
 5.  **KONSOLIDASI MEMORI**: Sintesiskan peristiwa PENTING dari giliran ini ke dalam memori, lalu keluarkan objek memori yang telah disempurnakan di \`memoryUpdate\`.
 6.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON.`;

@@ -102,6 +102,7 @@ export interface NPC {
     name: string;
     description: string;
     attitude: 'Ramah' | 'Netral' | 'Curiga' | 'Bermusuhan';
+    shopId?: string;
 }
 
 export interface Scene {
