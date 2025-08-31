@@ -35,6 +35,12 @@ const App: React.FC = () => {
     }
   }, []);
 
+  useEffect(() => {
+    const theme = activeWorld?.theme || 'dark_fantasy';
+    document.body.setAttribute('data-theme', theme);
+  }, [activeWorld]);
+
+
   const persistWorlds = (updatedWorlds: World[]) => {
     try {
       localStorage.setItem(SAVE_GAME_KEY, JSON.stringify(updatedWorlds));
@@ -66,11 +72,12 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-        const { name, description, marketplace } = await DungeonMaster.generateWorld(worldData);
+        const { name, description, marketplace, theme } = await DungeonMaster.generateWorld(worldData);
         const newWorld: World = {
             id: crypto.randomUUID(),
             name,
             description,
+            theme,
             longTermMemory: [],
             worldEvents: [],
             quests: [],

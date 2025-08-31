@@ -1,6 +1,6 @@
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot } from '../../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot, WorldTheme } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 import { apiKeyManager } from "../apiKeyManager";
 
@@ -150,9 +150,10 @@ const worldGenerationSchema = {
     properties: {
         name: { type: Type.STRING },
         description: { type: Type.STRING },
+        theme: { type: Type.STRING, enum: ['dark_fantasy', 'cyberpunk', 'steampunk', 'high_fantasy'] },
         marketplace: marketplaceSchema,
     },
-    required: ["name", "description", "marketplace"]
+    required: ["name", "description", "theme", "marketplace"]
 };
 
 const characterGenerationSchema = {
@@ -239,7 +240,7 @@ const gameTurnSchema = {
 
 
 class GeminiDungeonMaster implements IAiDungeonMasterService {
-    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; }> {
+    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; theme: WorldTheme; }> {
         const prompt = `Anda adalah seorang Arsitek Dunia AI. Tugas Anda adalah menciptakan dunia fantasi yang hidup dengan ekonomi yang berfungsi. SEMUA TEKS YANG DIHASILKAN HARUS DALAM BAHASA INDONESIA.
 
 Masukan Pemain:
@@ -249,12 +250,13 @@ Masukan Pemain:
 
 Tugas Anda:
 1.  **Sintesiskan Visi**: Ciptakan nama dan deskripsi dunia yang imersif.
-2.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
-3.  **Isi Inventaris Toko**: Untuk setiap toko, buat inventaris yang kaya dengan **8 hingga 15 item** yang relevan dan deskriptif. Fokus pada narasi, BUKAN statistik numerik. Pastikan untuk memberikan ID unik (UUID) untuk setiap item.
-4.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
+2.  **Pilih Tema Visual (WAJIB)**: Berdasarkan 'Konsep Inti Dunia', pilih SATU tema visual yang paling cocok dari daftar berikut: ['dark_fantasy', 'cyberpunk', 'steampunk', 'high_fantasy']. Tema ini akan menentukan palet warna permainan.
+3.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
+4.  **Isi Inventaris Toko**: Untuk setiap toko, buat inventaris yang kaya dengan **8 hingga 15 item** yang relevan dan deskriptif. Fokus pada narasi, BUKAN statistik numerik. Pastikan untuk memberikan ID unik (UUID) untuk setiap item.
+5.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: worldGenerationSchema }
         });
@@ -278,7 +280,7 @@ Tugas Anda:
 6.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: characterGenerationSchema }
         });
@@ -319,7 +321,7 @@ Tugas Anda:
 7.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON yang disediakan.`;
         
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: gameTurnSchema }
         });
@@ -337,7 +339,7 @@ Konteks Cerita:
 Jawaban Anda (sebagai GM):`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
         });
         return response.text;

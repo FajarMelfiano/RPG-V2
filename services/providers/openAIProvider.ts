@@ -1,6 +1,8 @@
 
+
 import OpenAI from 'openai';
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry } from '../../types';
+// FIX: Added WorldTheme to imports to support theme generation.
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 
 if (!process.env.API_KEY) {
@@ -17,10 +19,12 @@ const getJsonContent = (completion: OpenAI.Chat.Completions.ChatCompletion): str
 }
 
 class OpenAiDungeonMaster implements IAiDungeonMasterService {
-    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; }> {
-        const systemPrompt = `Anda adalah seorang Arsitek Dunia AI. Tugas Anda adalah mengubah ide-ide pemain menjadi fondasi dunia fantasi yang kohesif. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
+    // FIX: Updated the return type to include `theme` and modified the system prompt to request it from the AI.
+    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; theme: WorldTheme; }> {
+        const systemPrompt = `Anda adalah seorang Arsitek Dunia AI. Tugas Anda adalah mengubah ide-ide pemain menjadi fondasi dunia fantasi yang kohesif. Balas HANYA dengan sebuah objek JSON tunggal yang valid. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
 
 Aturan Penting:
+- **Pilih Tema (WAJIB)**: Berdasarkan 'Konsep Inti Dunia', pilih SATU tema yang paling cocok dari daftar ini: ['dark_fantasy', 'cyberpunk', 'steampunk', 'high_fantasy'].
 - Buat Marketplace awal dengan toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
 - Isi setiap toko dengan 3-7 item yang relevan.
 - **SETIAP ITEM HARUS MEMILIKI ID UNIK**. Fokus pada deskripsi item, bukan statistik numerik.
@@ -29,6 +33,7 @@ Struktur JSON yang DIWAJIBKAN:
 {
   "name": "string",
   "description": "string",
+  "theme": "string (salah satu dari: 'dark_fantasy', 'cyberpunk', 'steampunk', 'high_fantasy')",
   "marketplace": {
     "shops": [
       { 

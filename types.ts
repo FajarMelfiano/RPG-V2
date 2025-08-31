@@ -176,10 +176,13 @@ export interface SavedCharacter {
   transactionLog: TransactionLogEntry[];
 }
 
+export type WorldTheme = 'dark_fantasy' | 'cyberpunk' | 'steampunk' | 'high_fantasy';
+
 export interface World {
   id: string;
   name: string;
   description: string;
+  theme: WorldTheme;
   longTermMemory: string[];
   worldEvents: WorldEvent[];
   quests: Quest[];

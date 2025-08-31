@@ -1,5 +1,6 @@
 
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry } from '../types';
+
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme } from '../types';
 import { geminiProvider } from './providers/geminiProvider';
 import { openAiProvider } from './providers/openAIProvider';
 
@@ -8,6 +9,7 @@ export interface IAiDungeonMasterService {
     name: string;
     description: string;
     marketplace: Marketplace;
+    theme: WorldTheme;
   }>;
 
   generateCharacter(
