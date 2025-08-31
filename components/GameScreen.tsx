@@ -36,7 +36,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
     if (npc.shopId) {
       setDirectShopId(npc.shopId);
       // Buka jurnal di perangkat seluler untuk menampilkan toko secara otomatis
-      if (window.innerWidth < 1024) {
+      if (window.innerWidth < 768) {
           setIsJournalOpen(true);
       }
     }
@@ -47,7 +47,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
   const { quests, worldEvents, marketplace } = world;
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto h-[95vh] flex flex-row gap-4 sm:gap-6 p-1 sm:p-2">
+    <div className="w-full max-w-[1600px] mx-auto h-screen flex flex-row gap-4 sm:gap-6 p-2 sm:p-4">
       
       {selectedNpc && (
         <NpcDetailModal 
@@ -113,7 +113,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
 
       <button
         onClick={() => setIsJournalOpen(true)}
-        className="lg:hidden fixed top-4 right-4 z-30 bg-stone-800/80 text-[var(--color-accent)] p-3 rounded-full shadow-lg backdrop-blur-sm border border-[var(--border-color-medium)]/50"
+        className="md:hidden fixed top-4 right-4 z-30 bg-stone-800/80 text-[var(--color-accent)] p-3 rounded-full shadow-lg backdrop-blur-sm border border-[var(--border-color-medium)]/50"
         aria-label="Buka Jurnal"
       >
         <BookOpenIcon className="w-6 h-6" />

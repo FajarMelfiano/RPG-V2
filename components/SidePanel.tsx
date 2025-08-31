@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot, World } from '../types';
 import CharacterSheet from './CharacterSheet';
@@ -147,7 +143,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
     // Mobile & Tablet: Full-screen overlay
     const MobileJournal = (
         <div
-            className={`lg:hidden fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+            className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
             aria-hidden={!isOpen}
         >
             <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
@@ -172,7 +168,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
 
     // Desktop: Static side panel
     const DesktopJournal = (
-        <aside className="hidden lg:block md:w-2/5 lg:w-1/3 xl:w-[450px] flex-shrink-0 h-full journal-panel p-4">
+        <aside className="hidden md:block w-[380px] lg:w-[420px] xl:w-[450px] flex-shrink-0 h-full journal-panel p-4">
              <div className="h-full">
                 <PanelContent {...props} />
             </div>

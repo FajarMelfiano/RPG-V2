@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap, Stats } from './types';
 import StartScreen from './components/StartScreen';
@@ -621,7 +617,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-950 text-stone-300">
         <NotificationContainer notifications={notifications} />
-        <div className="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4">
+        <div className="min-h-screen flex flex-col items-center justify-center">
             {renderContent()}
         </div>
     </div>
