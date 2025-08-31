@@ -5,7 +5,8 @@ import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot } from '../typ
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
-import { BookOpenIcon } from './icons';
+import { BookOpenIcon, GlobeIcon } from './icons';
+import WorldCodex from './WorldCodex';
 
 interface GameScreenProps {
   world: World;
@@ -23,6 +24,7 @@ interface GameScreenProps {
 const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayerAction, isLoading, error, onNotesChange, onBuyItem, onSellItem, onEquipItem, onUnequipItem }) => {
   const [actionText, setActionText] = useState('');
   const [isJournalOpen, setIsJournalOpen] = useState(false);
+  const [isCodexOpen, setIsCodexOpen] = useState(false);
 
   const handleNpcInteract = (npcName: string) => {
     setActionText(`Bicara dengan ${npcName}`);
@@ -38,6 +40,12 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
   return (
     <div className="w-full max-w-[1600px] mx-auto h-[95vh] flex flex-row gap-4 sm:gap-6 p-1 sm:p-2">
       
+      <WorldCodex 
+        world={world}
+        isOpen={isCodexOpen}
+        onClose={() => setIsCodexOpen(false)}
+      />
+
       <SidePanel
         character={character}
         party={party}
@@ -76,7 +84,15 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
         )}
       </main>
 
-       <button
+      <button
+        onClick={() => setIsCodexOpen(true)}
+        className="fixed bottom-4 left-4 z-30 bg-stone-800/80 text-[var(--color-accent)] p-3 rounded-full shadow-lg backdrop-blur-sm border border-[var(--border-color-medium)]/50 hover:scale-110 hover:shadow-[var(--color-primary)]/30 transition-all"
+        aria-label="Buka Codex Dunia"
+      >
+        <GlobeIcon className="w-6 h-6" />
+      </button>
+
+      <button
         onClick={() => setIsJournalOpen(true)}
         className="lg:hidden fixed top-4 right-4 z-30 bg-stone-800/80 text-[var(--color-accent)] p-3 rounded-full shadow-lg backdrop-blur-sm border border-[var(--border-color-medium)]/50"
         aria-label="Buka Jurnal"

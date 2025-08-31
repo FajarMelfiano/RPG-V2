@@ -76,6 +76,7 @@ Struktur JSON yang DIWAJIBKAN:
 Aturan Penting:
 - **Level Awal Dinamis**: Analisis 'Latar Belakang & Pengalaman' untuk menentukan level awal (1-5).
 - **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga dalam array \`family\`.
+- **Nama NPC Unik**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia** (dapat disimpulkan dari konteks). Hindari nama-nama generik.
 - **Perlengkapan & Item**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik. Fokus pada deskripsi, bukan statistik.
 - Adegan awal ('initialScene') HARUS menyertakan \`availableShopIds\` yang logis.
 
@@ -126,8 +127,9 @@ Masukan Pemain untuk Karakter:
 
 Aturan Utama:
 1.  **Konsistensi Naratif**: Baca 'MEMORI DUNIA' dan 'Latar Belakang Karakter'. Cerita Anda HARUS konsisten dengan informasi ini.
-2.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
-3.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
+2.  **Nama NPC Unik**: Jika Anda memperkenalkan NPC BARU dalam \`sceneUpdate\`, berikan nama yang unik, bervariasi, dan sesuai tema. Periksa 'MEMORI DUNIA' untuk menghindari pengulangan nama.
+3.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
+4.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
 
 Struktur JSON yang DIWAJIBKAN:
 {

@@ -464,6 +464,23 @@ const App: React.FC = () => {
         }
       }
 
+      let updatedParty = [...activeCharacter.party];
+      if (response.partyUpdate) {
+        if (response.partyUpdate.join) {
+          const newMember: Character = {
+            ...response.partyUpdate.join,
+            id: crypto.randomUUID()
+          };
+          updatedParty.push(newMember);
+          addNotification(`${newMember.name} telah bergabung dengan party!`, 'event');
+        }
+        if (response.partyUpdate.leave) {
+          const leftMemberName = response.partyUpdate.leave;
+          updatedParty = updatedParty.filter(p => p.name !== leftMemberName);
+          addNotification(`${leftMemberName} telah meninggalkan party.`, 'event');
+        }
+      }
+
       let updatedWorld = { ...activeWorld };
       if (response.memoryUpdate) {
           updatedWorld.longTermMemory = response.memoryUpdate;
@@ -500,7 +517,7 @@ const App: React.FC = () => {
       const updatedSavedCharacter: SavedCharacter = {
         ...activeCharacter,
         character: updatedCharacter,
-        party: activeCharacter.party, // Party updates are narrated, not sent as data
+        party: updatedParty,
         scene: response.sceneUpdate,
         storyHistory: finalHistory,
         turnCount: newTurnCount,

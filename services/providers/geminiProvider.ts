@@ -260,7 +260,15 @@ const gameTurnSchema = {
         questsUpdate: { type: Type.ARRAY, items: questSchema },
         worldEventsUpdate: { type: Type.ARRAY, items: worldEventSchema },
         marketplaceUpdate: marketplaceSchema,
-        pembaruanKarakter: characterUpdateSchema
+        pembaruanKarakter: characterUpdateSchema,
+        partyUpdate: {
+            type: Type.OBJECT,
+            description: "Gunakan ini JIKA seorang NPC bergabung atau meninggalkan party.",
+            properties: {
+                join: characterSchema,
+                leave: { type: Type.STRING, description: "Nama karakter yang meninggalkan party." }
+            }
+        }
     },
     required: ["narasiBaru", "sceneUpdate"],
 };
@@ -304,7 +312,10 @@ Tugas Anda:
 3.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
 4.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`. Fokus pada deskripsi item, bukan statistik numerik.
 5.  **ID ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID).
-6.  **Adegan Awal**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan. Tentukan \`availableShopIds\` secara logis berdasarkan lokasi. Sikap NPC HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
+6.  **Adegan Awal & NPC Unik**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan.
+    *   **Aturan Nama NPC**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia**. Hindari nama-nama generik. Gunakan konteks dunia sebagai inspirasi.
+    *   Tentukan \`availableShopIds\` secara logis berdasarkan lokasi. 
+    *   Sikap NPC HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
 7.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await generateContentWithRotation({
@@ -321,8 +332,10 @@ Tugas Anda:
 
 **ATURAN INTI & PRINSIP:**
 1.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Karakter (NPC dan pemain) harus bertindak sesuai dengan kepribadian dan motivasi mereka. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'.
-2.  **Laporan Perubahan, Bukan Status Penuh**: Anda HANYA melaporkan perubahan status karakter melalui \`pembaruanKarakter\`.
-3.  **Manajemen Memori Aktif**: Anda tidak hanya menambahkan ke memori; Anda mengelolanya.
+2.  **Aturan Percakapan (SANGAT PENTING)**: Jika aksi pemain adalah memulai percakapan atau mengajukan pertanyaan kepada NPC, narasi Anda **HARUS** menyertakan respons atau reaksi dari NPC tersebut. Selesaikan interaksi dalam giliran yang sama. Jangan hanya menarasikan pemain yang berbicara.
+3.  **Manajemen Party**: Jika seorang NPC setuju untuk bergabung dengan party, Anda **WAJIB** mengisi objek \`partyUpdate.join\` dengan data karakter lengkap untuk NPC tersebut. Buatlah statistik dan inventaris awal yang sesuai untuk mereka. Jika seorang anggota party pergi, isi \`partyUpdate.leave\` dengan nama mereka.
+4.  **Laporan Perubahan, Bukan Status Penuh**: Anda HANYA melaporkan perubahan status karakter pemain melalui \`pembaruanKarakter\`.
+5.  **Manajemen Memori Aktif**: Anda tidak hanya menambahkan ke memori; Anda mengelolanya.
 
 **KONTEKS SAAT INI (Kebenaran Dasar):**
 -   **Giliran Saat Ini**: ${turnCount}
@@ -337,11 +350,12 @@ Tugas Anda:
 
 **TUGAS ANDA (Ikuti Secara Berurutan):**
 1.  **Analisis & Kontekstualisasi**: Baca SEMUA informasi di atas. Pahami aksi pemain dalam konteks MEMORI DUNIA, latar belakang karakter, dan situasi saat ini.
-2.  **Pemeriksaan Keterampilan (Jika Perlu)**: Jika aksi pemain memiliki kemungkinan untuk gagal (misalnya menyerang, menyelinap, membujuk, meretas), Anda **WAJIB** membuat \`skillCheck\`.
-3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain, hasil \`skillCheck\`, dan konteks yang ada.
+2.  **Pemeriksaan Keterampilan (Jika Perlu)**: Jika aksi pemain memiliki kemungkinan untuk gagal (misalnya menyerang, menyelinap, membujuk, meretas, merekrut), Anda **WAJIB** membuat \`skillCheck\`.
+3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain, hasil \`skillCheck\`, dan konteks yang ada. Ingat **Aturan Percakapan**.
 4.  **Perbarui Status & Dunia**:
     *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, atau status keluarga di \`pembaruanKarakter\`.
-    *   **Pembaruan Adegan**: Perbarui \`sceneUpdate\` dengan lokasi, deskripsi, dan status NPC yang baru.
+    *   **Pembaruan Party**: Jika ada perubahan party, isi \`partyUpdate\` sesuai **Aturan Manajemen Party**.
+    *   **Pembaruan Adegan & NPC Unik**: Perbarui \`sceneUpdate\` dengan lokasi, deskripsi, dan status NPC yang baru. **Aturan Nama NPC Baru**: Jika Anda memperkenalkan NPC BARU, berikan mereka nama yang **unik, bervariasi, dan sesuai dengan tema dunia**. Gunakan 'MEMORI DUNIA' untuk memeriksa nama-nama yang sudah ada dan **HINDARI PENGULANGAN**.
     *   **Ketersediaan Toko**: Berdasarkan lokasi baru di \`sceneUpdate\`, isi \`availableShopIds\` dengan benar.
     *   **Perkembangan Dunia**: Jika relevan, perbarui misi (\`questsUpdate\`) atau picu peristiwa dunia baru (\`worldEventsUpdate\`).
 5.  **KONSOLIDASI MEMORI (Tugas Kritis)**:

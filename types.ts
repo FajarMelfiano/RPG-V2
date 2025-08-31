@@ -167,6 +167,10 @@ export interface GameTurnResponse {
     questsUpdate?: Quest[];
     worldEventsUpdate?: Omit<WorldEvent, 'id' | 'turn'>[];
     marketplaceUpdate?: Marketplace;
+    partyUpdate?: {
+        join?: Omit<Character, 'id'>;
+        leave?: string; // name of character leaving
+    };
 }
 
 export interface AppNotification {
