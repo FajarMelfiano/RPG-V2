@@ -1,5 +1,6 @@
 
 
+
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot } from '../../types';
@@ -211,7 +212,7 @@ const gameTurnSchema = {
         worldEventsUpdate: { type: Type.ARRAY, items: worldEventSchema },
         marketplaceUpdate: marketplaceSchema,
     },
-    required: ["narasiBaru", "karakterTerbaru", "partyTerbaru", "sceneUpdate"]
+    required: ["narasiBaru", "karakterTerbaru", "sceneUpdate"],
 };
 
 class GeminiDungeonMaster implements IAiDungeonMasterService {
@@ -281,7 +282,7 @@ Tugas Anda:
 2.  **Proses Aksi**: Narasikan hasil aksi. Lakukan 'Pemeriksaan Keterampilan' (skillCheck) jika perlu. Tangani aksi "Periksa" NPC dengan detail.
 3.  **Perbarui Status**: Perbarui SEMUA field di \`karakterTerbaru\`. Jika mereka menemukan loot, item baru HARUS memiliki ID unik. Sikap NPC dalam \`sceneUpdate\` harus diperbarui secara dinamis dan HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
 4.  **Ketersediaan Toko (SANGAT PENTING)**: Berdasarkan \`sceneUpdate.location\` yang baru, lihat DAFTAR TOKO YANG ADA dan tentukan \`availableShopIds\` secara realistis. Jika lokasi adalah "Pasar Perbatasan Lumina", maka toko-toko yang relevan HARUS tersedia. Jika di "Gua Gelap", maka array harus kosong.
-5.  **Manajemen Pasar**: Setiap 20-25 giliran, segarkan inventaris 'traveling_merchant' di \`marketplaceUpdate\`.
+5.  **Manajemen Pasar**: Jika terjadi peristiwa dunia yang signifikan atau pemain berinteraksi dengan pasar, Anda dapat memperbarui inventaris toko di \`marketplaceUpdate\`. Jangan memperbaruinya di setiap giliran.
 6.  **Manajemen Misi & Dunia**: Perbarui misi dan peristiwa dunia seperti biasa.
 7.  **Format Respons**: Pastikan output sesuai dengan skema JSON.`;
         
