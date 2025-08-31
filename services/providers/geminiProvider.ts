@@ -1,6 +1,8 @@
 
 
 
+
+
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot } from '../../types';
@@ -278,13 +280,12 @@ Kondisi Saat Ini:
 - Aksi Pemain: "${playerAction}"
 
 Tugas Anda:
-1.  **Analisis Naratif**: Baca SEMUA informasi. Narasi Anda harus mencerminkan perlengkapan karakter secara deskriptif. Jika karakter memakai zirah pelat, sebutkan bagaimana serangan memantul. Jika senjatanya terlihat kuno, deskripsikan. Gunakan log transaksi untuk kesadaran ekonomi.
-2.  **Proses Aksi**: Narasikan hasil aksi. Lakukan 'Pemeriksaan Keterampilan' (skillCheck) jika perlu. Tangani aksi "Periksa" NPC dengan detail.
-3.  **Perbarui Status**: Perbarui SEMUA field di \`karakterTerbaru\`. Jika mereka menemukan loot, item baru HARUS memiliki ID unik. Sikap NPC dalam \`sceneUpdate\` harus diperbarui secara dinamis dan HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
-4.  **Ketersediaan Toko (SANGAT PENTING)**: Berdasarkan \`sceneUpdate.location\` yang baru, lihat DAFTAR TOKO YANG ADA dan tentukan \`availableShopIds\` secara realistis. Jika lokasi adalah "Pasar Perbatasan Lumina", maka toko-toko yang relevan HARUS tersedia. Jika di "Gua Gelap", maka array harus kosong.
-5.  **Manajemen Pasar**: Jika terjadi peristiwa dunia yang signifikan atau pemain berinteraksi dengan pasar, Anda dapat memperbarui inventaris toko di \`marketplaceUpdate\`. Jangan memperbaruinya di setiap giliran.
-6.  **Manajemen Misi & Dunia**: Perbarui misi dan peristiwa dunia seperti biasa.
-7.  **Format Respons**: Pastikan output sesuai dengan skema JSON.`;
+1.  **Proses Aksi & Narasikan**: Lanjutkan cerita berdasarkan aksi pemain. Narasikan hasilnya secara menarik. Lakukan 'Pemeriksaan Keterampilan' (\`skillCheck\`) jika perlu.
+2.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
+3.  **Perbarui Status Karakter (WAJIB)**: Selalu perbarui status karakter pemain di \`karakterTerbaru\`.
+4.  **Pembaruan Opsional (Gunakan Seperlunya)**: Field \`partyTerbaru\`, \`questsUpdate\`, \`worldEventsUpdate\`, dan \`marketplaceUpdate\` bersifat opsional. HANYA sertakan jika ada perubahan yang relevan dan signifikan. Jangan memperbarui pasar di setiap giliran.
+5.  **Ketersediaan Toko**: Pastikan \`availableShopIds\` di \`sceneUpdate\` mencerminkan toko yang tersedia di lokasi baru secara realistis.
+6.  **Format Respons**: Pastikan output sesuai dengan skema JSON.`;
         
         const response = await generateContentWithRotation({
             model: "gemini-2.5-flash",
