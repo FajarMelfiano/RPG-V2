@@ -394,7 +394,7 @@ Konteks Cerita:
 Jawaban Anda (sebagai GM):`;
 
         const response = await generateContentWithRotation({
-            model: "gem-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: { parts: [{ text: prompt }] },
         });
         return response.text;
