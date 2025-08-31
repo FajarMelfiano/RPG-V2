@@ -1,3 +1,4 @@
+
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot, WorldTheme, FamilyMember, WorldMemory, WorldMap } from '../../types';
@@ -394,10 +395,11 @@ Tugas Anda:
 **ATURAN INTI & PRINSIP:**
 1.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'.
 2.  **Aturan Percakapan (SANGAT PENTING)**: Jika aksi pemain adalah memulai percakapan atau mengajukan pertanyaan kepada NPC, narasi Anda **HARUS** menyertakan respons atau reaksi dari NPC tersebut.
-3.  **Manajemen Peta (PENTING)**: Jika pemain berpindah ke lokasi BARU yang belum ada di \`worldMap\`, Anda **WAJIB** membuat \`mapUpdate\`. Tambahkan node baru untuk lokasi tersebut dan edge baru yang menghubungkannya ke lokasi sebelumnya. Kembalikan SELURUH objek peta yang diperbarui.
-4.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di \`mapUpdate\` (atau \`worldMap\` jika tidak ada pembaruan).
-5.  **Populasi Adegan (SANGAT PENTING)**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan **5-10 NPC yang beragam**. Beri mereka nama, deskripsi singkat, dan sikap yang unik.
-6.  **Tautkan Pedagang ke Toko**: Jika salah satu NPC yang Anda tempatkan di adegan adalah seorang pedagang (misalnya, pandai besi, alkemis), Anda **WAJIB** mengisi bidang \`shopId\` mereka dengan ID yang sesuai dari daftar toko di marketplace. Pastikan juga ID toko tersebut ada di \`sceneUpdate.availableShopIds\`.
+3.  **Aturan Penemuan Dialog (SANGAT PENTING)**: Jika seorang NPC mengungkapkan lokasi baru yang spesifik dan dapat ditindaklanjuti dalam dialog (misalnya, menyebutkan 'Pasar Neonova' atau 'Reruntuhan Kuno'), Anda **WAJIB** memperbarui peta dengan menambahkan node dan edge baru di \`mapUpdate\`.
+4.  **Manajemen Peta (PENTING)**: Jika pemain berpindah ke lokasi BARU yang belum ada di \`worldMap\`, Anda **WAJIB** membuat \`mapUpdate\`. Tambahkan node baru untuk lokasi tersebut dan edge baru yang menghubungkannya ke lokasi sebelumnya. Kembalikan SELURUH objek peta yang diperbarui.
+5.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di \`mapUpdate\` (atau \`worldMap\` jika tidak ada pembaruan).
+6.  **Populasi Adegan (SANGAT PENTING)**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan **5-10 NPC yang beragam**. Beri mereka nama, deskripsi singkat, dan sikap yang unik.
+7.  **Tautkan Pedagang ke Toko**: Jika salah satu NPC yang Anda tempatkan di adegan adalah seorang pedagang (misalnya, pandai besi, alkemis), Anda **WAJIB** mengisi bidang \`shopId\` mereka dengan ID yang sesuai dari daftar toko di marketplace. Pastikan juga ID toko tersebut ada di \`sceneUpdate.availableShopIds\`.
 
 **KONTEKS SAAT INI (Kebenaran Dasar):**
 -   **Giliran Saat Ini**: ${turnCount}
@@ -414,7 +416,7 @@ Tugas Anda:
 3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain.
 4.  **Perbarui Status & Dunia**:
     *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, dll., di \`pembaruanKarakter\`. Untuk setiap item baru di \`itemDiterima\`, pastikan untuk menyertakan \`category\` dan \`usageNotes\` yang detail.
-    *   **Pembaruan Peta**: Terapkan **Aturan Manajemen Peta**. Jika peta diperbarui, sertakan di \`mapUpdate\`.
+    *   **Pembaruan Peta**: Terapkan **Aturan Manajemen Peta** dan **Aturan Penemuan Dialog**. Jika peta diperbarui, sertakan di \`mapUpdate\`.
     *   **Pembaruan Adegan**: Perbarui \`sceneUpdate\` dengan lokasi baru. Terapkan **Aturan Konsistensi Lokasi** dan **Populasi Adegan**.
     *   **ATURAN WAJIB PEMBARUAN TOKO**: Terapkan **Aturan Tautkan Pedagang ke Toko**.
     *   Jika relevan, perbarui misi (\`questsUpdate\`) atau picu peristiwa dunia (\`worldEventsUpdate\`).

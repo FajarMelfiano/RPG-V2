@@ -1,11 +1,15 @@
+
 import React from 'react';
 import { AppNotification } from '../types';
-import { ChestIcon, CoinIcon, ReputationIcon, ScrollIcon } from './icons';
+import { ChestIcon, CoinIcon, ReputationIcon, ScrollIcon, MapIcon } from './icons';
 
 const NotificationToast: React.FC<{ message: string }> = ({ message }) => {
     const lowerCaseMessage = message.toLowerCase();
 
     const getIcon = () => {
+        if (lowerCaseMessage.includes('peta') || lowerCaseMessage.includes('lokasi')) {
+            return <MapIcon className="w-6 h-6 text-cyan-300 flex-shrink-0" />;
+        }
         if (lowerCaseMessage.includes('emas')) {
             return <CoinIcon className="w-6 h-6 text-yellow-400 flex-shrink-0" />;
         }

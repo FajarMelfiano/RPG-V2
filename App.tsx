@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap, Stats } from './types';
 import StartScreen from './components/StartScreen';
@@ -508,6 +509,11 @@ const App: React.FC = () => {
       }
       
       if (response.mapUpdate) {
+        const oldNodeIds = new Set(activeWorld.worldMap.nodes.map(n => n.id));
+        const newNodes = response.mapUpdate.nodes.filter(n => !oldNodeIds.has(n.id));
+        newNodes.forEach(node => {
+          addNotification(`Peta Diperbarui: Lokasi '${node.name}' ditambahkan`, 'event');
+        });
         updatedWorld.worldMap = response.mapUpdate;
       }
 

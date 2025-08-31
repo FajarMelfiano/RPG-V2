@@ -1,3 +1,4 @@
+
 import OpenAI from 'openai';
 // FIX: Added WorldMap to imports to support world map generation.
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory, WorldMap } from '../../types';
@@ -122,7 +123,7 @@ Masukan Pemain untuk Karakter:
         return JSON.parse(jsonString);
     }
 
-    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: WorldMemory, notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace): Promise<GameTurnResponse> {
+    async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: WorldMemory, notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace, worldMap: WorldMap): Promise<GameTurnResponse> {
         const recentHistory = history.slice(-5).map(entry => {
             if(entry.type === 'action') return `Pemain: ${entry.content}`;
             if(entry.type === 'narrative') return `DM: ${entry.content}`;
@@ -138,6 +139,7 @@ Aturan Utama:
 4.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
 5.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
 6.  **Detail Item Baru**: Setiap item baru yang ditambahkan ke inventaris pemain melalui \`pembaruanKarakter.itemDiterima\` HARUS menyertakan \`category\` dan \`usageNotes\`.
+7.  **Pembaruan Peta Dinamis**: Jika seorang NPC mengungkapkan lokasi baru yang dapat ditindaklanjuti dalam percakapan, perbarui \`mapUpdate\` dengan menambahkan node dan edge baru.
 
 Struktur JSON yang DIWAJIBKAN:
 {
@@ -148,10 +150,12 @@ Struktur JSON yang DIWAJIBKAN:
   "memoryUpdate": { "keyEvents": ["string"], "keyCharacters": ["string"], "worldStateSummary": "string" },
   "questsUpdate": [ { ... } ],
   "worldEventsUpdate": [ { ... } ],
-  "marketplaceUpdate": { "shops": [{...}] }
+  "marketplaceUpdate": { "shops": [{...}] },
+  "mapUpdate": { "nodes": [{...}], "edges": [{...}] }
 }`;
 
         const userPrompt = `Giliran Saat Ini: ${turnCount}
+PETA DUNIA (Lokasi yang Diketahui): ${JSON.stringify(worldMap)}
 MEMORI DUNIA: ${JSON.stringify(longTermMemory)}
 Latar Belakang Karakter: ${character.backstory}
 DAFTAR TOKO DUNIA: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}
