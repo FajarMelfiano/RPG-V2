@@ -1,8 +1,9 @@
 
 
+
 import OpenAI from 'openai';
-// FIX: Added WorldTheme to imports to support theme generation.
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory } from '../../types';
+// FIX: Added WorldMap to imports to support world map generation.
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory, WorldMap } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 
 if (!process.env.API_KEY) {
@@ -19,8 +20,8 @@ const getJsonContent = (completion: OpenAI.Chat.Completions.ChatCompletion): str
 }
 
 class OpenAiDungeonMaster implements IAiDungeonMasterService {
-    // FIX: Updated the return type to include `theme` and modified the system prompt to request it from the AI.
-    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; theme: WorldTheme; }> {
+    // FIX: Updated the return type to include `worldMap` and modified the system prompt to request it from the AI, aligning with the IAiDungeonMasterService interface.
+    async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; theme: WorldTheme; worldMap: WorldMap; }> {
         const systemPrompt = `Anda adalah seorang Arsitek Dunia AI. Tugas Anda adalah mengubah ide-ide pemain menjadi fondasi dunia fantasi yang kohesif. Balas HANYA dengan sebuah objek JSON tunggal yang valid. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
 
 Aturan Penting:
@@ -28,6 +29,7 @@ Aturan Penting:
 - Buat Marketplace awal dengan toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
 - Isi setiap toko dengan 3-7 item yang relevan.
 - **SETIAP ITEM HARUS MEMILIKI ID UNIK**. Fokus pada deskripsi item, bukan statistik numerik.
+- **Buat Peta Awal (WorldMap)**: Ciptakan 3-5 lokasi (node) yang saling terhubung di sekitar area awal. Tentukan jalur (edge) yang menghubungkannya.
 
 Struktur JSON yang DIWAJIBKAN:
 {
@@ -47,6 +49,10 @@ Struktur JSON yang DIWAJIBKAN:
         }] 
       }
     ]
+  },
+  "worldMap": {
+      "nodes": [ { "id": "string", "name": "string", "description": "string" } ],
+      "edges": [ { "fromNodeId": "string", "toNodeId": "string", "direction": "string", "description": "string" } ]
   }
 }`;
 

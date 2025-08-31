@@ -1,7 +1,8 @@
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory } from './types';
+import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap } from './types';
 import StartScreen from './components/StartScreen';
 import WorldCreationScreen from './components/WorldCreationScreen';
 import WorldLobbyScreen from './components/WorldLobbyScreen';
@@ -30,18 +31,20 @@ const App: React.FC = () => {
         const loadedWorlds: World[] = JSON.parse(savedData);
         // Migrasi data lama ke struktur memori baru untuk kompatibilitas mundur
         const migratedWorlds = loadedWorlds.map(world => {
+          let migratedWorld = { ...world };
           if (Array.isArray(world.longTermMemory) || typeof world.longTermMemory !== 'object') {
             console.log(`Migrasi memori untuk dunia: ${world.name}`);
-            return {
-              ...world,
-              longTermMemory: {
+            migratedWorld.longTermMemory = {
                 keyEvents: Array.isArray(world.longTermMemory) ? world.longTermMemory : [],
                 keyCharacters: [],
                 worldStateSummary: world.description || "Sejarah dunia ini diselimuti misteri."
-              }
             };
           }
-          return world;
+          if (!world.worldMap) {
+             console.log(`Migrasi peta untuk dunia: ${world.name}`);
+             migratedWorld.worldMap = { nodes: [], edges: [] };
+          }
+          return migratedWorld;
         });
         setWorlds(migratedWorlds);
       }
@@ -88,7 +91,7 @@ const App: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-        const { name, description, marketplace, theme } = await DungeonMaster.generateWorld(worldData);
+        const { name, description, marketplace, theme, worldMap } = await DungeonMaster.generateWorld(worldData);
         const newWorld: World = {
             id: crypto.randomUUID(),
             name,
@@ -103,6 +106,7 @@ const App: React.FC = () => {
             quests: [],
             characters: [],
             marketplace,
+            worldMap,
         };
         const updatedWorlds = [...worlds, newWorld];
         persistWorlds(updatedWorlds);
@@ -408,7 +412,7 @@ const App: React.FC = () => {
       const response = await DungeonMaster.generateNextScene(
           activeCharacter.character, activeCharacter.party, activeCharacter.scene, currentHistory,
           activeWorld.longTermMemory, activeCharacter.notes, activeWorld.quests, activeWorld.worldEvents, 
-          newTurnCount, action, activeCharacter.transactionLog, activeWorld.marketplace
+          newTurnCount, action, activeCharacter.transactionLog, activeWorld.marketplace, activeWorld.worldMap
       );
       
       const newEntries: StoryEntry[] = [];
@@ -484,6 +488,10 @@ const App: React.FC = () => {
       let updatedWorld = { ...activeWorld };
       if (response.memoryUpdate) {
           updatedWorld.longTermMemory = response.memoryUpdate;
+      }
+      
+      if (response.mapUpdate) {
+        updatedWorld.worldMap = response.mapUpdate;
       }
 
       if (response.marketplaceUpdate) {

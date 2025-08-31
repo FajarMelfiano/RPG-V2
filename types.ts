@@ -161,6 +161,24 @@ export interface WorldMemory {
   worldStateSummary: string;
 }
 
+export interface MapNode {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface MapEdge {
+  fromNodeId: string;
+  toNodeId: string;
+  direction: string;
+  description: string;
+}
+
+export interface WorldMap {
+  nodes: MapNode[];
+  edges: MapEdge[];
+}
+
 export interface GameTurnResponse {
     narasiBaru: string;
     pembaruanKarakter?: CharacterUpdatePayload;
@@ -170,6 +188,7 @@ export interface GameTurnResponse {
     questsUpdate?: Quest[];
     worldEventsUpdate?: Omit<WorldEvent, 'id' | 'turn'>[];
     marketplaceUpdate?: Marketplace;
+    mapUpdate?: WorldMap;
     partyUpdate?: {
         join?: Omit<Character, 'id'>;
         leave?: string; // name of character leaving
@@ -212,4 +231,5 @@ export interface World {
   quests: Quest[];
   characters: SavedCharacter[];
   marketplace: Marketplace;
+  worldMap: WorldMap;
 }

@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef } from 'react';
 import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot } from '../types';
 import CharacterSheet from './CharacterSheet';
@@ -8,9 +9,10 @@ import NotesPanel from './NotesPanel';
 import InventorySheet from './InventorySheet';
 import QuestLog from './QuestLog';
 import MarketplaceScreen from './MarketplaceScreen';
-import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon } from './icons';
+import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon } from './icons';
 import EquipmentSheet from './EquipmentSheet';
 import FamilySheet from './FamilySheet';
+import MapView from './MapView';
 
 interface SidePanelProps {
     character: Character;
@@ -28,12 +30,13 @@ interface SidePanelProps {
     isLoading: boolean;
     onEquipItem: (itemId: string) => void;
     onUnequipItem: (slot: ItemSlot) => void;
+    world: any; // Simplified for this context
 }
 
-type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family';
+type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family' | 'map';
 
 const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (props) => {
-    const { character, party, notes, onNotesChange, quests, worldEvents, marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, onUnequipItem } = props;
+    const { character, party, notes, onNotesChange, quests, worldEvents, marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, onUnequipItem, world } = props;
     const [activeTab, setActiveTab] = useState<ActiveTab>('character');
 
     const renderTabContent = () => {
@@ -54,6 +57,8 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
                 return <InventorySheet character={character} onEquipItem={onEquipItem} />;
             case 'quests':
                 return <QuestLog quests={quests} worldEvents={worldEvents} />;
+            case 'map':
+                return <MapView worldMap={world.worldMap} currentLocationName={scene.location} />;
             case 'notes':
                 return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
             case 'marketplace':
@@ -90,6 +95,9 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
                     </button>
                     <button onClick={() => setActiveTab('inventory')} className={getTabClass('inventory')} title="Inventaris">
                         <ChestIcon className="w-5 h-5" /> <span>Inventaris</span>
+                    </button>
+                     <button onClick={() => setActiveTab('map')} className={getTabClass('map')} title="Peta">
+                        <MapIcon className="w-5 h-5" /> <span>Peta</span>
                     </button>
                     <button onClick={() => setActiveTab('family')} className={getTabClass('family')} title="Keluarga">
                         <HeartIcon className="w-5 h-5" /> <span>Keluarga</span>

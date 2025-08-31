@@ -1,6 +1,7 @@
 
 
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory } from '../types';
+
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory, WorldMap } from '../types';
 import { geminiProvider } from './providers/geminiProvider';
 import { openAiProvider } from './providers/openAIProvider';
 
@@ -10,6 +11,7 @@ export interface IAiDungeonMasterService {
     description: string;
     marketplace: Marketplace;
     theme: WorldTheme;
+    worldMap: WorldMap;
   }>;
 
   generateCharacter(
@@ -33,7 +35,8 @@ export interface IAiDungeonMasterService {
     turnCount: number,
     playerAction: string,
     transactionLog: TransactionLogEntry[],
-    marketplace: Marketplace
+    marketplace: Marketplace,
+    worldMap: WorldMap,
   ): Promise<GameTurnResponse>;
 
   askOOCQuestion(

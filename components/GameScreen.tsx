@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot } from '../types';
 import StoryLog from './StoryLog';
@@ -47,6 +48,8 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
       />
 
       <SidePanel
+        // FIX: Added the missing 'world' prop to satisfy SidePanelProps requirements.
+        world={world}
         character={character}
         party={party}
         notes={notes}
