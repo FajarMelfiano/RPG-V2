@@ -273,7 +273,7 @@ Tugas Anda:
 5.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: worldGenerationSchema }
         });
@@ -298,7 +298,7 @@ Tugas Anda:
 7.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: characterGenerationSchema }
         });
@@ -340,7 +340,7 @@ Tugas Anda:
 8.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON yang disediakan.`;
         
         const response = await generateContentWithRotation({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: gameTurnSchema }
         });
@@ -358,7 +358,7 @@ Konteks Cerita:
 Jawaban Anda (sebagai GM):`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.5-flash",
+            model: "gemini-2.0-flash",
             contents: { parts: [{ text: prompt }] },
         });
         return response.text;
