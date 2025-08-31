@@ -46,6 +46,8 @@ export interface AnyItem {
   value: number;
   rarity: ItemRarity;
   type: 'Weapon' | 'Armor' | 'Accessory' | 'Consumable' | 'Misc';
+  category: string; // e.g., 'Potion', 'Scroll', 'Key', 'Material', 'Junk'
+  usageNotes: string; // e.g., 'Drink to restore health.' or 'Unlocks the old cellar door.'
   slot?: ItemSlot;
 }
 

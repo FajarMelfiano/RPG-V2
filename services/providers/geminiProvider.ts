@@ -40,8 +40,10 @@ const itemSchema = {
         rarity: { type: Type.STRING },
         type: { type: Type.STRING },
         slot: { type: Type.STRING },
+        category: { type: Type.STRING, description: "Kategori item yang spesifik (misalnya, 'Ramuan', 'Bahan', 'Item Misi', 'Sampah')." },
+        usageNotes: { type: Type.STRING, description: "Deskripsi singkat tentang cara item ini dapat digunakan dalam narasi (misalnya, 'Minum untuk memulihkan kesehatan' atau 'Gunakan pada pintu sel berkarat')." },
     },
-    required: ["id", "name", "description", "value", "rarity", "type"]
+    required: ["id", "name", "description", "value", "rarity", "type", "category", "usageNotes"]
 };
 
 const inventoryItemSchema = {
@@ -324,7 +326,7 @@ Tugas Anda:
 1.  **Sintesiskan Visi**: Ciptakan nama dan deskripsi dunia yang imersif.
 2.  **Pilih Tema Visual (WAJIB)**: Berdasarkan 'Konsep Inti Dunia', pilih SATU tema visual yang paling cocok dari daftar berikut: ['dark_fantasy', 'cyberpunk', 'steampunk', 'high_fantasy'].
 3.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
-4.  **Isi Inventaris Toko**: Untuk setiap toko, buat inventaris yang kaya dengan **8 hingga 15 item** yang relevan. Berikan ID unik (UUID) untuk setiap item.
+4.  **Isi Inventaris Toko**: Untuk setiap toko, buat inventaris yang kaya dengan **8 hingga 15 item** yang relevan. Berikan ID unik (UUID), \`category\`, dan \`usageNotes\` untuk setiap item.
 5.  **Buat Peta Awal (WorldMap)**: Ciptakan peta relasional awal. Buat 3-5 lokasi (node) yang saling terhubung di sekitar area awal. Setiap node harus memiliki ID unik, nama, dan deskripsi singkat. Tentukan jalur (edge) yang menghubungkan node-node ini, lengkap dengan arah (misal, 'Utara', 'Jalan Berbatu').
 6.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
@@ -352,8 +354,8 @@ Tugas Anda:
     *   \`appearance\`: Deskripsi penampilan yang kaya (2-3 kalimat), mencakup rambut, mata, fitur wajah, dan tanda unik (bekas luka, tato, dll.).
 3.  **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga untuk karakter ini. Tentukan \`name\`, \`relationship\`, \`status\` ('Hidup', 'Hilang', 'Meninggal', 'Dalam bahaya'), dan \`description\` singkat yang bisa menjadi pemicu plot.
 4.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
-5.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`. Fokus pada deskripsi item, bukan statistik numerik.
-6.  **ID ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID).
+5.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`.
+6.  **ID ITEM, KATEGORI & PENGGUNAAN**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID), \`category\` yang logis (misal: 'Peralatan', 'Ramuan', 'Item Misi'), dan \`usageNotes\` yang jelas (misal: 'Dipakai untuk bertarung', 'Minum untuk memulihkan HP').
 7.  **Adegan Awal & NPC Unik**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan.
     *   **ATURAN NAMA LOKASI**: Nama \`initialScene.location\` HARUS SAMA PERSIS dengan nama salah satu node di peta dunia awal.
     *   **Aturan Nama NPC**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia**. Hindari nama-nama generik. Gunakan konteks dunia sebagai inspirasi.
@@ -396,7 +398,7 @@ Tugas Anda:
 2.  **Pemeriksaan Keterampilan (Jika Perlu)**: Jika aksi pemain memiliki kemungkinan untuk gagal, buatlah \`skillCheck\`.
 3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain.
 4.  **Perbarui Status & Dunia**:
-    *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, dll., di \`pembaruanKarakter\`.
+    *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, dll., di \`pembaruanKarakter\`. Untuk setiap item baru di \`itemDiterima\`, pastikan untuk menyertakan \`category\` dan \`usageNotes\` yang detail.
     *   **Pembaruan Peta**: Terapkan **Aturan Manajemen Peta**. Jika peta diperbarui, sertakan di \`mapUpdate\`.
     *   **Pembaruan Adegan**: Perbarui \`sceneUpdate\` dengan lokasi baru. Terapkan **Aturan Konsistensi Lokasi** dan **Populasi Adegan**.
     *   **ATURAN WAJIB PEMBARUAN TOKO**: Terapkan **Aturan Tautkan Pedagang ke Toko**.
