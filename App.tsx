@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem } from './types';
 import StartScreen from './components/StartScreen';
@@ -390,7 +391,11 @@ const App: React.FC = () => {
       newEntries.push({ type: 'narrative', content: response.narasiBaru });
 
       const finalHistory = [...currentHistory, ...newEntries];
-      let updatedCharacterData = { ...response.karakterTerbaru, id: activeCharacter.character.id };
+      
+      let updatedCharacterData = activeCharacter.character;
+      if (response.karakterTerbaru) {
+          updatedCharacterData = { ...response.karakterTerbaru, id: activeCharacter.character.id };
+      }
       
       const existingPartyIds = new Map(activeCharacter.party.map(p => [p.name, p.id]));
       const updatedParty: Character[] = (response.partyTerbaru || []).map(companion => ({

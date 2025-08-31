@@ -3,6 +3,7 @@
 
 
 
+
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot } from '../../types';
@@ -214,7 +215,7 @@ const gameTurnSchema = {
         worldEventsUpdate: { type: Type.ARRAY, items: worldEventSchema },
         marketplaceUpdate: marketplaceSchema,
     },
-    required: ["narasiBaru", "karakterTerbaru", "sceneUpdate"],
+    required: ["narasiBaru", "sceneUpdate"],
 };
 
 class GeminiDungeonMaster implements IAiDungeonMasterService {
@@ -282,8 +283,8 @@ Kondisi Saat Ini:
 Tugas Anda:
 1.  **Proses Aksi & Narasikan**: Lanjutkan cerita berdasarkan aksi pemain. Narasikan hasilnya secara menarik. Lakukan 'Pemeriksaan Keterampilan' (\`skillCheck\`) jika perlu.
 2.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
-3.  **Perbarui Status Karakter (WAJIB)**: Selalu perbarui status karakter pemain di \`karakterTerbaru\`.
-4.  **Pembaruan Opsional (Gunakan Seperlunya)**: Field \`partyTerbaru\`, \`questsUpdate\`, \`worldEventsUpdate\`, dan \`marketplaceUpdate\` bersifat opsional. HANYA sertakan jika ada perubahan yang relevan dan signifikan. Jangan memperbarui pasar di setiap giliran.
+3.  **Pembaruan Status Karakter (OPSIONAL)**: Field \`karakterTerbaru\` sekarang bersifat OPSIONAL. HANYA sertakan objek karakter lengkap jika status, inventaris, emas, atau reputasinya berubah. Jika tidak ada perubahan pada pemain, JANGAN sertakan field \`karakterTerbaru\`.
+4.  **Pembaruan Opsional Lainnya**: Field \`partyTerbaru\`, \`questsUpdate\`, \`worldEventsUpdate\`, dan \`marketplaceUpdate\` juga bersifat opsional. HANYA sertakan jika ada perubahan yang relevan.
 5.  **Ketersediaan Toko**: Pastikan \`availableShopIds\` di \`sceneUpdate\` mencerminkan toko yang tersedia di lokasi baru secara realistis.
 6.  **Format Respons**: Pastikan output sesuai dengan skema JSON.`;
         
