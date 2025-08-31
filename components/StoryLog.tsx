@@ -7,8 +7,7 @@ const NpcPill: React.FC<{ npc: NPC; onClick: (npc: NPC) => void }> = ({ npc, onC
         <button 
             onClick={() => onClick(npc)} 
             className="flex items-center gap-2 bg-stone-950/60 py-2 px-3 rounded-lg border border-stone-700 hover:border-[var(--color-primary)] transition-all flex-shrink-0 shadow-md hover:shadow-[var(--color-primary)]/10 text-left w-48"
-            // FIX: Replaced the `title` prop on the CoinIcon with a conditional title on the parent button. This resolves a TypeScript error and avoids competing tooltips, improving UX by providing a single, informative tooltip for the entire component.
-            title={npc.shopId ? `Bicara dengan ${npc.name} (Pedagang)` : `Bicara dengan ${npc.name}`}
+            title={npc.shopId ? `Lihat detail ${npc.name} (Pedagang)` : `Lihat detail ${npc.name}`}
         >
             {npc.shopId && <CoinIcon className="w-4 h-4 text-yellow-400 flex-shrink-0" />}
             <div className="overflow-hidden">

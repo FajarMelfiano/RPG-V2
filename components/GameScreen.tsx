@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState } from 'react';
 import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC } from '../types';
 import StoryLog from './StoryLog';
@@ -9,6 +5,7 @@ import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
 import { BookOpenIcon, GlobeIcon } from './icons';
 import WorldCodex from './WorldCodex';
+import NpcDetailModal from './NpcDetailModal';
 
 interface GameScreenProps {
   world: World;
@@ -28,9 +25,13 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
   const [isJournalOpen, setIsJournalOpen] = useState(false);
   const [isCodexOpen, setIsCodexOpen] = useState(false);
   const [directShopId, setDirectShopId] = useState<string | null>(null);
+  const [selectedNpc, setSelectedNpc] = useState<NPC | null>(null);
 
+  const handleShowNpcDetails = (npc: NPC) => {
+    setSelectedNpc(npc);
+  };
 
-  const handleNpcClick = (npc: NPC) => {
+  const handleNpcInteraction = (npc: NPC) => {
     setActionText(`Bicara dengan ${npc.name}`);
     if (npc.shopId) {
       setDirectShopId(npc.shopId);
@@ -39,6 +40,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
           setIsJournalOpen(true);
       }
     }
+    setSelectedNpc(null); // Tutup modal setelah interaksi dimulai
   };
 
   const { character, party, scene, storyHistory, notes } = savedCharacter;
@@ -47,6 +49,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
   return (
     <div className="w-full max-w-[1600px] mx-auto h-[95vh] flex flex-row gap-4 sm:gap-6 p-1 sm:p-2">
       
+      {selectedNpc && (
+        <NpcDetailModal 
+            npc={selectedNpc}
+            onClose={() => setSelectedNpc(null)}
+            onInteract={handleNpcInteraction}
+        />
+      )}
+
       <WorldCodex 
         world={world}
         isOpen={isCodexOpen}
@@ -78,7 +88,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
         <StoryLog 
           storyHistory={storyHistory} 
           scene={scene}
-          onNpcClick={handleNpcClick}
+          onNpcClick={handleShowNpcDetails}
         />
         <ActionInput 
           onAction={onPlayerAction} 
