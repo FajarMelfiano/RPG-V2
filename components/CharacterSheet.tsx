@@ -1,6 +1,6 @@
 import React from 'react';
 import { Character } from '../types';
-import { SwordIcon, ShieldIcon, BookIcon, HeartIcon, ManaIcon, ReputationIcon, CoinIcon } from './icons';
+import { SwordIcon, ShieldIcon, BookIcon, HeartIcon, ManaIcon, ReputationIcon, CoinIcon, SparklesIcon, ChevronsRightIcon } from './icons';
 
 interface StatDisplayProps {
     label: string;
@@ -27,6 +27,13 @@ const CharacterSheet: React.FC<{ character: Character }> = ({ character }) => {
     const { name, race, characterClass, stats, backstory, gold } = character;
     const healthPercentage = stats.maxHealth > 0 ? (stats.health / stats.maxHealth) * 100 : 0;
     const manaPercentage = stats.maxMana > 0 ? (stats.mana / stats.maxMana) * 100 : 0;
+    
+    const getModifier = (score: number) => {
+        const modifier = Math.floor((score - 10) / 2);
+        return modifier >= 0 ? `+${modifier}` : `${modifier}`;
+    };
+
+    const dexModifierValue = Math.floor((stats.dexterity - 10) / 2);
 
     return (
     <div className="p-1">
@@ -62,12 +69,22 @@ const CharacterSheet: React.FC<{ character: Character }> = ({ character }) => {
       )}
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <StatDisplay label="KEK" value={stats.strength} icon={<SwordIcon className="w-4 h-4 text-red-400" />} />
-        <StatDisplay label="TKS" value={stats.dexterity} icon={<ShieldIcon className="w-4 h-4 text-green-400" />} />
-        <StatDisplay label="KON" value={stats.constitution} icon={<HeartIcon className="w-4 h-4 text-yellow-400" />} />
-        <StatDisplay label="KCR" value={stats.intelligence} icon={<BookIcon className="w-4 h-4 text-blue-400" />} />
-        <StatDisplay label="KBJ" value={stats.wisdom} icon={<BookIcon className="w-4 h-4 text-purple-400" />} />
-        <StatDisplay label="KRM" value={stats.charisma} icon={<ReputationIcon className="w-4 h-4 text-amber-400" />} />
+        <StatDisplay label="KEK" value={`${stats.strength} (${getModifier(stats.strength)})`} icon={<SwordIcon className="w-4 h-4 text-red-400" />} />
+        <StatDisplay label="TKS" value={`${stats.dexterity} (${getModifier(stats.dexterity)})`} icon={<ShieldIcon className="w-4 h-4 text-green-400" />} />
+        <StatDisplay label="KON" value={`${stats.constitution} (${getModifier(stats.constitution)})`} icon={<HeartIcon className="w-4 h-4 text-yellow-400" />} />
+        <StatDisplay label="KCR" value={`${stats.intelligence} (${getModifier(stats.intelligence)})`} icon={<BookIcon className="w-4 h-4 text-blue-400" />} />
+        <StatDisplay label="KBJ" value={`${stats.wisdom} (${getModifier(stats.wisdom)})`} icon={<BookIcon className="w-4 h-4 text-purple-400" />} />
+        <StatDisplay label="KRM" value={`${stats.charisma} (${getModifier(stats.charisma)})`} icon={<ReputationIcon className="w-4 h-4 text-amber-400" />} />
+      </div>
+
+      <DecorativeSeparator />
+
+      <h3 className="font-cinzel text-xl text-amber-300 mb-3 text-glow">Statistik Rinci</h3>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <StatDisplay label="Armor Class" value={10 + dexModifierValue} icon={<ShieldIcon className="w-4 h-4 text-stone-400" />} />
+        <StatDisplay label="Inisiatif" value={getModifier(stats.dexterity)} icon={<SparklesIcon className="w-4 h-4 text-yellow-400" />} />
+        <StatDisplay label="Srgn. Melee" value={getModifier(stats.strength)} icon={<SwordIcon className="w-4 h-4 text-red-500" />} />
+        <StatDisplay label="Srgn. Jauh" value={getModifier(stats.dexterity)} icon={<ChevronsRightIcon className="w-4 h-4 text-green-500" />} />
       </div>
       
       <DecorativeSeparator />

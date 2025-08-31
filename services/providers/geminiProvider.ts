@@ -1,7 +1,3 @@
-
-
-
-
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot } from '../../types';
@@ -254,7 +250,7 @@ Masukan Pemain:
 Tugas Anda:
 1.  **Sintesiskan Visi**: Ciptakan nama dan deskripsi dunia yang imersif.
 2.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
-3.  **Isi Inventaris Toko**: Untuk setiap toko, buat 3-5 item yang relevan dan deskriptif. Fokus pada narasi, BUKAN statistik numerik. Pastikan untuk memberikan ID unik (UUID) untuk setiap item.
+3.  **Isi Inventaris Toko**: Untuk setiap toko, buat inventaris yang kaya dengan **8 hingga 15 item** yang relevan dan deskriptif. Fokus pada narasi, BUKAN statistik numerik. Pastikan untuk memberikan ID unik (UUID) untuk setiap item.
 4.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await generateContentWithRotation({
@@ -319,7 +315,7 @@ Tugas Anda:
 3.  **Ketersediaan Toko (SANGAT PENTING)**: Berdasarkan deskripsi lokasi dan NPC yang Anda tempatkan di \`sceneUpdate\`, tentukan toko mana dari 'DAFTAR TOKO DUNIA' yang dapat diakses. Isi array \`availableShopIds\` dengan ID yang sesuai. Jika tidak ada toko, biarkan array kosong.
 4.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
 5.  **Perkembangan Dunia**: Secara berkala, pertimbangkan untuk memperkenalkan \`questsUpdate\` atau \`worldEventsUpdate\` baru.
-6.  **Memori & Ekonomi**: Jika terjadi peristiwa penting, rangkum dalam \`memorySummary\`. Jika \`turnCount\` kelipatan 20, segarkan inventaris 'traveling_merchant' dalam \`marketplaceUpdate\`.
+6.  **Memori & Perkembangan**: Jika terjadi peristiwa penting, rangkum dalam \`memorySummary\`. Inventaris toko bersifat konstan dan hanya berubah melalui tindakan pemain (membeli/menjual).
 7.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON yang disediakan.`;
         
         const response = await generateContentWithRotation({
