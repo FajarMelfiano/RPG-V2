@@ -1,8 +1,9 @@
 
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap } from './types';
+import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap, Stats } from './types';
 import StartScreen from './components/StartScreen';
 import WorldCreationScreen from './components/WorldCreationScreen';
 import WorldLobbyScreen from './components/WorldLobbyScreen';
@@ -469,21 +470,41 @@ const App: React.FC = () => {
       }
 
       let updatedParty = [...activeCharacter.party];
-      if (response.partyUpdate) {
-        if (response.partyUpdate.join) {
-          const newMember: Character = {
-            ...response.partyUpdate.join,
-            id: crypto.randomUUID()
-          };
-          updatedParty.push(newMember);
-          addNotification(`${newMember.name} telah bergabung dengan party!`, 'event');
+        if (response.partyUpdate) {
+            if (response.partyUpdate.join) {
+                const joinData = response.partyUpdate.join;
+                const defaultStats: Stats = {
+                    level: 1, health: 10, maxHealth: 10, mana: 0, maxMana: 0,
+                    strength: 10, dexterity: 10, constitution: 10,
+                    intelligence: 10, wisdom: 10, charisma: 10,
+                };
+
+                const newMember: Character = {
+                    id: crypto.randomUUID(),
+                    name: joinData.name,
+                    race: joinData.race,
+                    characterClass: joinData.characterClass,
+                    stats: { ...defaultStats, ...joinData.stats },
+                    age: 30,
+                    height: "Rata-rata",
+                    appearance: "Penampilan belum dideskripsikan.",
+                    backstory: "Seorang teman seperjalanan yang misterius bergabung.",
+                    inventory: [],
+                    equipment: {},
+                    reputation: 0,
+                    gold: 0,
+                    family: [],
+                };
+                updatedParty.push(newMember);
+                addNotification(`${newMember.name} telah bergabung dengan party!`, 'event');
+            }
+            if (response.partyUpdate.leave) {
+                const leftMemberName = response.partyUpdate.leave;
+                updatedParty = updatedParty.filter(p => p.name !== leftMemberName);
+                addNotification(`${leftMemberName} telah meninggalkan party.`, 'event');
+            }
         }
-        if (response.partyUpdate.leave) {
-          const leftMemberName = response.partyUpdate.leave;
-          updatedParty = updatedParty.filter(p => p.name !== leftMemberName);
-          addNotification(`${leftMemberName} telah meninggalkan party.`, 'event');
-        }
-      }
+
 
       let updatedWorld = { ...activeWorld };
       if (response.memoryUpdate) {

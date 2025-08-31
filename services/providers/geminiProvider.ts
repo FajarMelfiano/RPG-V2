@@ -43,7 +43,7 @@ const itemSchema = {
         category: { type: Type.STRING },
         usageNotes: { type: Type.STRING },
     },
-    required: ["id", "name", "description", "value", "rarity", "type", "category", "usageNotes"]
+    required: ["name", "description", "value", "rarity", "type", "category", "usageNotes"]
 };
 
 const inventoryItemSchema = {
@@ -300,7 +300,26 @@ const gameTurnSchema = {
         partyUpdate: {
             type: Type.OBJECT,
             properties: {
-                join: characterSchema,
+                join: {
+                    type: Type.OBJECT,
+                    properties: {
+                        name: { type: Type.STRING },
+                        race: { type: Type.STRING },
+                        characterClass: { type: Type.STRING },
+                        stats: {
+                            type: Type.OBJECT,
+                            properties: {
+                                level: { type: Type.INTEGER },
+                                health: { type: Type.INTEGER },
+                                maxHealth: { type: Type.INTEGER },
+                                mana: { type: Type.INTEGER },
+                                maxMana: { type: Type.INTEGER },
+                            },
+                             required: ["level", "health", "maxHealth", "mana", "maxMana"]
+                        }
+                    },
+                    required: ["name", "race", "characterClass", "stats"]
+                },
                 leave: { type: Type.STRING }
             }
         }
