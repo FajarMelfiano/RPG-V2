@@ -130,10 +130,20 @@ export interface Marketplace {
   shops: Shop[];
 }
 
+export interface CharacterUpdatePayload {
+  perubahanHp?: number;
+  perubahanMana?: number;
+  perubahanEmas?: number;
+  itemDiterima?: InventoryItem[];
+  itemDihapus?: {
+    name: string;
+    quantity: number;
+  }[];
+}
+
 export interface GameTurnResponse {
     narasiBaru: string;
-    karakterTerbaru: Omit<Character, 'id'>;
-    partyTerbaru?: Omit<Character, 'id'>[];
+    pembaruanKarakter?: CharacterUpdatePayload;
     sceneUpdate: Scene;
     skillCheck?: SkillCheckResult;
     memorySummary?: string; 

@@ -1,7 +1,7 @@
 
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem } from './types';
+import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload } from './types';
 import StartScreen from './components/StartScreen';
 import WorldCreationScreen from './components/WorldCreationScreen';
 import WorldLobbyScreen from './components/WorldLobbyScreen';
@@ -392,15 +392,48 @@ const App: React.FC = () => {
 
       const finalHistory = [...currentHistory, ...newEntries];
       
-      let updatedCharacterData = activeCharacter.character;
-      if (response.karakterTerbaru) {
-          updatedCharacterData = { ...response.karakterTerbaru, id: activeCharacter.character.id };
+      // --- START: New Delta Update Logic ---
+      let updatedCharacter = { ...activeCharacter.character };
+      const updates = response.pembaruanKarakter;
+
+      if (updates) {
+        if (updates.perubahanHp) {
+            updatedCharacter.stats.health = Math.max(0, Math.min(updatedCharacter.stats.maxHealth, updatedCharacter.stats.health + updates.perubahanHp));
+        }
+        if (updates.perubahanMana) {
+            updatedCharacter.stats.mana = Math.max(0, Math.min(updatedCharacter.stats.maxMana, updatedCharacter.stats.mana + updates.perubahanMana));
+        }
+        if (updates.perubahanEmas) {
+            updatedCharacter.gold = Math.max(0, updatedCharacter.gold + updates.perubahanEmas);
+        }
+        if (updates.itemDiterima) {
+            const newInventory = [...updatedCharacter.inventory];
+            updates.itemDiterima.forEach(newItem => {
+                const existingItem = newInventory.find(i => i.item.name.toLowerCase() === newItem.item.name.toLowerCase());
+                if (existingItem) {
+                    existingItem.quantity += newItem.quantity;
+                } else {
+                    newItem.item.id = newItem.item.id || crypto.randomUUID();
+                    newInventory.push(newItem);
+                }
+            });
+            updatedCharacter.inventory = newInventory;
+        }
+        if (updates.itemDihapus) {
+            let inventoryAfterRemoval = [...updatedCharacter.inventory];
+            updates.itemDihapus.forEach(itemToRemove => {
+                const itemIndex = inventoryAfterRemoval.findIndex(i => i.item.name.toLowerCase() === itemToRemove.name.toLowerCase());
+                if (itemIndex > -1) {
+                    inventoryAfterRemoval[itemIndex].quantity -= itemToRemove.quantity;
+                    if (inventoryAfterRemoval[itemIndex].quantity <= 0) {
+                        inventoryAfterRemoval = inventoryAfterRemoval.filter((_, index) => index !== itemIndex);
+                    }
+                }
+            });
+            updatedCharacter.inventory = inventoryAfterRemoval;
+        }
       }
-      
-      const existingPartyIds = new Map(activeCharacter.party.map(p => [p.name, p.id]));
-      const updatedParty: Character[] = (response.partyTerbaru || []).map(companion => ({
-          ...companion, id: existingPartyIds.get(companion.name) || crypto.randomUUID()
-      }));
+      // --- END: New Delta Update Logic ---
 
       let updatedWorld = { ...activeWorld };
       updatedWorld.longTermMemory = response.memorySummary ? [...updatedWorld.longTermMemory, response.memorySummary] : updatedWorld.longTermMemory;
@@ -435,8 +468,8 @@ const App: React.FC = () => {
       
       const updatedSavedCharacter: SavedCharacter = {
         ...activeCharacter,
-        character: updatedCharacterData,
-        party: updatedParty,
+        character: updatedCharacter,
+        party: activeCharacter.party, // Party updates are narrated, not sent as data
         scene: response.sceneUpdate,
         storyHistory: finalHistory,
         turnCount: newTurnCount,
@@ -446,7 +479,7 @@ const App: React.FC = () => {
       
       updateActiveCharacterAndWorld(updatedSavedCharacter, updatedWorld);
       
-      if (updatedCharacterData.stats.health <= 0) {
+      if (updatedCharacter.stats.health <= 0) {
         setGameState(GameState.GAME_OVER);
       }
 

@@ -1,9 +1,6 @@
 
 
 
-
-
-
 // FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
 import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot } from '../../types';
@@ -191,12 +188,36 @@ const worldEventSchema = {
     required: ["title", "description", "type"]
 };
 
+const characterUpdateSchema = {
+    type: Type.OBJECT,
+    properties: {
+        perubahanHp: { type: Type.INTEGER, description: "Perubahan HP karakter. Positif untuk penyembuhan, negatif untuk kerusakan. Kosongkan jika tidak ada perubahan." },
+        perubahanMana: { type: Type.INTEGER, description: "Perubahan Mana karakter. Positif untuk pemulihan, negatif untuk penggunaan. Kosongkan jika tidak ada perubahan." },
+        perubahanEmas: { type: Type.INTEGER, description: "Jumlah emas yang diterima (positif) atau hilang (negatif). Kosongkan jika tidak ada." },
+        itemDiterima: { 
+            type: Type.ARRAY,
+            description: "Daftar item BARU yang diterima karakter (misalnya dari rampasan atau hadiah). Jangan sertakan item yang dibeli.",
+            items: inventoryItemSchema
+        },
+        itemDihapus: {
+            type: Type.ARRAY,
+            description: "Daftar item yang DIHAPUS dari inventaris karakter (misalnya karena digunakan, dijual, atau hilang).",
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    name: { type: Type.STRING, description: "Nama item yang dihapus. HARUS SAMA PERSIS dengan nama di inventaris." },
+                    quantity: { type: Type.INTEGER, description: "Jumlah yang dihapus." }
+                },
+                required: ["name", "quantity"]
+            }
+        }
+    }
+};
+
 const gameTurnSchema = {
     type: Type.OBJECT,
     properties: {
-        narasiBaru: { type: Type.STRING },
-        karakterTerbaru: characterSchema,
-        partyTerbaru: { type: Type.ARRAY, items: characterSchema },
+        narasiBaru: { type: Type.STRING, description: "Bagian cerita selanjutnya, mendeskripsikan hasil dari aksi pemain dan situasi baru. Harus menarik dan detail." },
         sceneUpdate: sceneSchema,
         skillCheck: {
             type: Type.OBJECT,
@@ -210,13 +231,15 @@ const gameTurnSchema = {
                 success: { type: Type.BOOLEAN }
             }
         },
-        memorySummary: { type: Type.STRING },
+        memorySummary: { type: Type.STRING, description: "Jika terjadi peristiwa yang SANGAT PENTING, rangkum dalam satu kalimat di sini. Jika tidak, kosongkan." },
         questsUpdate: { type: Type.ARRAY, items: questSchema },
         worldEventsUpdate: { type: Type.ARRAY, items: worldEventSchema },
         marketplaceUpdate: marketplaceSchema,
+        pembaruanKarakter: characterUpdateSchema
     },
     required: ["narasiBaru", "sceneUpdate"],
 };
+
 
 class GeminiDungeonMaster implements IAiDungeonMasterService {
     async generateWorld(worldData: { concept: string; factions: string; conflict: string; }): Promise<{ name: string; description: string; marketplace: Marketplace; }> {
@@ -252,7 +275,7 @@ Masukan Pemain:
 Tugas Anda:
 1.  **Integrasi Dunia**: Karakter harus terasa seperti bagian dari dunia ini.
 2.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
-3.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`. Fokus pada deskripsi item, bukan statistik numerik.
+3.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`. Fokus pada deskripsi item, bukan statistik numerik. PENTING: Karakter HARUS memiliki inventaris dan perlengkapan awal yang sesuai.
 4.  **ID ITEM**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID).
 5.  **Adegan Awal**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan. Tentukan \`availableShopIds\` secara logis berdasarkan lokasi. Sikap NPC HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
 6.  **Format JSON**: Pastikan output sesuai dengan skema.`;
@@ -266,27 +289,33 @@ Tugas Anda:
     }
 
     async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: string[], notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace): Promise<GameTurnResponse> {
-        const prompt = `Anda adalah Dungeon Master AI. Lanjutkan cerita. SEMUA TEKS YANG DIHASILKAN HARUS DALAM BAHASA INDONESIA.
+        const prompt = `Anda adalah Dungeon Master AI. Lanjutkan cerita. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
+
+**ATURAN UTAMA: ANDA TIDAK LAGI MENGIRIM STATUS LENGKAP KARAKTER. ANDA HANYA MELAPORKAN PERUBAHAN.**
 
 Giliran Saat Ini: ${turnCount}
 Konteks Dunia:
-- DAFTAR TOKO YANG ADA DI DUNIA: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name, description: s.description})))}
 - LOG TRANSAKSI TERBARU: ${transactionLog.length > 0 ? transactionLog.map(t => `- Giliran ${t.turn}: ${t.type === 'buy' ? 'Membeli' : 'Menjual'} ${t.itemName} (x${t.quantity}) seharga ${Math.abs(t.goldAmount)} emas.`).join('\n') : 'Tidak ada.'}
 - CATATAN PEMAIN: ${notes || 'Tidak ada.'}
-- ... (dan data lainnya seperti memori, misi, dll.)
+- MEMORI JANGKA PANJANG: ${longTermMemory.join('\n- ')}
+- MISI AKTIF: ${quests.filter(q => q.status === 'Aktif').map(q => q.title).join(', ') || 'Tidak ada.'}
 
 Kondisi Saat Ini:
-- Karakter Pemain (termasuk perlengkapan): ${JSON.stringify(character, null, 2)}
+- Karakter Pemain: ${JSON.stringify({ name: character.name, stats: character.stats, gold: character.gold, inventory: character.inventory.map(i => `${i.item.name} (x${i.quantity})`) })}
 - Adegan: ${JSON.stringify(scene, null, 2)}
 - Aksi Pemain: "${playerAction}"
 
 Tugas Anda:
-1.  **Proses Aksi & Narasikan**: Lanjutkan cerita berdasarkan aksi pemain. Narasikan hasilnya secara menarik. Lakukan 'Pemeriksaan Keterampilan' (\`skillCheck\`) jika perlu.
-2.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
-3.  **Pembaruan Status Karakter (OPSIONAL)**: Field \`karakterTerbaru\` sekarang bersifat OPSIONAL. HANYA sertakan objek karakter lengkap jika status, inventaris, emas, atau reputasinya berubah. Jika tidak ada perubahan pada pemain, JANGAN sertakan field \`karakterTerbaru\`.
-4.  **Pembaruan Opsional Lainnya**: Field \`partyTerbaru\`, \`questsUpdate\`, \`worldEventsUpdate\`, dan \`marketplaceUpdate\` juga bersifat opsional. HANYA sertakan jika ada perubahan yang relevan.
-5.  **Ketersediaan Toko**: Pastikan \`availableShopIds\` di \`sceneUpdate\` mencerminkan toko yang tersedia di lokasi baru secara realistis.
-6.  **Format Respons**: Pastikan output sesuai dengan skema JSON.`;
+1.  **Narasikan Hasil**: Lanjutkan cerita berdasarkan aksi pemain. Jika perlu, lakukan 'Pemeriksaan Keterampilan' (\`skillCheck\`).
+2.  **LAPORKAN PERUBAHAN STATUS (WAJIB)**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah.
+    *   **HP/Mana/Emas**: Jika HP karakter berkurang 5, isi \`perubahanHp: -5\`. Jika dapat 10 emas, isi \`perubahanEmas: 10\`.
+    *   **Item Diterima**: Jika pemain menemukan 'Ramuan Kesehatan' dari rampasan, tambahkan objek item lengkap ke \`itemDiterima\`. JANGAN laporkan item yang dibeli di sini.
+    *   **Item Dihapus**: Jika pemain menggunakan 'Obor', tambahkan \`{ "name": "Obor", "quantity": 1 }\` ke \`itemDihapus\`. JANGAN laporkan item yang dijual di sini.
+    *   **PENTING**: Jika tidak ada perubahan pada suatu stat, JANGAN sertakan field-nya. Jika tidak ada perubahan status sama sekali, kosongkan \`pembaruanKarakter\`.
+3.  **Perbarui Adegan**: Perbarui \`sceneUpdate\` dengan informasi lokasi, deskripsi, dan status NPC saat ini.
+4.  **Perkembangan Dunia**: Secara berkala, pertimbangkan untuk memperkenalkan \`questsUpdate\` atau \`worldEventsUpdate\` baru.
+5.  **Memori & Ekonomi**: Jika terjadi peristiwa penting, rangkum dalam \`memorySummary\`. Jika \`turnCount\` kelipatan 20, segarkan inventaris 'traveling_merchant' dalam \`marketplaceUpdate\`.
+6.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON yang disediakan.`;
         
         const response = await generateContentWithRotation({
             model: "gemini-2.5-flash",
