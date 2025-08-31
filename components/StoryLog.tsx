@@ -6,7 +6,7 @@ const NpcPill: React.FC<{ npc: NPC; onClick: (npc: NPC) => void }> = ({ npc, onC
     return (
         <button 
             onClick={() => onClick(npc)} 
-            className="flex items-center gap-2 bg-stone-950/60 py-2 px-3 rounded-lg border border-stone-700 hover:border-[var(--color-primary)] transition-all flex-shrink-0 shadow-md hover:shadow-[var(--color-primary)]/10 text-left w-48"
+            className="flex items-center gap-2 bg-stone-950/60 py-2 px-3 rounded-lg border border-stone-700 hover:border-[var(--color-primary)] transition-all shadow-md hover:shadow-[var(--color-primary)]/10 text-left"
             title={npc.shopId ? `Lihat detail ${npc.name} (Pedagang)` : `Lihat detail ${npc.name}`}
         >
             {npc.shopId && <CoinIcon className="w-4 h-4 text-yellow-400 flex-shrink-0" />}
@@ -26,7 +26,7 @@ const StoryHeader: React.FC<{ scene: Scene; onNpcClick: (npc: NPC) => void; }> =
       {scene.npcs.length > 0 && (
           <div>
             <h3 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-2">Terlihat di Sekitar:</h3>
-            <div className="flex gap-2 overflow-x-auto pb-2 -mb-2" style={{ scrollbarWidth: 'thin' }}>
+            <div className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
                 {scene.npcs.map((npc) => (
                     <NpcPill
                       key={npc.name} 
