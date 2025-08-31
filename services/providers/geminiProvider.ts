@@ -40,8 +40,8 @@ const itemSchema = {
         rarity: { type: Type.STRING },
         type: { type: Type.STRING },
         slot: { type: Type.STRING },
-        category: { type: Type.STRING, description: "Kategori item yang spesifik (misalnya, 'Ramuan', 'Bahan', 'Item Misi', 'Sampah')." },
-        usageNotes: { type: Type.STRING, description: "Deskripsi singkat tentang cara item ini dapat digunakan dalam narasi (misalnya, 'Minum untuk memulihkan kesehatan' atau 'Gunakan pada pintu sel berkarat')." },
+        category: { type: Type.STRING },
+        usageNotes: { type: Type.STRING },
     },
     required: ["id", "name", "description", "value", "rarity", "type", "category", "usageNotes"]
 };
@@ -154,9 +154,9 @@ const characterSchema = {
     name: { type: Type.STRING },
     race: { type: Type.STRING },
     characterClass: { type: Type.STRING },
-    age: { type: Type.INTEGER, description: "Umur karakter, ditentukan secara logis berdasarkan ras dan latar belakang." },
-    height: { type: Type.STRING, description: "Tinggi badan karakter dalam cm (misal: '180 cm')." },
-    appearance: { type: Type.STRING, description: "Deskripsi penampilan fisik yang detail dan kaya (2-3 kalimat), termasuk fitur wajah, rambut, mata, dan tanda unik seperti bekas luka atau tato." },
+    age: { type: Type.INTEGER },
+    height: { type: Type.STRING },
+    appearance: { type: Type.STRING },
     backstory: { type: Type.STRING },
     stats: statsSchema,
     inventory: { type: Type.ARRAY, items: inventoryItemSchema },
@@ -181,7 +181,7 @@ const sceneSchema = {
                     name: { type: Type.STRING },
                     description: { type: Type.STRING },
                     attitude: { type: Type.STRING, enum: ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'] },
-                    shopId: { type: Type.STRING, description: "Jika NPC ini adalah pedagang, sertakan ID toko mereka dari daftar marketplace dunia. Jika tidak, kosongkan." }
+                    shopId: { type: Type.STRING }
                 },
                 required: ["name", "description", "attitude"]
             }
@@ -239,29 +239,26 @@ const worldEventSchema = {
 const characterUpdateSchema = {
     type: Type.OBJECT,
     properties: {
-        perubahanHp: { type: Type.INTEGER, description: "Perubahan HP karakter. Positif untuk penyembuhan, negatif untuk kerusakan. Kosongkan jika tidak ada perubahan." },
-        perubahanMana: { type: Type.INTEGER, description: "Perubahan Mana karakter. Positif untuk pemulihan, negatif untuk penggunaan. Kosongkan jika tidak ada perubahan." },
-        perubahanEmas: { type: Type.INTEGER, description: "Jumlah emas yang diterima (positif) atau hilang (negatif). Kosongkan jika tidak ada." },
+        perubahanHp: { type: Type.INTEGER },
+        perubahanMana: { type: Type.INTEGER },
+        perubahanEmas: { type: Type.INTEGER },
         itemDiterima: { 
             type: Type.ARRAY,
-            description: "Daftar item BARU yang diterima karakter (misalnya dari rampasan atau hadiah). Jangan sertakan item yang dibeli.",
             items: inventoryItemSchema
         },
         itemDihapus: {
             type: Type.ARRAY,
-            description: "Daftar item yang DIHAPUS dari inventaris karakter (misalnya karena digunakan, dijual, atau hilang).",
             items: {
                 type: Type.OBJECT,
                 properties: {
-                    name: { type: Type.STRING, description: "Nama item yang dihapus. HARUS SAMA PERSIS dengan nama di inventaris." },
-                    quantity: { type: Type.INTEGER, description: "Jumlah yang dihapus." }
+                    name: { type: Type.STRING },
+                    quantity: { type: Type.INTEGER }
                 },
                 required: ["name", "quantity"]
             }
         },
         keluargaDiperbarui: {
             type: Type.ARRAY,
-            description: "Jika status anggota keluarga berubah (misalnya dari 'Hidup' menjadi 'Dalam bahaya'), laporkan SELURUH daftar keluarga yang diperbarui di sini.",
             items: familyMemberSchema
         }
     }
@@ -270,9 +267,9 @@ const characterUpdateSchema = {
 const worldMemorySchema = {
     type: Type.OBJECT,
     properties: {
-        keyEvents: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Daftar peristiwa paling penting dalam cerita, yang membentuk dunia." },
-        keyCharacters: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Daftar karakter (NPC) paling penting dan peran mereka." },
-        worldStateSummary: { type: Type.STRING, description: "Ringkasan status dunia saat ini, termasuk konflik utama dan atmosfer umum." }
+        keyEvents: { type: Type.ARRAY, items: { type: Type.STRING } },
+        keyCharacters: { type: Type.ARRAY, items: { type: Type.STRING } },
+        worldStateSummary: { type: Type.STRING }
     },
     required: ["keyEvents", "keyCharacters", "worldStateSummary"]
 };
@@ -280,7 +277,7 @@ const worldMemorySchema = {
 const gameTurnSchema = {
     type: Type.OBJECT,
     properties: {
-        narasiBaru: { type: Type.STRING, description: "Bagian cerita selanjutnya, mendeskripsikan hasil dari aksi pemain dan situasi baru. Harus menarik dan detail." },
+        narasiBaru: { type: Type.STRING },
         sceneUpdate: sceneSchema,
         skillCheck: {
             type: Type.OBJECT,
@@ -302,10 +299,9 @@ const gameTurnSchema = {
         mapUpdate: worldMapSchema,
         partyUpdate: {
             type: Type.OBJECT,
-            description: "Gunakan ini JIKA seorang NPC bergabung atau meninggalkan party.",
             properties: {
                 join: characterSchema,
-                leave: { type: Type.STRING, description: "Nama karakter yang meninggalkan party." }
+                leave: { type: Type.STRING }
             }
         }
     },

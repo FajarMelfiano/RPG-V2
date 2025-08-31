@@ -1,7 +1,3 @@
-
-
-
-
 import OpenAI from 'openai';
 // FIX: Added WorldMap to imports to support world map generation.
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory, WorldMap } from '../../types';
@@ -29,7 +25,7 @@ Aturan Penting:
 - **Pilih Tema (WAJIB)**: Berdasarkan 'Konsep Inti Dunia', pilih SATU tema yang paling cocok dari daftar ini: ['dark_fantasy', 'cyberpunk', 'steampunk', 'high_fantasy'].
 - Buat Marketplace awal dengan toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
 - Isi setiap toko dengan 3-7 item yang relevan.
-- **SETIAP ITEM HARUS MEMILIKI ID UNIK**. Fokus pada deskripsi item, bukan statistik numerik.
+- **SETIAP ITEM HARUS MEMILIKI ID UNIK, KATEGORI, DAN CATATAN PENGGUNAAN**. Fokus pada deskripsi item, bukan statistik numerik.
 - **Buat Peta Awal (WorldMap)**: Ciptakan 3-5 lokasi (node) yang saling terhubung di sekitar area awal. Tentukan jalur (edge) yang menghubungkannya.
 
 Struktur JSON yang DIWAJIBKAN:
@@ -44,7 +40,7 @@ Struktur JSON yang DIWAJIBKAN:
         "inventory": [{ 
           "item": { 
             "id": "string", "name": "string", "description": "string", "value": "integer", "rarity": "string", 
-            "type": "string", "slot": "string"
+            "type": "string", "slot": "string", "category": "string (e.g., 'Potion', 'Weapon', 'Material')", "usageNotes": "string (e.g., 'Drink to restore health.')"
           }, 
           "quantity": "integer" 
         }] 
@@ -85,7 +81,7 @@ Aturan Penting:
 - **Level Awal Dinamis**: Analisis 'Latar Belakang & Pengalaman' untuk menentukan level awal (1-5).
 - **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga dalam array \`family\`.
 - **Nama NPC Unik**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia** (dapat disimpulkan dari konteks). Hindari nama-nama generik.
-- **Perlengkapan & Item**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik. Fokus pada deskripsi, bukan statistik.
+- **Perlengkapan & Item**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik, \`category\`, dan \`usageNotes\`. Fokus pada deskripsi, bukan statistik.
 - Adegan awal ('initialScene') HARUS menyertakan \`availableShopIds\` yang logis.
 - **Tautkan Pedagang**: Jika NPC di adegan awal adalah seorang pedagang, isi bidang \`shopId\` mereka dengan ID toko yang relevan.
 
@@ -97,8 +93,8 @@ Struktur JSON yang DIWAJIBKAN:
     "backstory": "string",
     "family": [{ "name": "string", "relationship": "string", "status": "string", "description": "string" }],
     "stats": { "level": "integer", "health": "integer", "maxHealth": "integer", "mana": "integer", "maxMana": "integer", "strength": "integer", "dexterity": "integer", "constitution": "integer", "intelligence": "integer", "wisdom": "integer", "charisma": "integer" },
-    "inventory": [{ "item": { "id": "string", "name": "string", ... }, "quantity": "integer" }],
-    "equipment": { "mainHand": { "id": "string", ... }, "chest": { "id": "string", ... } },
+    "inventory": [{ "item": { "id": "string", "name": "string", "category": "string", "usageNotes": "string", ... }, "quantity": "integer" }],
+    "equipment": { "mainHand": { "id": "string", "name": "string", "category": "string", "usageNotes": "string", ... }, "chest": { "id": "string", ... } },
     "reputation": "integer", "gold": "integer"
   },
   "initialScene": { "location": "string", "description": "string", "npcs": [{"name": "string", "description": "string", "attitude": "string", "shopId": "string | null"}], "availableShopIds": ["string"] },
@@ -141,6 +137,7 @@ Aturan Utama:
 3.  **Tautkan Pedagang**: Jika NPC di adegan adalah seorang pedagang, isi bidang \`shopId\` mereka dengan ID toko yang sesuai dari 'DAFTAR TOKO DUNIA'.
 4.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
 5.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
+6.  **Detail Item Baru**: Setiap item baru yang ditambahkan ke inventaris pemain melalui \`pembaruanKarakter.itemDiterima\` HARUS menyertakan \`category\` dan \`usageNotes\`.
 
 Struktur JSON yang DIWAJIBKAN:
 {
