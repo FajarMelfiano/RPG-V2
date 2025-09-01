@@ -35,15 +35,35 @@ interface SidePanelProps {
 
 type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family' | 'map' | 'residence';
 
-const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (props) => {
-    const { character, party, notes, onNotesChange, quests, worldEvents, marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, onUnequipItem, world, directShopId, setDirectShopId } = props;
+const SidePanel: React.FC<SidePanelProps> = (props) => {
+    const { 
+        isOpen, onClose, character, party, notes, onNotesChange, quests, worldEvents, 
+        marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, 
+        onUnequipItem, world, directShopId, setDirectShopId 
+    } = props;
+
     const [activeTab, setActiveTab] = useState<ActiveTab>('character');
+    const tabsRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (directShopId) {
             setActiveTab('marketplace');
         }
     }, [directShopId]);
+
+    const handleWheel = (e: React.WheelEvent) => {
+        if (tabsRef.current) {
+            tabsRef.current.scrollLeft += e.deltaY;
+        }
+    };
+
+    const getTabClass = (tabName: ActiveTab) => {
+        return `flex-shrink-0 py-2 px-3 text-xs font-bold rounded-md flex items-center justify-center gap-1.5 transition-all duration-300 transform border-2 min-w-[100px] ${
+            activeTab === tabName 
+            ? 'bg-[var(--color-primary-dark)]/50 text-[var(--color-text-header)] border-[var(--color-primary-hover)] shadow-lg scale-105' 
+            : 'bg-stone-950/50 hover:bg-stone-900/70 text-stone-300 border-transparent hover:border-[var(--color-primary-dark)]'
+        }`;
+    }
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -85,23 +105,8 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
         }
     }
 
-    const getTabClass = (tabName: ActiveTab) => {
-        return `flex-shrink-0 py-2 px-3 text-xs font-bold rounded-md flex items-center justify-center gap-1.5 transition-all duration-300 transform border-2 min-w-[100px] ${
-            activeTab === tabName 
-            ? 'bg-[var(--color-primary-dark)]/50 text-[var(--color-text-header)] border-[var(--color-primary-hover)] shadow-lg scale-105' 
-            : 'bg-stone-950/50 hover:bg-stone-900/70 text-stone-300 border-transparent hover:border-[var(--color-primary-dark)]'
-        }`;
-    }
-    
-    const tabsRef = useRef<HTMLDivElement>(null);
-    const handleWheel = (e: React.WheelEvent) => {
-        if (tabsRef.current) {
-            tabsRef.current.scrollLeft += e.deltaY;
-        }
-    };
-
-    return (
-        <div className="flex flex-col gap-4 h-full">
+    const panelInnerContent = (
+        <>
             <div className="flex-shrink-0 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-hidden">
                 <div ref={tabsRef} onWheel={handleWheel} className="flex gap-1 overflow-x-auto pb-1 -mb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
                     <button onClick={() => setActiveTab('character')} className={getTabClass('character')} title="Karakter">
@@ -139,12 +144,8 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
             <div className="flex-grow min-h-0 overflow-y-auto pr-1">
                 {renderTabContent()}
             </div>
-        </div>
+        </>
     );
-};
-
-const SidePanel: React.FC<SidePanelProps> = (props) => {
-    const { isOpen, onClose } = props;
 
     // Mobile & Tablet: Full-screen overlay
     const MobileJournal = (
@@ -165,8 +166,8 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
                 >
                     <XIcon className="w-6 h-6" />
                 </button>
-                <div className="h-full pt-8">
-                    <PanelContent {...props} />
+                <div className="h-full pt-8 flex flex-col gap-4">
+                    {panelInnerContent}
                 </div>
             </aside>
         </div>
@@ -174,9 +175,8 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
 
     // Desktop: Static side panel
     const DesktopJournal = (
-        <aside className="hidden md:flex flex-col flex-shrink-0 h-full journal-panel p-4">
-            {/* The wrapping div that caused scroll issues was here. It has been removed. */}
-            <PanelContent {...props} />
+        <aside className="hidden md:flex flex-col flex-shrink-0 h-full journal-panel p-4 gap-4">
+            {panelInnerContent}
         </aside>
     );
 
