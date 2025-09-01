@@ -1,7 +1,8 @@
 
+
 import OpenAI from 'openai';
 // FIX: Added WorldMap to imports to support world map generation.
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory, WorldMap } from '../../types';
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory, WorldMap, Residence } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 
 if (!process.env.API_KEY) {
@@ -81,6 +82,7 @@ Aturan Penting:
 - **Ciptakan Detail Fisik (WAJIB)**: Hasilkan \`age\`, \`height\`, dan \`appearance\` yang realistis dan deskriptif.
 - **Level Awal Dinamis**: Analisis 'Latar Belakang & Pengalaman' untuk menentukan level awal (1-5).
 - **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga dalam array \`family\`.
+- **Properti Awal**: Jika latar belakang menyiratkan kepemilikan, berikan properti awal di array \`residences\`. Jika tidak, biarkan kosong.
 - **Nama NPC Unik**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia** (dapat disimpulkan dari konteks). Hindari nama-nama generik.
 - **Perlengkapan & Item**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik, \`category\`, dan \`usageNotes\`. Fokus pada deskripsi, bukan statistik.
 - Adegan awal ('initialScene') HARUS menyertakan \`availableShopIds\` yang logis.
@@ -93,6 +95,7 @@ Struktur JSON yang DIWAJIBKAN:
     "age": "integer", "height": "string", "appearance": "string",
     "backstory": "string",
     "family": [{ "name": "string", "relationship": "string", "status": "string", "description": "string" }],
+    "residences": [{ "id": "string", "name": "string", "description": "string", "location": "string", "storage": [] }],
     "stats": { "level": "integer", "health": "integer", "maxHealth": "integer", "mana": "integer", "maxMana": "integer", "strength": "integer", "dexterity": "integer", "constitution": "integer", "intelligence": "integer", "wisdom": "integer", "charisma": "integer" },
     "inventory": [{ "item": { "id": "string", "name": "string", "category": "string", "usageNotes": "string", ... }, "quantity": "integer" }],
     "equipment": { "mainHand": { "id": "string", "name": "string", "category": "string", "usageNotes": "string", ... }, "chest": { "id": "string", ... } },
@@ -134,17 +137,18 @@ Masukan Pemain untuk Karakter:
 
 Aturan Utama:
 1.  **Konsistensi Naratif**: Baca 'MEMORI DUNIA' dan 'Latar Belakang Karakter'. Cerita Anda HARUS konsisten dengan informasi ini.
-2.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan 5-10 NPC yang beragam.
-3.  **Tautkan Pedagang**: Jika NPC di adegan adalah seorang pedagang, isi bidang \`shopId\` mereka dengan ID toko yang sesuai dari 'DAFTAR TOKO DUNIA'.
-4.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
-5.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
-6.  **Detail Item Baru**: Setiap item baru yang ditambahkan ke inventaris pemain melalui \`pembaruanKarakter.itemDiterima\` HARUS menyertakan \`category\` dan \`usageNotes\`.
-7.  **Pembaruan Peta Dinamis**: Jika seorang NPC mengungkapkan lokasi baru yang dapat ditindaklanjuti dalam percakapan, perbarui \`mapUpdate\` dengan menambahkan node dan edge baru.
+2.  **KONSISTENSI TRANSAKSI**: Periksa inventaris dan properti pemain. JANGAN menawarkan untuk menjual item/properti yang sudah mereka miliki.
+3.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan 5-10 NPC yang beragam.
+4.  **Tautkan Pedagang**: Jika NPC di adegan adalah seorang pedagang, isi bidang \`shopId\` mereka dengan ID toko yang sesuai dari 'DAFTAR TOKO DUNIA'.
+5.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter (termasuk properti baru di \`residenceGained\`).
+6.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
+7.  **Detail Item Baru**: Setiap item baru yang ditambahkan ke inventaris pemain melalui \`pembaruanKarakter.itemDiterima\` HARUS menyertakan \`category\` dan \`usageNotes\`.
+8.  **Pembaruan Peta Dinamis**: Jika seorang NPC mengungkapkan lokasi baru yang dapat ditindaklanjuti dalam percakapan, perbarui \`mapUpdate\` dengan menambahkan node dan edge baru.
 
 Struktur JSON yang DIWAJIBKAN:
 {
   "narasiBaru": "string",
-  "pembaruanKarakter": { ... },
+  "pembaruanKarakter": { "residenceGained": { ... }, ... },
   "sceneUpdate": { "location": "string", "description": "string", "npcs": [{"name": "string", "description": "string", "attitude": "string", "shopId": "string | null"}], "availableShopIds": ["string"] },
   "skillCheck": { ... },
   "memoryUpdate": { "keyEvents": ["string"], "keyCharacters": ["string"], "worldStateSummary": "string" },
@@ -161,7 +165,7 @@ Latar Belakang Karakter: ${character.backstory}
 DAFTAR TOKO DUNIA: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}
 
 Kondisi Saat Ini:
-- Karakter Pemain: ${JSON.stringify({name: character.name, appearance: character.appearance, stats: character.stats})}
+- Karakter Pemain: ${JSON.stringify({name: character.name, appearance: character.appearance, stats: character.stats, residences: character.residences.map(r=>r.name)})}
 - Adegan: ${JSON.stringify(scene, null, 2)}
 - Aksi Pemain: "${playerAction}"`;
 

@@ -73,6 +73,14 @@ export interface FamilyMember {
   description: string;
 }
 
+export interface Residence {
+  id: string;
+  name: string;
+  description: string;
+  location: string;
+  storage: InventoryItem[];
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -88,6 +96,7 @@ export interface Character {
   reputation: number;
   gold: number;
   family: FamilyMember[];
+  residences: Residence[];
 }
 
 export interface SkillCheckResult {
@@ -156,6 +165,7 @@ export interface CharacterUpdatePayload {
     quantity: number;
   }[];
   keluargaDiperbarui?: FamilyMember[];
+  residenceGained?: Residence;
 }
 
 export interface WorldMemory {

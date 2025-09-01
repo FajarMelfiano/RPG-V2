@@ -1,6 +1,7 @@
 
+
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap, Stats } from './types';
+import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap, Stats, Residence } from './types';
 import StartScreen from './components/StartScreen';
 import WorldCreationScreen from './components/WorldCreationScreen';
 import WorldLobbyScreen from './components/WorldLobbyScreen';
@@ -42,6 +43,12 @@ const App: React.FC = () => {
              console.log(`Migrasi peta untuk dunia: ${world.name}`);
              migratedWorld.worldMap = { nodes: [], edges: [] };
           }
+           migratedWorld.characters = (migratedWorld.characters || []).map(char => {
+              if (!char.character.residences) {
+                  char.character.residences = [];
+              }
+              return char;
+           });
           return migratedWorld;
         });
         setWorlds(migratedWorlds);
@@ -464,6 +471,10 @@ const App: React.FC = () => {
             updatedCharacter.family = updates.keluargaDiperbarui;
             addNotification('Hubungan keluarga diperbarui.', 'event');
         }
+        if (updates.residenceGained) {
+          updatedCharacter.residences = [...updatedCharacter.residences, updates.residenceGained];
+          addNotification(`Properti Diperoleh: ${updates.residenceGained.name}`, 'event');
+        }
       }
 
       let updatedParty = [...activeCharacter.party];
@@ -491,6 +502,7 @@ const App: React.FC = () => {
                     reputation: 0,
                     gold: 0,
                     family: [],
+                    residences: [],
                 };
                 updatedParty.push(newMember);
                 addNotification(`${newMember.name} telah bergabung dengan party!`, 'event');

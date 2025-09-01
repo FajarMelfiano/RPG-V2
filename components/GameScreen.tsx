@@ -1,3 +1,5 @@
+
+
 import React, { useState } from 'react';
 import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC } from '../types';
 import StoryLog from './StoryLog';
@@ -47,7 +49,7 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
   const { quests, worldEvents, marketplace } = world;
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto h-screen flex flex-row gap-4 sm:gap-6 p-2 sm:p-4">
+    <div className="w-full max-w-[1600px] mx-auto h-screen flex flex-col md:flex-row gap-4 sm:gap-6 p-2 sm:p-4">
       
       {selectedNpc && (
         <NpcDetailModal 

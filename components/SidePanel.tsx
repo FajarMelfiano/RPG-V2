@@ -1,3 +1,5 @@
+
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot, World } from '../types';
 import CharacterSheet from './CharacterSheet';
@@ -6,10 +8,11 @@ import NotesPanel from './NotesPanel';
 import InventorySheet from './InventorySheet';
 import QuestLog from './QuestLog';
 import MarketplaceScreen from './MarketplaceScreen';
-import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon } from './icons';
+import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon, HomeIcon } from './icons';
 import EquipmentSheet from './EquipmentSheet';
 import FamilySheet from './FamilySheet';
 import MapView from './MapView';
+import ResidenceSheet from './ResidenceSheet';
 
 interface SidePanelProps {
     character: Character;
@@ -32,7 +35,7 @@ interface SidePanelProps {
     setDirectShopId: (id: string | null) => void;
 }
 
-type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family' | 'map';
+type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family' | 'map' | 'residence';
 
 const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (props) => {
     const { character, party, notes, onNotesChange, quests, worldEvents, marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, onUnequipItem, world, directShopId, setDirectShopId } = props;
@@ -64,6 +67,8 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
                 return <QuestLog quests={quests} worldEvents={worldEvents} />;
             case 'map':
                 return <MapView worldMap={world.worldMap} currentLocationName={scene.location} />;
+            case 'residence':
+                return <ResidenceSheet residences={character.residences} />;
             case 'notes':
                 return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
             case 'marketplace':
@@ -112,6 +117,9 @@ const PanelContent: React.FC<Omit<SidePanelProps, 'isOpen' | 'onClose'>> = (prop
                     </button>
                      <button onClick={() => setActiveTab('map')} className={getTabClass('map')} title="Peta">
                         <MapIcon className="w-5 h-5" /> <span>Peta</span>
+                    </button>
+                    <button onClick={() => setActiveTab('residence')} className={getTabClass('residence')} title="Rumah">
+                        <HomeIcon className="w-5 h-5" /> <span>Rumah</span>
                     </button>
                     <button onClick={() => setActiveTab('family')} className={getTabClass('family')} title="Keluarga">
                         <HeartIcon className="w-5 h-5" /> <span>Keluarga</span>
@@ -168,7 +176,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
 
     // Desktop: Static side panel
     const DesktopJournal = (
-        <aside className="hidden md:block w-[380px] lg:w-[420px] xl:w-[450px] flex-shrink-0 h-full journal-panel p-4">
+        <aside className="hidden md:flex flex-col w-[380px] lg:w-[420px] xl:w-[450px] flex-shrink-0 h-full journal-panel p-4">
              <div className="h-full">
                 <PanelContent {...props} />
             </div>

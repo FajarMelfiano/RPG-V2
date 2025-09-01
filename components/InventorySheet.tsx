@@ -1,3 +1,5 @@
+
+
 import React, { useState } from 'react';
 import { Character, AnyItem, EquippableItem, ItemRarity, InventoryItem } from '../types';
 import { ChestIcon, CoinIcon } from './icons';
@@ -69,7 +71,7 @@ const InventorySheet: React.FC<{
                                         {category}
                                     </div>
                                 </summary>
-                                <ul className="space-y-2 pl-2 animate-[fadeIn_0.3s_ease-out]">
+                                <ul className="space-y-2 pl-2 animate-fadeIn">
                                     {items.map((invItem) => {
                                         const isExpanded = expandedItemId === invItem.item.id;
                                         return (
@@ -85,7 +87,7 @@ const InventorySheet: React.FC<{
                                                 </div>
                                                 
                                                 {isExpanded && (
-                                                    <div className="animate-[fadeIn_0.5s_ease-out]">
+                                                    <div className="animate-fadeIn">
                                                         <ItemDetails item={invItem.item} />
                                                         <div className="flex justify-end items-center mt-2">
                                                             {isEquippable(invItem.item) && (

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { NPC } from '../types';
 import { XIcon, CoinIcon } from './icons';

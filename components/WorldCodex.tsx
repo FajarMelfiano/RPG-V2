@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { World } from '../types';
 import { BookIcon, GlobeIcon, UsersIcon, XIcon } from './icons';
@@ -79,42 +80,43 @@ const WorldCodex: React.FC<WorldCodexProps> = ({ world, isOpen, onClose }) => {
         }`;
     }
 
+    if (!isOpen) return null;
+
     return (
         <div
-            className={`fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            aria-hidden={!isOpen}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn"
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
         >
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
-            <aside
-                className={`relative z-10 journal-panel w-full max-w-md h-full p-4 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
-                aria-label="Codex Dunia"
+            <div
+                className="journal-panel w-full max-w-2xl h-full max-h-[90vh] p-6 relative animate-zoomIn flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-stone-400 hover:text-white"
+                    className="absolute top-4 right-4 text-stone-400 hover:text-white transition-colors z-10"
                     aria-label="Tutup Codex"
                 >
                     <XIcon className="w-6 h-6" />
                 </button>
-                <div className="h-full pt-8 flex flex-col">
-                    <h2 className="font-cinzel text-2xl text-[var(--color-text-header)] mb-4 text-glow flex items-center gap-3">
-                        <GlobeIcon className="w-6 h-6" />
-                        Codex: {world.name}
-                    </h2>
-                     <div className="flex-shrink-0 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-hidden mb-4">
-                        <div className="flex gap-1 overflow-x-auto pb-1 -mb-1">
-                            <button onClick={() => setActiveTab('summary')} className={getTabClass('summary')}>Ringkasan</button>
-                            <button onClick={() => setActiveTab('events')} className={getTabClass('events')}>Peristiwa</button>
-                            <button onClick={() => setActiveTab('characters')} className={getTabClass('characters')}>Tokoh</button>
-                            <button onClick={() => setActiveTab('rules')} className={getTabClass('rules')}>Aturan Dunia</button>
-                        </div>
-                    </div>
-                    <div className="flex-grow min-h-0 overflow-y-auto pr-2">
-                        {renderTabContent()}
+
+                <h2 className="font-cinzel text-2xl text-[var(--color-text-header)] mb-4 text-glow flex items-center gap-3 flex-shrink-0">
+                    <GlobeIcon className="w-6 h-6" />
+                    Codex: {world.name}
+                </h2>
+                <div className="flex-shrink-0 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-hidden mb-4">
+                    <div className="flex gap-1 overflow-x-auto pb-1 -mb-1">
+                        <button onClick={() => setActiveTab('summary')} className={getTabClass('summary')}>Ringkasan</button>
+                        <button onClick={() => setActiveTab('events')} className={getTabClass('events')}>Peristiwa</button>
+                        <button onClick={() => setActiveTab('characters')} className={getTabClass('characters')}>Tokoh</button>
+                        <button onClick={() => setActiveTab('rules')} className={getTabClass('rules')}>Aturan Dunia</button>
                     </div>
                 </div>
-            </aside>
+                <div className="flex-grow min-h-0 overflow-y-auto pr-2">
+                    {renderTabContent()}
+                </div>
+            </div>
         </div>
     );
 };

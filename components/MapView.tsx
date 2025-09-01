@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { WorldMap, MapNode, MapEdge } from '../types';
+import { WorldMap, MapNode } from '../types';
 import { MapIcon } from './icons';
 
 interface MapViewProps {

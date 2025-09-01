@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { AppNotification } from '../types';
 import { ChestIcon, CoinIcon, ReputationIcon, ScrollIcon, MapIcon } from './icons';

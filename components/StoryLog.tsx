@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useRef } from 'react';
 import { StoryEntry, SkillCheckResult, Scene, NPC } from '../types';
 import { CoinIcon } from './icons';

@@ -1,11 +1,12 @@
-// FIX: Replaced deprecated `GenerateContentRequest` type with `GenerateContentParameters`.
-import { GoogleGenAI, Type, GenerateContentParameters } from "@google/genai";
-import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot, WorldTheme, FamilyMember, WorldMemory, WorldMap } from '../../types';
+
+
+import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot, WorldTheme, FamilyMember, WorldMemory, WorldMap, Residence } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
 import { apiKeyManager } from "../apiKeyManager";
 
 
-async function generateContentWithRotation(request: GenerateContentParameters): Promise<any> {
+async function generateContentWithRotation(request: any): Promise<GenerateContentResponse> {
     apiKeyManager.resetCycle(); 
     let retries = 0;
 
@@ -53,6 +54,18 @@ const inventoryItemSchema = {
         quantity: { type: Type.INTEGER },
     },
     required: ["item", "quantity"]
+};
+
+const residenceSchema = {
+    type: Type.OBJECT,
+    properties: {
+        id: { type: Type.STRING },
+        name: { type: Type.STRING },
+        description: { type: Type.STRING },
+        location: { type: Type.STRING },
+        storage: { type: Type.ARRAY, items: inventoryItemSchema }
+    },
+    required: ["id", "name", "description", "location", "storage"]
 };
 
 const shopSchema = {
@@ -163,9 +176,10 @@ const characterSchema = {
     equipment: equipmentSchema,
     reputation: { type: Type.INTEGER },
     gold: { type: Type.INTEGER },
-    family: { type: Type.ARRAY, items: familyMemberSchema }
+    family: { type: Type.ARRAY, items: familyMemberSchema },
+    residences: { type: Type.ARRAY, items: residenceSchema }
   },
-  required: ["name", "race", "characterClass", "age", "height", "appearance", "backstory", "stats", "inventory", "equipment", "reputation", "gold", "family"]
+  required: ["name", "race", "characterClass", "age", "height", "appearance", "backstory", "stats", "inventory", "equipment", "reputation", "gold", "family", "residences"]
 };
 
 const sceneSchema = {
@@ -260,7 +274,8 @@ const characterUpdateSchema = {
         keluargaDiperbarui: {
             type: Type.ARRAY,
             items: familyMemberSchema
-        }
+        },
+        residenceGained: residenceSchema
     }
 };
 
@@ -350,7 +365,8 @@ Tugas Anda:
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: worldGenerationSchema }
         });
-        return JSON.parse(response.text);
+        const jsonString = response.text;
+        return JSON.parse(jsonString);
     }
 
     async generateCharacter(characterData: { concept: string; background: string; }, worldContext: string): Promise<{ character: Omit<Character, 'id'>; initialScene: Scene; introStory: string; }> {
@@ -368,64 +384,64 @@ Tugas Anda:
     *   \`height\`: Tinggi badan yang sesuai (misal: '190 cm').
     *   \`appearance\`: Deskripsi penampilan yang kaya (2-3 kalimat), mencakup rambut, mata, fitur wajah, dan tanda unik (bekas luka, tato, dll.).
 3.  **Ciptakan Keluarga (WAJIB)**: Berdasarkan latar belakang, ciptakan 1-3 anggota keluarga untuk karakter ini. Tentukan \`name\`, \`relationship\`, \`status\` ('Hidup', 'Hilang', 'Meninggal', 'Dalam bahaya'), dan \`description\` singkat yang bisa menjadi pemicu plot.
-4.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
-5.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`.
-6.  **ID ITEM, KATEGORI & PENGGUNAAN**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID), \`category\` yang logis (misal: 'Peralatan', 'Ramuan', 'Item Misi'), dan \`usageNotes\` yang jelas (misal: 'Dipakai untuk bertarung', 'Minum untuk memulihkan HP').
-7.  **Adegan Awal & NPC Unik**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan.
-    *   **ATURAN NAMA LOKASI**: Nama \`initialScene.location\` HARUS SAMA PERSIS dengan nama salah satu node di peta dunia awal.
+4.  **Properti Awal**: Jika latar belakang menyiratkan kepemilikan (misal: 'bangsawan yang memiliki manor kecil'), berikan karakter sebuah properti awal di array \`residences\`. Jika tidak, biarkan array kosong.
+5.  **Tentukan Level Awal & Statistik**: Analisis latar belakang untuk menentukan level (1-5) dan alokasikan \`stats\` yang sesuai.
+6.  **Perlengkapan & Inventaris Awal**: Berikan karakter perlengkapan awal yang logis di \`equipment\` dan beberapa item tambahan di \`inventory\`.
+7.  **ID ITEM, KATEGORI & PENGGUNAAN**: Semua item di \`equipment\` dan \`inventory\` HARUS memiliki ID unik (UUID), \`category\` yang logis (misal: 'Peralatan', 'Ramuan', 'Item Misi'), dan \`usageNotes\` yang jelas (misal: 'Dipakai untuk bertarung', 'Minum untuk memulihkan HP').
+8.  **Adegan Awal & NPC Unik**: Ciptakan \`initialScene\` dan \`introStory\` yang relevan.
     *   **Aturan Nama NPC**: Untuk setiap NPC di adegan awal, berikan nama yang **unik, bervariasi, dan sesuai dengan tema dunia**. Hindari nama-nama generik. Gunakan konteks dunia sebagai inspirasi.
     *   **Tautkan Pedagang**: Jika NPC di adegan awal adalah seorang pedagang, isi bidang \`shopId\` mereka dengan ID toko yang relevan.
     *   Tentukan \`availableShopIds\` secara logis berdasarkan lokasi. 
     *   Sikap NPC HARUS salah satu dari ['Ramah', 'Netral', 'Curiga', 'Bermusuhan'].
-8.  **Format JSON**: Pastikan output sesuai dengan skema.`;
+9.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await generateContentWithRotation({
             model: "gemini-2.0-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: characterGenerationSchema }
         });
-        return JSON.parse(response.text);
+        const jsonString = response.text;
+        return JSON.parse(jsonString);
     }
 
     async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: WorldMemory, notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace, worldMap: WorldMap): Promise<GameTurnResponse> {
         
-        const prompt = `Anda adalah Dungeon Master (DM) AI yang logis dan konsisten. Misi utama Anda adalah menjaga kontinuitas cerita dan menciptakan pengalaman yang dinamis. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
+        const prompt = `Anda adalah Dungeon Master (DM) AI yang logis dan konsisten. Misi utama Anda adalah menjaga kontinuitas cerita, realisme, dan menciptakan pengalaman yang dinamis. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
 
 **ATURAN INTI & PRINSIP (WAJIB DIIKUTI):**
-1.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'.
-2.  **Aturan Percakapan**: Jika aksi pemain adalah memulai percakapan atau mengajukan pertanyaan kepada NPC, narasi Anda **HARUS** menyertakan respons atau reaksi dari NPC tersebut.
-3.  **Manajemen Peta & Penemuan**: Jika pemain berpindah ke lokasi BARU atau NPC mengungkapkan lokasi baru yang spesifik, Anda **WAJIB** memperbarui \`mapUpdate\` dengan menambahkan node dan edge baru. Kembalikan SELURUH objek peta yang diperbarui.
-4.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di Peta Dunia.
-5.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan **5-10 NPC yang beragam** dengan nama dan deskripsi unik.
+1.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'. JANGAN mengulang nama lokasi yang sudah ada untuk tempat baru (misal: menggunakan nama desa terbengkalai untuk kota baru).
+2.  **Penalaran Logis & Matematis**: Anda adalah AI yang cerdas. Saat pemain meminta perhitungan (misal: 'berapa totalnya?') atau membuat keputusan berdasarkan logika, berikan jawaban yang akurat secara matematis dan masuk akal. Jika NPC menyatakan harga 2000 dan 500, totalnya adalah 2500, bukan 50.
+3.  **Aturan Percakapan**: Jika aksi pemain adalah memulai percakapan atau mengajukan pertanyaan kepada NPC, narasi Anda **HARUS** menyertakan respons atau reaksi dari NPC tersebut.
+4.  **Manajemen Peta & Penemuan**: Jika pemain berpindah ke lokasi BARU atau NPC mengungkapkan lokasi baru yang spesifik, Anda **WAJIB** memperbarui \`mapUpdate\` dengan menambahkan node dan edge baru. Kembalikan SELURUH objek peta yang diperbarui.
+5.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di Peta Dunia. Jika pemain berhasil pindah, perbarui lokasi ini. Jika mereka hanya mencoba pindah, lokasi tetap sama.
+6.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan **5-10 NPC yang beragam** dengan nama dan deskripsi unik.
 
 **MANAJEMEN EKONOMI & INTERAKSI (SANGAT KRITIS):**
-6.  **Tautan Pedagang ke Toko**: Jika ada NPC pedagang di adegan, **WAJIB** isi bidang \`shopId\` mereka dengan ID yang sesuai dari DAFTAR TOKO DUNIA. Pastikan ID toko tersebut ada di \`sceneUpdate.availableShopIds\`. **Ini krusial agar toko muncul di UI.** Jika Anda membuat NPC pedagang baru, pastikan mereka tertaut dengan benar.
-7.  **Sinkronisasi Inventaris Mutlak**: Apa pun yang dideskripsikan dalam narasi mengenai barang dagangan atau transaksi **HARUS** tercermin secara akurat dalam data. Jika narasi menyebutkan "pandai besi menjual pedang baja", maka pedang baja itu **HARUS** ada di inventaris tokonya dalam \`marketplaceUpdate\`. **Tidak boleh ada inkonsistensi. Ini adalah aturan paling penting.**
-8.  **Inventaris Dinamis & Reaktif**: Ini adalah fitur kunci. Jika pemain bertanya kepada pedagang tentang item spesial, langka, atau "barang misterius" (misalnya: "apa ada yang spesial di belakang?", "jual barang langka?", "punya sesuatu yang unik?"), Anda **HARUS** secara dinamis memperbarui inventaris toko tersebut di \`marketplaceUpdate\`.
-    *   **Aksi**: Tambahkan 1-3 item baru yang tematik dan sebelumnya tidak tersedia ke dalam inventaris toko yang bersangkutan. Item baru ini HARUS memiliki \`category\` yang sesuai. Idealnya dengan kelangkaan ('rarity') 'Tidak Biasa' atau 'Langka'.
-    *   **Narasi**: Narasikan penemuan ini seolah-olah pedagang ragu-ragu sejenak sebelum mengeluarkan barang dari bawah meja atau dari ruangan belakang. Sebutkan nama-nama item baru ini dalam narasi.
+7.  **ATURAN KONSISTENSI TRANSAKSI (PALING PENTING)**: Sebelum menarasikan dialog tentang penjualan, **WAJIB PERIKSA** status karakter saat ini (\`character.inventory\`, \`character.residences\`). Jika pemain **SUDAH MEMILIKI** item atau properti yang sedang dibicarakan, **JANGAN** menawarkan untuk menjualnya lagi atau menanyakan harganya. Anggap transaksi sudah selesai dan lanjutkan narasi dengan pengakuan bahwa pemain sudah memilikinya.
+8.  **MANAJEMEN PROPERTI**: Jika pemain mencoba membeli rumah, periksa apakah mereka memiliki cukup emas. Jika ya, proses transaksi di \`pembaruanKarakter\` dengan mengisi \`residenceGained\`. Setelah pemain memiliki properti, AI **HARUS** mengingatnya (berdasarkan status karakter yang diperbarui). Jangan menawarkan properti yang sama lagi. Kenali saat pemain berada di properti mereka.
+9.  **Tautan Pedagang ke Toko**: Jika ada NPC pedagang di adegan, **WAJIB** isi bidang \`shopId\` mereka dengan ID yang sesuai dari DAFTAR TOKO DUNIA. Pastikan ID toko tersebut ada di \`sceneUpdate.availableShopIds\`.
+10. **Sinkronisasi Inventaris Mutlak**: Apa pun yang dideskripsikan dalam narasi mengenai barang dagangan atau transaksi **HARUS** tercermin secara akurat dalam data. Jika narasi menyebutkan "pandai besi menjual pedang baja", maka pedang baja itu **HARUS** ada di inventaris tokonya dalam \`marketplaceUpdate\`.
+11. **Inventaris Dinamis & Reaktif**: Jika pemain bertanya kepada pedagang tentang item spesial atau "barang misterius", Anda **HARUS** secara dinamis memperbarui inventaris toko tersebut di \`marketplaceUpdate\` dengan menambahkan 1-3 item baru yang tematik dan sebelumnya tidak tersedia. Narasikan penemuan ini.
 
 **KONTEKS SAAT INI (Kebenaran Dasar):**
 -   **Giliran Saat Ini**: ${turnCount}
--   **PETA DUNIA (Lokasi yang Diketahui)**: ${JSON.stringify(worldMap)}
--   **DAFTAR TOKO DUNIA (Pedagang yang Ada)**: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name, description: s.description, inventoryCategories: [...new Set(s.inventory.map(i => i.item.category))]})))}
+-   **PETA DUNIA**: ${JSON.stringify(worldMap)}
+-   **DAFTAR TOKO DUNIA**: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}
 -   **MEMORI DUNIA**: ${JSON.stringify(longTermMemory)}
--   **KARAKTER PEMAIN**: ${JSON.stringify({ name: character.name, stats: character.stats, gold: character.gold, inventory: character.inventory.map(i => `${i.item.name} (x${i.quantity})`) })}
+-   **KARAKTER PEMAIN (KEPEMILIKAN SAAT INI)**: ${JSON.stringify({ name: character.name, stats: character.stats, gold: character.gold, inventory: character.inventory.map(i => `${i.item.name} (x${i.quantity})`), residences: character.residences.map(r => r.name) })}
 -   **ADEGAN SAAT INI**: ${JSON.stringify(scene)}
--   **LOG TRANSAKSI TERAKHIR**: ${JSON.stringify(transactionLog)}
 -   **AKSI PEMAIN**: "${playerAction}"
 
 **TUGAS ANDA (Ikuti Secara Berurutan):**
-1.  **Analisis & Kontekstualisasi**: Pahami aksi pemain dalam konteks MEMORI DUNIA, PETA DUNIA, dan situasi saat ini, terutama jika itu adalah interaksi dengan pedagang.
-2.  **Pemeriksaan Keterampilan (Jika Perlu)**: Jika aksi pemain memiliki kemungkinan untuk gagal (misalnya, meyakinkan pedagang untuk menunjukkan barang langka), buatlah \`skillCheck\`.
-3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain.
-4.  **Perbarui Status & Dunia (SESUAI ATURAN DI ATAS)**:
-    *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, dll., di \`pembaruanKarakter\`. Semua item baru HARUS memiliki \`category\` dan \`usageNotes\`.
-    *   **Pembaruan Peta**: Terapkan **Aturan Manajemen Peta**.
-    *   **Pembaruan Adegan**: Perbarui \`sceneUpdate\`. Terapkan **Aturan Konsistensi Lokasi** dan **Populasi Adegan**.
-    *   **Pembaruan Marketplace**: Terapkan **Aturan Tautan Pedagang**, **Sinkronisasi Inventaris**, dan **Inventaris Dinamis**. Jika ada perubahan pada toko, kembalikan seluruh objek marketplace yang diperbarui.
+1.  **Analisis & Kontekstualisasi**: Pahami aksi pemain dalam konteks MEMORI DUNIA, PETA DUNIA, dan terutama KEPEMILIKAN PEMAIN saat ini.
+2.  **Pemeriksaan Keterampilan (Jika Perlu)**: Jika aksi pemain memiliki kemungkinan untuk gagal, buatlah \`skillCheck\`.
+3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain, dengan mematuhi semua aturan di atas.
+4.  **Perbarui Status & Dunia**:
+    *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, atau properti baru di \`pembaruanKarakter\`.
+    *   **Pembaruan Peta & Adegan**: Terapkan **Aturan Manajemen Peta** dan **Konsistensi Lokasi**.
+    *   **Pembaruan Marketplace**: Terapkan **Aturan Tautan Pedagang**, **Sinkronisasi Inventaris**, dan **Inventaris Dinamis**.
     *   Jika relevan, perbarui misi (\`questsUpdate\`) atau picu peristiwa dunia (\`worldEventsUpdate\`).
-5.  **Konsolidasi Memori**: Sintesiskan peristiwa PENTING dari giliran ini, lalu keluarkan objek memori yang telah disempurnakan di \`memoryUpdate\`.
+5.  **Konsolidasi Memori**: Sintesiskan peristiwa PENTING, lalu keluarkan objek memori yang telah disempurnakan di \`memoryUpdate\`.
 6.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON.`;
         
         const response = await generateContentWithRotation({
@@ -433,7 +449,8 @@ Tugas Anda:
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: gameTurnSchema }
         });
-        return JSON.parse(response.text) as GameTurnResponse;
+        const jsonString = response.text;
+        return JSON.parse(jsonString) as GameTurnResponse;
     }
 
     async askOOCQuestion(history: StoryEntry[], longTermMemory: WorldMemory, question: string): Promise<string> {
@@ -450,7 +467,8 @@ Jawaban Anda (sebagai GM):`;
             model: "gemini-2.0-flash",
             contents: { parts: [{ text: prompt }] },
         });
-        return response.text;
+        const text = response.text;
+        return text;
     }
 }
 
