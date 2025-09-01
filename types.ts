@@ -230,6 +230,7 @@ export interface SavedCharacter {
   turnCount: number;
   lastPlayed: string;
   transactionLog: TransactionLogEntry[];
+  hasSeenGuidebook: boolean;
 }
 
 export type WorldTheme = 'dark_fantasy' | 'cyberpunk' | 'steampunk' | 'high_fantasy';

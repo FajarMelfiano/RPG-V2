@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap, Stats, Residence } from './types';
 import StartScreen from './components/StartScreen';
@@ -10,6 +11,7 @@ import GameScreen from './components/GameScreen';
 import GameOverScreen from './components/GameOverScreen';
 import NotificationContainer from './components/NotificationContainer';
 import DungeonMaster from './services/aiService';
+import ConfirmationModal from './components/ConfirmationModal';
 
 const SAVE_GAME_KEY = 'gemini-rpg-worlds';
 
@@ -22,13 +24,20 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [confirmation, setConfirmation] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
 
   useEffect(() => {
     try {
       const savedData = localStorage.getItem(SAVE_GAME_KEY);
       if (savedData) {
         const loadedWorlds: World[] = JSON.parse(savedData);
-        // Migrasi data lama ke struktur memori baru untuk kompatibilitas mundur
+        // Migrasi data lama untuk kompatibilitas mundur
         const migratedWorlds = loadedWorlds.map(world => {
           let migratedWorld = { ...world };
           if (Array.isArray(world.longTermMemory) || typeof world.longTermMemory !== 'object') {
@@ -46,6 +55,10 @@ const App: React.FC = () => {
            migratedWorld.characters = (migratedWorld.characters || []).map(char => {
               if (!char.character.residences) {
                   char.character.residences = [];
+              }
+              // Tambahkan flag buku panduan untuk karakter lama, set ke true
+              if (char.hasSeenGuidebook === undefined) {
+                  char.hasSeenGuidebook = true; 
               }
               return char;
            });
@@ -82,6 +95,22 @@ const App: React.FC = () => {
         setNotifications(prev => prev.filter(n => n.id !== id));
     }, 5000);
   }, []);
+
+  const requestConfirmation = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmation({
+        isOpen: true,
+        title,
+        message,
+        onConfirm: () => {
+            onConfirm();
+            setConfirmation(null);
+        },
+    });
+  };
+
+  const handleCancelConfirmation = () => {
+      setConfirmation(null);
+  };
 
   const handleGoToStart = () => {
     setGameState(GameState.START);
@@ -158,6 +187,7 @@ const App: React.FC = () => {
         turnCount: 0,
         lastPlayed: new Date().toISOString(),
         transactionLog: [],
+        hasSeenGuidebook: false, // Karakter baru belum melihat buku panduan
       };
 
       const updatedWorld = { ...activeWorld, characters: [...activeWorld.characters, newSavedCharacter] };
@@ -212,7 +242,13 @@ const App: React.FC = () => {
       if (!activeCharacter) return;
       const updatedCharacter = { ...activeCharacter, notes: newNotes };
       updateActiveCharacterAndWorld(updatedCharacter);
-  }, [activeCharacter, activeWorld, worlds]);
+  }, [activeCharacter]);
+
+  const handleMarkGuidebookAsRead = useCallback(() => {
+    if (!activeCharacter) return;
+    const updatedCharacter = { ...activeCharacter, hasSeenGuidebook: true };
+    updateActiveCharacterAndWorld(updatedCharacter);
+  }, [activeCharacter]);
   
   const handleBuyItem = useCallback((item: ShopItem, shopId: string) => {
       if (!activeCharacter || !activeWorld) return;
@@ -221,100 +257,108 @@ const App: React.FC = () => {
           return;
       }
 
-      // Optimistic update
-      const updatedCharacterState = { ...activeCharacter };
-      const updatedWorldState = { ...activeWorld };
+      const performPurchase = () => {
+        const updatedCharacterState = { ...activeCharacter };
+        const updatedWorldState = { ...activeWorld };
 
-      // Kurangi emas
-      updatedCharacterState.character = { ...updatedCharacterState.character, gold: updatedCharacterState.character.gold - item.item.value };
+        updatedCharacterState.character = { ...updatedCharacterState.character, gold: updatedCharacterState.character.gold - item.item.value };
 
-      // Tambah item ke inventaris
-      const newInventory = [...updatedCharacterState.character.inventory];
-      const existingItemIndex = newInventory.findIndex(i => i.item.id === item.item.id);
-      if (existingItemIndex > -1) {
-          newInventory[existingItemIndex] = { ...newInventory[existingItemIndex], quantity: newInventory[existingItemIndex].quantity + item.quantity };
-      } else {
-          newInventory.push({ ...item });
-      }
-      updatedCharacterState.character.inventory = newInventory;
-      
-      // Hapus item dari toko
-      const shop = updatedWorldState.marketplace.shops.find(s => s.id === shopId);
-      if (shop) {
-        const newShopInventory = [...shop.inventory];
-        const shopItemIndex = newShopInventory.findIndex(i => i.item.id === item.item.id);
-        if(shopItemIndex > -1) {
-            if(newShopInventory[shopItemIndex].quantity > item.quantity) {
-                newShopInventory[shopItemIndex].quantity -= item.quantity;
-            } else {
-                newShopInventory.splice(shopItemIndex, 1);
-            }
-            shop.inventory = newShopInventory;
+        const newInventory = [...updatedCharacterState.character.inventory];
+        const existingItemIndex = newInventory.findIndex(i => i.item.id === item.item.id);
+        if (existingItemIndex > -1) {
+            newInventory[existingItemIndex] = { ...newInventory[existingItemIndex], quantity: newInventory[existingItemIndex].quantity + item.quantity };
+        } else {
+            newInventory.push({ ...item });
         }
-      }
-      
-      // Tambah log transaksi
-      const newLogEntry: TransactionLogEntry = {
-        turn: activeCharacter.turnCount,
-        type: 'buy',
-        itemName: item.item.name,
-        quantity: item.quantity,
-        goldAmount: -item.item.value
-      };
-      updatedCharacterState.transactionLog = [...updatedCharacterState.transactionLog, newLogEntry];
+        updatedCharacterState.character.inventory = newInventory;
+        
+        const shop = updatedWorldState.marketplace.shops.find(s => s.id === shopId);
+        if (shop) {
+          const newShopInventory = [...shop.inventory];
+          const shopItemIndex = newShopInventory.findIndex(i => i.item.id === item.item.id);
+          if(shopItemIndex > -1) {
+              if(newShopInventory[shopItemIndex].quantity > item.quantity) {
+                  newShopInventory[shopItemIndex].quantity -= item.quantity;
+              } else {
+                  newShopInventory.splice(shopItemIndex, 1);
+              }
+              shop.inventory = newShopInventory;
+          }
+        }
+        
+        const newLogEntry: TransactionLogEntry = {
+          turn: activeCharacter.turnCount,
+          type: 'buy',
+          itemName: item.item.name,
+          quantity: item.quantity,
+          goldAmount: -item.item.value
+        };
+        updatedCharacterState.transactionLog = [...updatedCharacterState.transactionLog, newLogEntry];
 
-      updateActiveCharacterAndWorld(updatedCharacterState, updatedWorldState);
-      addNotification(`Membeli: ${item.item.name}`, 'item');
-  }, [activeCharacter, activeWorld, worlds, addNotification]);
+        updateActiveCharacterAndWorld(updatedCharacterState, updatedWorldState);
+        addNotification(`Membeli: ${item.item.name}`, 'item');
+      };
+      
+      requestConfirmation(
+        "Konfirmasi Pembelian",
+        `Apakah Anda yakin ingin membeli ${item.item.name} seharga ${item.item.value} emas?`,
+        performPurchase
+      );
+
+  }, [activeCharacter, activeWorld, addNotification]);
 
   const handleSellItem = useCallback((item: InventoryItem, shopId: string) => {
       if (!activeCharacter || !activeWorld) return;
       const sellValue = Math.floor(item.item.value / 2);
 
-      const updatedCharacterState = { ...activeCharacter };
-      const updatedWorldState = { ...activeWorld };
+      const performSale = () => {
+        const updatedCharacterState = { ...activeCharacter };
+        const updatedWorldState = { ...activeWorld };
 
-      // Tambah emas
-      updatedCharacterState.character = { ...updatedCharacterState.character, gold: updatedCharacterState.character.gold + sellValue };
-      
-      // Kurangi item dari inventaris
-      const newInventory = [...updatedCharacterState.character.inventory];
-      const itemToSellIndex = newInventory.findIndex(i => i.item.id === item.item.id);
-      if (itemToSellIndex > -1) {
-          if (newInventory[itemToSellIndex].quantity > 1) {
-              newInventory[itemToSellIndex].quantity -= 1;
-          } else {
-              newInventory.splice(itemToSellIndex, 1);
-          }
-      }
-      updatedCharacterState.character.inventory = newInventory;
+        updatedCharacterState.character = { ...updatedCharacterState.character, gold: updatedCharacterState.character.gold + sellValue };
+        
+        const newInventory = [...updatedCharacterState.character.inventory];
+        const itemToSellIndex = newInventory.findIndex(i => i.item.id === item.item.id);
+        if (itemToSellIndex > -1) {
+            if (newInventory[itemToSellIndex].quantity > 1) {
+                newInventory[itemToSellIndex].quantity -= 1;
+            } else {
+                newInventory.splice(itemToSellIndex, 1);
+            }
+        }
+        updatedCharacterState.character.inventory = newInventory;
 
-      // Tambah item ke toko
-      const shop = updatedWorldState.marketplace.shops.find(s => s.id === shopId);
-      if (shop) {
-          const newShopInventory = [...shop.inventory];
-          const existingShopItemIndex = newShopInventory.findIndex(i => i.item.id === item.item.id);
-          if (existingShopItemIndex > -1) {
-              newShopInventory[existingShopItemIndex].quantity += 1;
-          } else {
-              newShopInventory.push({ item: item.item, quantity: 1 });
-          }
-          shop.inventory = newShopInventory;
-      }
+        const shop = updatedWorldState.marketplace.shops.find(s => s.id === shopId);
+        if (shop) {
+            const newShopInventory = [...shop.inventory];
+            const existingShopItemIndex = newShopInventory.findIndex(i => i.item.id === item.item.id);
+            if (existingShopItemIndex > -1) {
+                newShopInventory[existingShopItemIndex].quantity += 1;
+            } else {
+                newShopInventory.push({ item: item.item, quantity: 1 });
+            }
+            shop.inventory = newShopInventory;
+        }
 
-      // Tambah log transaksi
-      const newLogEntry: TransactionLogEntry = {
-        turn: activeCharacter.turnCount,
-        type: 'sell',
-        itemName: item.item.name,
-        quantity: 1,
-        goldAmount: sellValue
+        const newLogEntry: TransactionLogEntry = {
+          turn: activeCharacter.turnCount,
+          type: 'sell',
+          itemName: item.item.name,
+          quantity: 1,
+          goldAmount: sellValue
+        };
+        updatedCharacterState.transactionLog = [...updatedCharacterState.transactionLog, newLogEntry];
+
+        updateActiveCharacterAndWorld(updatedCharacterState, updatedWorldState);
+        addNotification(`Menjual: ${item.item.name} (+${sellValue} Emas)`, 'gold');
       };
-      updatedCharacterState.transactionLog = [...updatedCharacterState.transactionLog, newLogEntry];
 
-      updateActiveCharacterAndWorld(updatedCharacterState, updatedWorldState);
-      addNotification(`Menjual: ${item.item.name} (+${sellValue} Emas)`, 'gold');
-  }, [activeCharacter, activeWorld, worlds, addNotification]);
+      requestConfirmation(
+        "Konfirmasi Penjualan",
+        `Apakah Anda yakin ingin menjual ${item.item.name} seharga ${sellValue} emas?`,
+        performSale
+      );
+  }, [activeCharacter, activeWorld, addNotification]);
 
   const handleEquipItem = useCallback((itemId: string) => {
     if (!activeCharacter) return;
@@ -420,158 +464,184 @@ const App: React.FC = () => {
           newTurnCount, action, activeCharacter.transactionLog, activeWorld.marketplace, activeWorld.worldMap
       );
       
+      const applyAIResponse = (finalHistory: StoryEntry[]) => {
+        let updatedCharacter = { ...activeCharacter.character };
+        const updates = response.pembaruanKarakter;
+  
+        if (updates) {
+          if (updates.perubahanHp) {
+              updatedCharacter.stats.health = Math.max(0, Math.min(updatedCharacter.stats.maxHealth, updatedCharacter.stats.health + updates.perubahanHp));
+          }
+          if (updates.perubahanMana) {
+              updatedCharacter.stats.mana = Math.max(0, Math.min(updatedCharacter.stats.maxMana, updatedCharacter.stats.mana + updates.perubahanMana));
+          }
+          if (updates.perubahanEmas) {
+              updatedCharacter.gold = Math.max(0, updatedCharacter.gold + updates.perubahanEmas);
+          }
+          if (updates.itemDiterima) {
+              const newInventory = [...updatedCharacter.inventory];
+              updates.itemDiterima.forEach(newItem => {
+                  const existingItem = newInventory.find(i => i.item.name.toLowerCase() === newItem.item.name.toLowerCase());
+                  if (existingItem) {
+                      existingItem.quantity += newItem.quantity;
+                  } else {
+                      newItem.item.id = newItem.item.id || crypto.randomUUID();
+                      newInventory.push(newItem);
+                  }
+              });
+              updatedCharacter.inventory = newInventory;
+          }
+          if (updates.itemDihapus) {
+              let inventoryAfterRemoval = [...updatedCharacter.inventory];
+              updates.itemDihapus.forEach(itemToRemove => {
+                  const itemIndex = inventoryAfterRemoval.findIndex(i => i.item.name.toLowerCase() === itemToRemove.name.toLowerCase());
+                  if (itemIndex > -1) {
+                      inventoryAfterRemoval[itemIndex].quantity -= itemToRemove.quantity;
+                      if (inventoryAfterRemoval[itemIndex].quantity <= 0) {
+                          inventoryAfterRemoval = inventoryAfterRemoval.filter((_, index) => index !== itemIndex);
+                      }
+                  }
+              });
+              updatedCharacter.inventory = inventoryAfterRemoval;
+          }
+          if (updates.keluargaDiperbarui) {
+              updatedCharacter.family = updates.keluargaDiperbarui;
+              addNotification('Hubungan keluarga diperbarui.', 'event');
+          }
+          if (updates.residenceGained) {
+            updatedCharacter.residences = [...updatedCharacter.residences, updates.residenceGained];
+            addNotification(`Properti Diperoleh: ${updates.residenceGained.name}`, 'event');
+          }
+        }
+  
+        let updatedParty = [...activeCharacter.party];
+          if (response.partyUpdate) {
+              if (response.partyUpdate.join) {
+                  const joinData = response.partyUpdate.join;
+                  const defaultStats: Stats = {
+                      level: 1, health: 10, maxHealth: 10, mana: 0, maxMana: 0,
+                      strength: 10, dexterity: 10, constitution: 10,
+                      intelligence: 10, wisdom: 10, charisma: 10,
+                  };
+  
+                  const newMember: Character = {
+                      id: crypto.randomUUID(),
+                      name: joinData.name,
+                      race: joinData.race,
+                      characterClass: joinData.characterClass,
+                      stats: { ...defaultStats, ...joinData.stats },
+                      age: 30,
+                      height: "Rata-rata",
+                      appearance: "Penampilan belum dideskripsikan.",
+                      backstory: "Seorang teman seperjalanan yang misterius bergabung.",
+                      inventory: [],
+                      equipment: {},
+                      reputation: 0,
+                      gold: 0,
+                      family: [],
+                      residences: [],
+                  };
+                  updatedParty.push(newMember);
+                  addNotification(`${newMember.name} telah bergabung dengan party!`, 'event');
+              }
+              if (response.partyUpdate.leave) {
+                  const leftMemberName = response.partyUpdate.leave;
+                  updatedParty = updatedParty.filter(p => p.name !== leftMemberName);
+                  addNotification(`${leftMemberName} telah meninggalkan party.`, 'event');
+              }
+          }
+  
+  
+        let updatedWorld = { ...activeWorld };
+        if (response.memoryUpdate) {
+            updatedWorld.longTermMemory = response.memoryUpdate;
+        }
+        
+        if (response.mapUpdate) {
+          const oldNodeIds = new Set(activeWorld.worldMap.nodes.map(n => n.id));
+          const newNodes = response.mapUpdate.nodes.filter(n => !oldNodeIds.has(n.id));
+          newNodes.forEach(node => {
+            addNotification(`Peta Diperbarui: Lokasi '${node.name}' ditambahkan`, 'event');
+          });
+          updatedWorld.worldMap = response.mapUpdate;
+        }
+  
+        if (response.marketplaceUpdate) {
+          updatedWorld.marketplace = response.marketplaceUpdate;
+        }
+  
+        if (response.questsUpdate?.length) {
+          let currentQuests = [...updatedWorld.quests];
+          response.questsUpdate.forEach(updatedQuest => {
+            const idx = currentQuests.findIndex(q => q.title.toLowerCase() === updatedQuest.title.toLowerCase());
+            if (idx > -1) {
+              if (currentQuests[idx].status === 'Aktif' && updatedQuest.status === 'Selesai') addNotification(`Misi Selesai: ${updatedQuest.title}`, 'quest');
+              else if (currentQuests[idx].status !== updatedQuest.status) addNotification(`Misi Diperbarui: ${updatedQuest.title}`, 'quest');
+              currentQuests[idx] = { ...updatedQuest, id: currentQuests[idx].id };
+            } else {
+              currentQuests.push({ ...updatedQuest, id: crypto.randomUUID() });
+              addNotification(`Misi Baru: ${updatedQuest.title}`, 'quest');
+            }
+          });
+          updatedWorld.quests = currentQuests;
+        }
+  
+        if (response.worldEventsUpdate?.length) {
+          response.worldEventsUpdate.forEach(newEventData => {
+              const newEvent: WorldEvent = { ...newEventData, id: crypto.randomUUID(), turn: newTurnCount };
+              updatedWorld.worldEvents.push(newEvent);
+              addNotification(`Kabar Dunia (${newEvent.type}): ${newEvent.title}`, 'event');
+          });
+         }
+        
+        const updatedSavedCharacter: SavedCharacter = {
+          ...activeCharacter,
+          character: updatedCharacter,
+          party: updatedParty,
+          scene: response.sceneUpdate,
+          storyHistory: finalHistory,
+          turnCount: newTurnCount,
+          lastPlayed: new Date().toISOString(),
+          transactionLog: [], // Hapus log setelah AI melihatnya
+        };
+        
+        updateActiveCharacterAndWorld(updatedSavedCharacter, updatedWorld);
+        
+        if (updatedCharacter.stats.health <= 0) {
+          setGameState(GameState.GAME_OVER);
+        }
+      };
+
+      const updates = response.pembaruanKarakter;
+      const isPurchase = updates && updates.perubahanEmas && updates.perubahanEmas < 0 && ((updates.itemDiterima && updates.itemDiterima.length > 0) || updates.residenceGained);
+      
       const newEntries: StoryEntry[] = [];
       if(response.skillCheck) {
           newEntries.push({ type: 'dice_roll', content: '', rollDetails: response.skillCheck });
       }
       newEntries.push({ type: 'narrative', content: response.narasiBaru });
-
       const finalHistory = [...currentHistory, ...newEntries];
       
-      let updatedCharacter = { ...activeCharacter.character };
-      const updates = response.pembaruanKarakter;
+      if (isPurchase) {
+        let title = "Konfirmasi Transaksi";
+        let message = "AI Dungeon Master ingin menyelesaikan transaksi. Lanjutkan?";
+        const goldChange = Math.abs(updates.perubahanEmas || 0);
 
-      if (updates) {
-        if (updates.perubahanHp) {
-            updatedCharacter.stats.health = Math.max(0, Math.min(updatedCharacter.stats.maxHealth, updatedCharacter.stats.health + updates.perubahanHp));
-        }
-        if (updates.perubahanMana) {
-            updatedCharacter.stats.mana = Math.max(0, Math.min(updatedCharacter.stats.maxMana, updatedCharacter.stats.mana + updates.perubahanMana));
-        }
-        if (updates.perubahanEmas) {
-            updatedCharacter.gold = Math.max(0, updatedCharacter.gold + updates.perubahanEmas);
-        }
-        if (updates.itemDiterima) {
-            const newInventory = [...updatedCharacter.inventory];
-            updates.itemDiterima.forEach(newItem => {
-                const existingItem = newInventory.find(i => i.item.name.toLowerCase() === newItem.item.name.toLowerCase());
-                if (existingItem) {
-                    existingItem.quantity += newItem.quantity;
-                } else {
-                    newItem.item.id = newItem.item.id || crypto.randomUUID();
-                    newInventory.push(newItem);
-                }
-            });
-            updatedCharacter.inventory = newInventory;
-        }
-        if (updates.itemDihapus) {
-            let inventoryAfterRemoval = [...updatedCharacter.inventory];
-            updates.itemDihapus.forEach(itemToRemove => {
-                const itemIndex = inventoryAfterRemoval.findIndex(i => i.item.name.toLowerCase() === itemToRemove.name.toLowerCase());
-                if (itemIndex > -1) {
-                    inventoryAfterRemoval[itemIndex].quantity -= itemToRemove.quantity;
-                    if (inventoryAfterRemoval[itemIndex].quantity <= 0) {
-                        inventoryAfterRemoval = inventoryAfterRemoval.filter((_, index) => index !== itemIndex);
-                    }
-                }
-            });
-            updatedCharacter.inventory = inventoryAfterRemoval;
-        }
-        if (updates.keluargaDiperbarui) {
-            updatedCharacter.family = updates.keluargaDiperbarui;
-            addNotification('Hubungan keluarga diperbarui.', 'event');
-        }
         if (updates.residenceGained) {
-          updatedCharacter.residences = [...updatedCharacter.residences, updates.residenceGained];
-          addNotification(`Properti Diperoleh: ${updates.residenceGained.name}`, 'event');
+            title = "Konfirmasi Pembelian Properti";
+            message = `Apakah Anda yakin ingin membeli ${updates.residenceGained.name} seharga ${goldChange} emas?`;
+        } else if (updates.itemDiterima && updates.itemDiterima.length > 0) {
+            const itemNames = updates.itemDiterima.map(i => `${i.item.name} (x${i.quantity})`).join(', ');
+            title = "Konfirmasi Pembelian Barang";
+            message = `Apakah Anda yakin ingin membeli ${itemNames} seharga ${goldChange} emas?`;
         }
-      }
+        
+        // Tampilkan narasi terlebih dahulu, lalu minta konfirmasi
+        setActiveCharacter(prev => prev ? { ...prev, storyHistory: finalHistory } : null);
+        requestConfirmation(title, message, () => applyAIResponse(finalHistory));
 
-      let updatedParty = [...activeCharacter.party];
-        if (response.partyUpdate) {
-            if (response.partyUpdate.join) {
-                const joinData = response.partyUpdate.join;
-                const defaultStats: Stats = {
-                    level: 1, health: 10, maxHealth: 10, mana: 0, maxMana: 0,
-                    strength: 10, dexterity: 10, constitution: 10,
-                    intelligence: 10, wisdom: 10, charisma: 10,
-                };
-
-                const newMember: Character = {
-                    id: crypto.randomUUID(),
-                    name: joinData.name,
-                    race: joinData.race,
-                    characterClass: joinData.characterClass,
-                    stats: { ...defaultStats, ...joinData.stats },
-                    age: 30,
-                    height: "Rata-rata",
-                    appearance: "Penampilan belum dideskripsikan.",
-                    backstory: "Seorang teman seperjalanan yang misterius bergabung.",
-                    inventory: [],
-                    equipment: {},
-                    reputation: 0,
-                    gold: 0,
-                    family: [],
-                    residences: [],
-                };
-                updatedParty.push(newMember);
-                addNotification(`${newMember.name} telah bergabung dengan party!`, 'event');
-            }
-            if (response.partyUpdate.leave) {
-                const leftMemberName = response.partyUpdate.leave;
-                updatedParty = updatedParty.filter(p => p.name !== leftMemberName);
-                addNotification(`${leftMemberName} telah meninggalkan party.`, 'event');
-            }
-        }
-
-
-      let updatedWorld = { ...activeWorld };
-      if (response.memoryUpdate) {
-          updatedWorld.longTermMemory = response.memoryUpdate;
-      }
-      
-      if (response.mapUpdate) {
-        const oldNodeIds = new Set(activeWorld.worldMap.nodes.map(n => n.id));
-        const newNodes = response.mapUpdate.nodes.filter(n => !oldNodeIds.has(n.id));
-        newNodes.forEach(node => {
-          addNotification(`Peta Diperbarui: Lokasi '${node.name}' ditambahkan`, 'event');
-        });
-        updatedWorld.worldMap = response.mapUpdate;
-      }
-
-      if (response.marketplaceUpdate) {
-        updatedWorld.marketplace = response.marketplaceUpdate;
-      }
-
-      if (response.questsUpdate?.length) {
-        let currentQuests = [...updatedWorld.quests];
-        response.questsUpdate.forEach(updatedQuest => {
-          const idx = currentQuests.findIndex(q => q.title.toLowerCase() === updatedQuest.title.toLowerCase());
-          if (idx > -1) {
-            if (currentQuests[idx].status === 'Aktif' && updatedQuest.status === 'Selesai') addNotification(`Misi Selesai: ${updatedQuest.title}`, 'quest');
-            else if (currentQuests[idx].status !== updatedQuest.status) addNotification(`Misi Diperbarui: ${updatedQuest.title}`, 'quest');
-            currentQuests[idx] = { ...updatedQuest, id: currentQuests[idx].id };
-          } else {
-            currentQuests.push({ ...updatedQuest, id: crypto.randomUUID() });
-            addNotification(`Misi Baru: ${updatedQuest.title}`, 'quest');
-          }
-        });
-        updatedWorld.quests = currentQuests;
-      }
-
-      if (response.worldEventsUpdate?.length) {
-        response.worldEventsUpdate.forEach(newEventData => {
-            const newEvent: WorldEvent = { ...newEventData, id: crypto.randomUUID(), turn: newTurnCount };
-            updatedWorld.worldEvents.push(newEvent);
-            addNotification(`Kabar Dunia (${newEvent.type}): ${newEvent.title}`, 'event');
-        });
-       }
-      
-      const updatedSavedCharacter: SavedCharacter = {
-        ...activeCharacter,
-        character: updatedCharacter,
-        party: updatedParty,
-        scene: response.sceneUpdate,
-        storyHistory: finalHistory,
-        turnCount: newTurnCount,
-        lastPlayed: new Date().toISOString(),
-        transactionLog: [], // Hapus log setelah AI melihatnya
-      };
-      
-      updateActiveCharacterAndWorld(updatedSavedCharacter, updatedWorld);
-      
-      if (updatedCharacter.stats.health <= 0) {
-        setGameState(GameState.GAME_OVER);
+      } else {
+        applyAIResponse(finalHistory);
       }
 
     } catch (err) {
@@ -581,7 +651,7 @@ const App: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [activeWorld, activeCharacter, worlds, addNotification]);
+  }, [activeWorld, activeCharacter, addNotification]);
   
   const renderContent = () => {
     switch (gameState) {
@@ -612,6 +682,7 @@ const App: React.FC = () => {
             onSellItem={handleSellItem}
             onEquipItem={handleEquipItem}
             onUnequipItem={handleUnequipItem}
+            onMarkGuidebookAsRead={handleMarkGuidebookAsRead}
           />;
         }
         break;
@@ -635,6 +706,15 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-stone-950 text-stone-300">
         <NotificationContainer notifications={notifications} />
+        {confirmation?.isOpen && (
+            <ConfirmationModal
+                isOpen={confirmation.isOpen}
+                title={confirmation.title}
+                message={confirmation.message}
+                onConfirm={confirmation.onConfirm}
+                onCancel={handleCancelConfirmation}
+            />
+        )}
         <div className="min-h-screen flex flex-col items-center justify-center">
             {renderContent()}
         </div>

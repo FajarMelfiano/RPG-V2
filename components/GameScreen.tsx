@@ -1,13 +1,15 @@
 
 
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC } from '../types';
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
-import { BookOpenIcon, GlobeIcon } from './icons';
+import { BookOpenIcon, GlobeIcon, QuestionMarkCircleIcon } from './icons';
 import WorldCodex from './WorldCodex';
 import NpcDetailModal from './NpcDetailModal';
+import GuidebookModal from './GuidebookModal';
 
 interface GameScreenProps {
   world: World;
@@ -20,14 +22,32 @@ interface GameScreenProps {
   onSellItem: (item: InventoryItem, shopName: string) => void;
   onEquipItem: (itemId: string) => void;
   onUnequipItem: (slot: ItemSlot) => void;
+  onMarkGuidebookAsRead: () => void;
 }
 
-const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayerAction, isLoading, error, onNotesChange, onBuyItem, onSellItem, onEquipItem, onUnequipItem }) => {
+const GameScreen: React.FC<GameScreenProps> = (props) => {
+  const { world, savedCharacter, onPlayerAction, isLoading, error, onNotesChange, onBuyItem, onSellItem, onEquipItem, onUnequipItem, onMarkGuidebookAsRead } = props;
+  
   const [actionText, setActionText] = useState('');
   const [isJournalOpen, setIsJournalOpen] = useState(false);
   const [isCodexOpen, setIsCodexOpen] = useState(false);
+  const [isGuidebookOpen, setIsGuidebookOpen] = useState(false);
   const [directShopId, setDirectShopId] = useState<string | null>(null);
   const [selectedNpc, setSelectedNpc] = useState<NPC | null>(null);
+
+  useEffect(() => {
+    // Tampilkan buku panduan secara otomatis jika ini adalah pertama kalinya
+    if (!savedCharacter.hasSeenGuidebook) {
+      setIsGuidebookOpen(true);
+    }
+  }, [savedCharacter.hasSeenGuidebook]);
+
+  const handleCloseGuidebook = () => {
+    if (!savedCharacter.hasSeenGuidebook) {
+      onMarkGuidebookAsRead();
+    }
+    setIsGuidebookOpen(false);
+  };
 
   const handleShowNpcDetails = (npc: NPC) => {
     setSelectedNpc(npc);
@@ -46,7 +66,6 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
   };
 
   const { character, party, scene, storyHistory, notes } = savedCharacter;
-  const { quests, worldEvents, marketplace } = world;
 
   return (
     <div className="w-full max-w-[1600px] mx-auto h-screen flex flex-col md:flex-row gap-4 sm:gap-6 p-2 sm:p-4">
@@ -65,17 +84,22 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
         onClose={() => setIsCodexOpen(false)}
       />
 
+      <GuidebookModal 
+        isOpen={isGuidebookOpen}
+        onClose={handleCloseGuidebook}
+      />
+
       <SidePanel
         world={world}
         character={character}
         party={party}
         notes={notes}
         onNotesChange={onNotesChange}
-        quests={quests}
-        worldEvents={worldEvents}
+        quests={world.quests}
+        worldEvents={world.worldEvents}
         isOpen={isJournalOpen}
         onClose={() => setIsJournalOpen(false)}
-        marketplace={marketplace}
+        marketplace={world.marketplace}
         scene={scene}
         onBuyItem={onBuyItem}
         onSellItem={onSellItem}
@@ -104,6 +128,14 @@ const GameScreen: React.FC<GameScreenProps> = ({ world, savedCharacter, onPlayer
             </div>
         )}
       </main>
+
+       <button
+        onClick={() => setIsGuidebookOpen(true)}
+        className="fixed top-4 left-4 z-30 bg-stone-800/80 text-[var(--color-accent)] p-3 rounded-full shadow-lg backdrop-blur-sm border border-[var(--border-color-medium)]/50 hover:scale-110 hover:shadow-[var(--color-primary)]/30 transition-all"
+        aria-label="Buka Buku Panduan"
+      >
+        <QuestionMarkCircleIcon className="w-6 h-6" />
+      </button>
 
       <button
         onClick={() => setIsCodexOpen(true)}

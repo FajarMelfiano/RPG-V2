@@ -1,5 +1,6 @@
 
 
+
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, ItemRarity, ItemSlot, WorldTheme, FamilyMember, WorldMemory, WorldMap, Residence } from '../../types';
 import { IAiDungeonMasterService } from "../aiService";
@@ -411,17 +412,24 @@ Tugas Anda:
 **ATURAN INTI & PRINSIP (WAJIB DIIKUTI):**
 1.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'. JANGAN mengulang nama lokasi yang sudah ada untuk tempat baru (misal: menggunakan nama desa terbengkalai untuk kota baru).
 2.  **Penalaran Logis & Matematis**: Anda adalah AI yang cerdas. Saat pemain meminta perhitungan (misal: 'berapa totalnya?') atau membuat keputusan berdasarkan logika, berikan jawaban yang akurat secara matematis dan masuk akal. Jika NPC menyatakan harga 2000 dan 500, totalnya adalah 2500, bukan 50.
-3.  **Aturan Percakapan**: Jika aksi pemain adalah memulai percakapan atau mengajukan pertanyaan kepada NPC, narasi Anda **HARUS** menyertakan respons atau reaksi dari NPC tersebut.
-4.  **Manajemen Peta & Penemuan**: Jika pemain berpindah ke lokasi BARU atau NPC mengungkapkan lokasi baru yang spesifik, Anda **WAJIB** memperbarui \`mapUpdate\` dengan menambahkan node dan edge baru. Kembalikan SELURUH objek peta yang diperbarui.
-5.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di Peta Dunia. Jika pemain berhasil pindah, perbarui lokasi ini. Jika mereka hanya mencoba pindah, lokasi tetap sama.
-6.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan **5-10 NPC yang beragam** dengan nama dan deskripsi unik.
+3.  **ATURAN PEMERIKSAAN KETERAMPILAN (SKILL CHECK) - SANGAT KRITIS**:
+    *   **KAPAN WAJIB DIGUNAKAN**: Anda **WAJIB** membuat \`skillCheck\` untuk setiap aksi pemain yang memiliki kemungkinan **GAGAL** dan BUKAN merupakan transaksi ekonomi murni atau percakapan biasa. Ini adalah aturan non-negosiasi.
+    *   **CONTOH AKSI YANG MEMBUTUHKAN SKILL CHECK**:
+        -   **Interaksi Sosial Berisiko**: Mencoba meyakinkan (Persuasi), mengintimidasi (Intimidasi), menipu (Penipuan), atau mencari informasi (Investigasi) dari NPC yang tidak kooperatif.
+        -   **Aksi Fisik & Tempur**: Menyerang target, menyelinap melewati musuh, memanjat dinding, melompati celah, menonaktifkan jebakan.
+        -   **Aksi Pengetahuan**: Mencoba mengingat lore kuno (Sejarah), mengidentifikasi item sihir (Arcana), atau bertahan hidup di alam liar (Survival).
+    *   **NARASI BERDASARKAN HASIL**: Narasi Anda (\`narasiBaru\`) **HARUS** secara langsung mencerminkan hasil dari \`skillCheck\` ini. **JANGAN** pernah menarasikan keberhasilan atau kegagalan aksi-aksi ini tanpa melakukan \`skillCheck\` terlebih dahulu.
+4.  **Aturan Percakapan**: Jika aksi pemain adalah memulai percakapan atau mengajukan pertanyaan kepada NPC, narasi Anda **HARUS** menyertakan respons atau reaksi dari NPC tersebut.
+5.  **Manajemen Peta & Penemuan**: Jika pemain berpindah ke lokasi BARU atau NPC mengungkapkan lokasi baru yang spesifik, Anda **WAJIB** memperbarui \`mapUpdate\` dengan menambahkan node dan edge baru. Kembalikan SELURUH objek peta yang diperbarui.
+6.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di Peta Dunia. Jika pemain berhasil pindah, perbarui lokasi ini. Jika mereka hanya mencoba pindah, lokasi tetap sama.
+7.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan **5-10 NPC yang beragam** dengan nama dan deskripsi unik.
 
 **MANAJEMEN EKONOMI & INTERAKSI (SANGAT KRITIS):**
-7.  **ATURAN KONSISTENSI TRANSAKSI (PALING PENTING)**: Sebelum menarasikan dialog tentang penjualan, **WAJIB PERIKSA** status karakter saat ini (\`character.inventory\`, \`character.residences\`). Jika pemain **SUDAH MEMILIKI** item atau properti yang sedang dibicarakan, **JANGAN** menawarkan untuk menjualnya lagi atau menanyakan harganya. Anggap transaksi sudah selesai dan lanjutkan narasi dengan pengakuan bahwa pemain sudah memilikinya.
-8.  **MANAJEMEN PROPERTI**: Jika pemain mencoba membeli rumah, periksa apakah mereka memiliki cukup emas. Jika ya, proses transaksi di \`pembaruanKarakter\` dengan mengisi \`residenceGained\`. Setelah pemain memiliki properti, AI **HARUS** mengingatnya (berdasarkan status karakter yang diperbarui). Jangan menawarkan properti yang sama lagi. Kenali saat pemain berada di properti mereka.
-9.  **Tautan Pedagang ke Toko**: Jika ada NPC pedagang di adegan, **WAJIB** isi bidang \`shopId\` mereka dengan ID yang sesuai dari DAFTAR TOKO DUNIA. Pastikan ID toko tersebut ada di \`sceneUpdate.availableShopIds\`.
-10. **Sinkronisasi Inventaris Mutlak**: Apa pun yang dideskripsikan dalam narasi mengenai barang dagangan atau transaksi **HARUS** tercermin secara akurat dalam data. Jika narasi menyebutkan "pandai besi menjual pedang baja", maka pedang baja itu **HARUS** ada di inventaris tokonya dalam \`marketplaceUpdate\`.
-11. **Inventaris Dinamis & Reaktif**: Jika pemain bertanya kepada pedagang tentang item spesial atau "barang misterius", Anda **HARUS** secara dinamis memperbarui inventaris toko tersebut di \`marketplaceUpdate\` dengan menambahkan 1-3 item baru yang tematik dan sebelumnya tidak tersedia. Narasikan penemuan ini.
+8.  **ATURAN KONSISTENSI TRANSAKSI (PALING PENTING)**: Sebelum menarasikan dialog tentang penjualan, **WAJIB PERIKSA** status karakter saat ini (\`character.inventory\`, \`character.residences\`). Jika pemain **SUDAH MEMILIKI** item atau properti yang sedang dibicarakan, **JANGAN** menawarkan untuk menjualnya lagi atau menanyakan harganya. Anggap transaksi sudah selesai dan lanjutkan narasi dengan pengakuan bahwa pemain sudah memilikinya.
+9.  **MANAJEMEN PROPERTI**: Jika pemain mencoba membeli rumah, periksa apakah mereka memiliki cukup emas. Jika ya, proses transaksi di \`pembaruanKarakter\` dengan mengisi \`residenceGained\`. Setelah pemain memiliki properti, AI **HARUS** mengingatnya (berdasarkan status karakter yang diperbarui). Jangan menawarkan properti yang sama lagi. Kenali saat pemain berada di properti mereka.
+10. **Tautan Pedagang ke Toko**: Jika ada NPC pedagang di adegan, **WAJIB** isi bidang \`shopId\` mereka dengan ID yang sesuai dari DAFTAR TOKO DUNIA. Pastikan ID toko tersebut ada di \`sceneUpdate.availableShopIds\`.
+11. **Sinkronisasi Inventaris Mutlak**: Apa pun yang dideskripsikan dalam narasi mengenai barang dagangan atau transaksi **HARUS** tercermin secara akurat dalam data. Jika narasi menyebutkan "pandai besi menjual pedang baja", maka pedang baja itu **HARUS** ada di inventaris tokonya dalam \`marketplaceUpdate\`.
+12. **Inventaris Dinamis & Reaktif**: Jika pemain bertanya kepada pedagang tentang item spesial atau "barang misterius", Anda **HARUS** secara dinamis memperbarui inventaris toko tersebut di \`marketplaceUpdate\` dengan menambahkan 1-3 item baru yang tematik dan sebelumnya tidak tersedia. Narasikan penemuan ini.
 
 **KONTEKS SAAT INI (Kebenaran Dasar):**
 -   **Giliran Saat Ini**: ${turnCount}
@@ -434,8 +442,8 @@ Tugas Anda:
 
 **TUGAS ANDA (Ikuti Secara Berurutan):**
 1.  **Analisis & Kontekstualisasi**: Pahami aksi pemain dalam konteks MEMORI DUNIA, PETA DUNIA, dan terutama KEPEMILIKAN PEMAIN saat ini.
-2.  **Pemeriksaan Keterampilan (Jika Perlu)**: Jika aksi pemain memiliki kemungkinan untuk gagal, buatlah \`skillCheck\`.
-3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain, dengan mematuhi semua aturan di atas.
+2.  **Pemeriksaan Keterampilan**: Terapkan **ATURAN PEMERIKSAAN KETERAMPILAN** jika aksi pemain memerlukannya.
+3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain dan hasil \`skillCheck\` (jika ada), dengan mematuhi semua aturan di atas.
 4.  **Perbarui Status & Dunia**:
     *   **Pembaruan Karakter**: Laporkan HANYA perubahan pada HP, mana, emas, item, atau properti baru di \`pembaruanKarakter\`.
     *   **Pembaruan Peta & Adegan**: Terapkan **Aturan Manajemen Peta** dan **Konsistensi Lokasi**.
