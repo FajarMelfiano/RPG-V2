@@ -175,6 +175,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
     // Desktop: Static side panel
     const DesktopJournal = (
         <aside className="hidden md:flex flex-col flex-shrink-0 h-full journal-panel p-4">
+            {/* The wrapping div that caused scroll issues was here. It has been removed. */}
             <PanelContent {...props} />
         </aside>
     );

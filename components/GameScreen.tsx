@@ -65,7 +65,7 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
   const { character, party, scene, storyHistory, notes } = savedCharacter;
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto h-full p-2 sm:p-4 md:grid md:grid-cols-[420px,1fr] md:gap-6">
+    <div className="w-full max-w-screen-2xl mx-auto h-full p-2 sm:p-4 md:grid md:grid-cols-[minmax(380px,28vw),1fr] md:gap-6">
       
       {selectedNpc && (
         <NpcDetailModal 

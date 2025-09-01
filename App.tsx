@@ -719,9 +719,9 @@ const App: React.FC = () => {
                 onCancel={handleCancelConfirmation}
             />
         )}
-        <div className="h-full flex flex-col items-center justify-center">
+        <main className="h-full w-full">
             {renderContent()}
-        </div>
+        </main>
     </div>
   );
 };
