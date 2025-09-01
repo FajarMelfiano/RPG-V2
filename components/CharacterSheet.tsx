@@ -40,7 +40,7 @@ const CharacterSheet: React.FC<{ character: Character }> = ({ character }) => {
       <div className="text-center mb-4">
         <h2 className="text-3xl font-cinzel text-[var(--color-text-header)] text-glow">{name}</h2>
         <p className="text-stone-400">{`Level ${stats.level} ${race} ${characterClass}`}</p>
-        <p className="text-sm text-stone-500">{`${age} tahun, Tinggi ${height}`}</p>
+        <p className="text-sm text-stone-500">{`${age || 'tidak diketahui'} tahun, Tinggi ${height || 'tidak diketahui'}`}</p>
         <div className="inline-flex items-center gap-2 mt-2 bg-stone-950/50 px-3 py-1 rounded-full border border-stone-700">
             <CoinIcon className="w-5 h-5 text-[var(--color-accent)]" />
             <span className="font-bold text-lg text-stone-200">{gold}</span>
