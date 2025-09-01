@@ -32,7 +32,6 @@ interface SidePanelProps {
     world: World;
     directShopId: string | null;
     setDirectShopId: (id: string | null) => void;
-    onTabSelect: (tab: ActiveTab) => void;
 }
 
 
@@ -40,7 +39,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
     const { 
         character, party, notes, onNotesChange, quests, worldEvents, 
         marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, 
-        onUnequipItem, world, directShopId, setDirectShopId, onTabSelect
+        onUnequipItem, world, directShopId, setDirectShopId
     } = props;
 
     const [activeTab, setActiveTab] = useState<ActiveTab>('character');
@@ -52,7 +51,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
     }, [directShopId]);
 
     const getTabClass = (tabName: ActiveTab) => {
-        return `flex items-center justify-start gap-3 w-full p-3 rounded-lg transition-all transform ${
+        return `flex items-center justify-center w-14 aspect-square flex-shrink-0 rounded-lg transition-all transform ${
             activeTab === tabName 
             ? 'bg-[var(--color-primary-dark)]/50 text-[var(--color-text-header)]' 
             : 'hover:bg-stone-900/70 text-stone-300'
@@ -60,18 +59,18 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
     }
     
     const tabs: { id: ActiveTab; label: string; icon: React.ReactNode; count?: number }[] = [
-        { id: 'character', label: 'Karakter', icon: <ShieldIcon className="w-5 h-5" /> },
-        { id: 'equipment', label: 'Perlengkapan', icon: <HelmetIcon className="w-5 h-5" /> },
-        { id: 'inventory', label: 'Inventaris', icon: <ChestIcon className="w-5 h-5" /> },
-        { id: 'map', label: 'Peta', icon: <MapIcon className="w-5 h-5" /> },
-        { id: 'residence', label: 'Rumah', icon: <HomeIcon className="w-5 h-5" />, count: character.residences.length },
-        { id: 'family', label: 'Keluarga', icon: <HeartIcon className="w-5 h-5" /> },
-        { id: 'quests', label: 'Misi', icon: <ScrollIcon className="w-5 h-5" /> },
-        { id: 'marketplace', label: 'Pasar', icon: <StoreIcon className="w-5 h-5" /> },
-        { id: 'party', label: 'Party', icon: <UsersIcon className="w-5 h-5" />, count: party.length },
-        { id: 'notes', label: 'Catatan', icon: <FileTextIcon className="w-5 h-5" /> },
-        { id: 'codex', label: 'Codex', icon: <GlobeIcon className="w-5 h-5" /> },
-        { id: 'guidebook', label: 'Panduan', icon: <QuestionMarkCircleIcon className="w-5 h-5" /> },
+        { id: 'character', label: 'Karakter', icon: <ShieldIcon className="w-6 h-6" /> },
+        { id: 'equipment', label: 'Perlengkapan', icon: <HelmetIcon className="w-6 h-6" /> },
+        { id: 'inventory', label: 'Inventaris', icon: <ChestIcon className="w-6 h-6" /> },
+        { id: 'map', label: 'Peta', icon: <MapIcon className="w-6 h-6" /> },
+        { id: 'residence', label: 'Rumah', icon: <HomeIcon className="w-6 h-6" />, count: character.residences.length },
+        { id: 'family', label: 'Keluarga', icon: <HeartIcon className="w-6 h-6" /> },
+        { id: 'quests', label: 'Misi', icon: <ScrollIcon className="w-6 h-6" /> },
+        { id: 'marketplace', label: 'Pasar', icon: <StoreIcon className="w-6 h-6" /> },
+        { id: 'party', label: 'Party', icon: <UsersIcon className="w-6 h-6" />, count: party.length },
+        { id: 'notes', label: 'Catatan', icon: <FileTextIcon className="w-6 h-6" /> },
+        { id: 'codex', label: 'Codex', icon: <GlobeIcon className="w-6 h-6" /> },
+        { id: 'guidebook', label: 'Panduan', icon: <QuestionMarkCircleIcon className="w-6 h-6" /> },
     ];
 
 
@@ -87,7 +86,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
             case 'party': return <PartySheet party={party} />;
             case 'notes': return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
             case 'marketplace': return <MarketplaceScreen marketplace={marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} directShopId={directShopId} setDirectShopId={setDirectShopId} />;
-            case 'codex': return <WorldCodex world={world} isSheet />;
+            case 'codex': return <WorldCodex world={world} isSheet={true} />;
             case 'guidebook': return <GuidebookModal onClose={() => {}} isSheet />;
             default: return null;
         }
@@ -95,13 +94,15 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
 
     return (
         <aside className="hidden md:w-[450px] md:flex flex-shrink-0 journal-panel p-4 gap-4">
-            <nav className="flex flex-col gap-1 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-y-auto">
+            <nav className="flex flex-col gap-2 bg-black/20 rounded-lg p-2 border border-stone-700 overflow-y-auto">
                  {tabs.map(tab => (
                     <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={getTabClass(tab.id)} title={tab.label}>
-                        {tab.icon}
-                        {tab.count !== undefined && tab.count > 0 && (
-                             <span className="text-xs bg-[var(--color-primary)]/80 text-white rounded-full px-1.5 py-0.5 ml-auto">{tab.count}</span>
-                        )}
+                        <div className="relative">
+                            {tab.icon}
+                            {tab.count !== undefined && tab.count > 0 && (
+                                <span className="absolute -top-1 -right-1 text-xs bg-[var(--color-primary)] text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">{tab.count}</span>
+                            )}
+                        </div>
                     </button>
                  ))}
             </nav>

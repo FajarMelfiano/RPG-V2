@@ -3,7 +3,7 @@ import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC, Characte
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
-import { BookOpenIcon, GlobeIcon, QuestionMarkCircleIcon, HeartIcon, ManaIcon, CoinIcon, ShieldIcon } from './icons';
+import { CoinIcon } from './icons';
 import WorldCodex from './WorldCodex';
 import NpcDetailModal from './NpcDetailModal';
 import GuidebookModal from './GuidebookModal';
@@ -18,8 +18,8 @@ import FamilySheet from './FamilySheet';
 import QuestLog from './QuestLog';
 import MarketplaceScreen from './MarketplaceScreen';
 import PartySheet from './PartySheet';
-// FIX: Import NotesPanel component to resolve 'Cannot find name' error.
 import NotesPanel from './NotesPanel';
+import MoreMenuSheet from './MoreMenuSheet';
 
 interface GameScreenProps {
   world: World;
@@ -118,8 +118,9 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
       case 'party': return <PartySheet party={party} />;
       case 'notes': return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
       case 'marketplace': return <MarketplaceScreen marketplace={world.marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} directShopId={directShopId} setDirectShopId={setDirectShopId} />;
-      case 'codex': return <WorldCodex world={world} />;
+      case 'codex': return <WorldCodex world={world} isSheet={true}/>;
       case 'guidebook': return <GuidebookModal onClose={handleCloseGuidebook} isSheet={true}/>;
+      case 'more_menu': return <MoreMenuSheet onSelectTab={handleTabSelect} character={character} party={party} />;
       default: return null;
     }
   }
@@ -138,7 +139,6 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
       <MobileHeader character={character} />
 
       <div className="w-full max-w-screen-2xl mx-auto flex-1 flex flex-col md:flex-row md:gap-6 md:p-4 min-h-0">
-        {/* FIX: Pass all required props to SidePanel instead of using spread, which caused a type error. */}
         <SidePanel
           character={character}
           party={party}
@@ -154,7 +154,6 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
           onEquipItem={onEquipItem}
           onUnequipItem={onUnequipItem}
           world={world}
-          onTabSelect={handleTabSelect}
           directShopId={directShopId}
           setDirectShopId={setDirectShopId}
         />

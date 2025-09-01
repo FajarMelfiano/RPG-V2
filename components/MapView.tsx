@@ -1,7 +1,8 @@
 
+
 import React from 'react';
 import { WorldMap, MapNode } from '../types';
-import { MapIcon } from './icons';
+import { MapIcon, ChevronsRightIcon } from './icons';
 
 interface MapViewProps {
     worldMap: WorldMap;
@@ -31,32 +32,40 @@ const MapView: React.FC<MapViewProps> = ({ worldMap, currentLocationName }) => {
 
             <div className="mb-4">
                 <h4 className="font-semibold text-stone-300 mb-1">Lokasi Saat Ini:</h4>
-                <p className="text-lg font-bold text-[var(--color-accent)] bg-stone-950/40 p-2 rounded-md border border-[var(--border-color-soft)]">{currentLocationName}</p>
+                 <div className="p-3 bg-gradient-to-r from-[var(--color-primary-dark)]/50 via-stone-950/40 to-stone-950/40 rounded-lg border-2 border-[var(--color-accent)] shadow-lg shadow-[var(--color-accent-glow)]/20">
+                    <p className="text-xl font-bold text-[var(--color-accent)] font-cinzel">{currentLocationName}</p>
+                 </div>
             </div>
             
             <div>
                 <h4 className="font-semibold text-stone-300 mb-2">Lokasi yang Diketahui:</h4>
                 <ul className="space-y-3">
                     {nodes.map(node => {
-                        const isCurrent = node.name === currentLocationName;
                         const nodeEdges = edges.filter(edge => edge.fromNodeId === node.id);
 
                         return (
-                            <li key={node.id} className={`bg-stone-950/40 p-3 rounded-md border-l-4 transition-all ${isCurrent ? 'border-[var(--color-accent)] shadow-lg shadow-[var(--color-accent-glow)]/20' : 'border-stone-700'}`}>
-                                <p className={`font-bold ${isCurrent ? 'text-[var(--color-accent)]' : 'text-stone-200'}`}>{node.name}</p>
+                            <li key={node.id} className="bg-stone-950/40 p-3 rounded-md border border-stone-700/50 transition-all">
+                                <p className="font-bold text-stone-200 font-cinzel">{node.name}</p>
                                 <p className="text-xs text-stone-400 italic mt-1">{node.description}</p>
+                                
                                 {nodeEdges.length > 0 && (
-                                    <ul className="mt-2 pl-4 text-xs space-y-1">
-                                        {nodeEdges.map(edge => {
-                                            const targetNode = getNodeById(edge.toNodeId);
-                                            return (
-                                                <li key={`${edge.fromNodeId}-${edge.toNodeId}`} className="text-stone-300">
-                                                    <span className="font-semibold text-[var(--color-primary)]">{edge.direction}:</span> {targetNode?.name || 'Lokasi tidak diketahui'}
-                                                    <em className="text-stone-500 ml-1">({edge.description})</em>
-                                                </li>
-                                            )
-                                        })}
-                                    </ul>
+                                    <div className="mt-3 pt-3 border-t border-[var(--border-color-soft)]">
+                                        <ul className="space-y-2 text-xs">
+                                            {nodeEdges.map(edge => {
+                                                const targetNode = getNodeById(edge.toNodeId);
+                                                return (
+                                                    <li key={`${edge.fromNodeId}-${edge.toNodeId}`} className="flex items-start gap-2">
+                                                        <ChevronsRightIcon className="w-4 h-4 text-stone-500 mt-0.5 flex-shrink-0" />
+                                                        <div className="flex-grow">
+                                                            <span className="font-semibold text-[var(--color-primary)]">{edge.direction}:</span>
+                                                            <span className="font-semibold text-stone-300 ml-1">{targetNode?.name || 'Lokasi tidak diketahui'}</span>
+                                                            <em className="text-stone-500 ml-1">({edge.description})</em>
+                                                        </div>
+                                                    </li>
+                                                )
+                                            })}
+                                        </ul>
+                                    </div>
                                 )}
                             </li>
                         );
