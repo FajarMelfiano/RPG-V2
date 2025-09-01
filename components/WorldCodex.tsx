@@ -1,17 +1,17 @@
-
 import React, { useState } from 'react';
 import { World } from '../types';
 import { BookIcon, GlobeIcon, UsersIcon, XIcon } from './icons';
 
 interface WorldCodexProps {
     world: World;
-    isOpen: boolean;
-    onClose: () => void;
+    isOpen?: boolean;
+    onClose?: () => void;
+    isSheet?: boolean;
 }
 
-type CodexTab = 'summary' | 'events' | 'characters' | 'rules';
+type CodexTab = 'summary' | 'events' | 'characters';
 
-const WorldCodex: React.FC<WorldCodexProps> = ({ world, isOpen, onClose }) => {
+const WorldCodex: React.FC<WorldCodexProps> = ({ world, isOpen, onClose, isSheet = false }) => {
     const [activeTab, setActiveTab] = useState<CodexTab>('summary');
 
     const renderTabContent = () => {
@@ -52,23 +52,6 @@ const WorldCodex: React.FC<WorldCodexProps> = ({ world, isOpen, onClose }) => {
                         {longTermMemory.keyCharacters.length === 0 && <li className="text-stone-500 italic">Belum ada tokoh kunci yang tercatat.</li>}
                     </ul>
                 );
-            case 'rules':
-                return (
-                    <div className="text-sm text-stone-300 space-y-3">
-                        <p>Dunia ini hidup dan bereaksi terhadap Anda, tetapi aturannya mungkin tidak selalu jelas.</p>
-                        <p>Sebagai pemain, Anda memiliki kemampuan untuk bertanya kepada AI Dungeon Master tentang dunia di luar karakter Anda.</p>
-                        <div className="bg-black/30 p-3 rounded-lg border border-[var(--border-color-soft)]">
-                            <p>Gunakan perintah <code className="font-mono bg-[var(--color-bg-primary)] px-1 py-0.5 rounded text-[var(--color-accent)]">/ooc [pertanyaanmu]</code> di kotak input aksi.</p>
-                        </div>
-                        <p className="font-bold text-[var(--color-text-header)]">Contoh pertanyaan yang bisa Anda ajukan:</p>
-                        <ul className="list-disc list-inside space-y-1 pl-2 text-stone-400">
-                            <li>/ooc apa mata uang yang berlaku di sini?</li>
-                            <li>/ooc ceritakan lebih banyak tentang Kekaisaran Naga.</li>
-                            <li>/ooc apakah ada hukum tentang penggunaan sihir di kota ini?</li>
-                            <li>/ooc siapa pemimpin faksi pemberontak?</li>
-                        </ul>
-                    </div>
-                );
         }
     };
     
@@ -80,7 +63,30 @@ const WorldCodex: React.FC<WorldCodexProps> = ({ world, isOpen, onClose }) => {
         }`;
     }
 
-    if (!isOpen) return null;
+    const content = (
+        <>
+            <h2 className="font-cinzel text-2xl text-[var(--color-text-header)] mb-4 text-glow flex items-center gap-3 flex-shrink-0">
+                <GlobeIcon className="w-6 h-6" />
+                Codex: {world.name}
+            </h2>
+            <div className="flex-shrink-0 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-hidden mb-4">
+                <div className="flex gap-1 overflow-x-auto pb-1 -mb-1">
+                    <button onClick={() => setActiveTab('summary')} className={getTabClass('summary')}>Ringkasan</button>
+                    <button onClick={() => setActiveTab('events')} className={getTabClass('events')}>Peristiwa</button>
+                    <button onClick={() => setActiveTab('characters')} className={getTabClass('characters')}>Tokoh</button>
+                </div>
+            </div>
+            <div className="flex-grow min-h-0 overflow-y-auto pr-2">
+                {renderTabContent()}
+            </div>
+        </>
+    );
+
+    if (isSheet) {
+        return <div className="p-1 h-full flex flex-col">{content}</div>;
+    }
+
+    if (!isOpen || !onClose) return null;
 
     return (
         <div
@@ -100,22 +106,7 @@ const WorldCodex: React.FC<WorldCodexProps> = ({ world, isOpen, onClose }) => {
                 >
                     <XIcon className="w-6 h-6" />
                 </button>
-
-                <h2 className="font-cinzel text-2xl text-[var(--color-text-header)] mb-4 text-glow flex items-center gap-3 flex-shrink-0">
-                    <GlobeIcon className="w-6 h-6" />
-                    Codex: {world.name}
-                </h2>
-                <div className="flex-shrink-0 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-hidden mb-4">
-                    <div className="flex gap-1 overflow-x-auto pb-1 -mb-1">
-                        <button onClick={() => setActiveTab('summary')} className={getTabClass('summary')}>Ringkasan</button>
-                        <button onClick={() => setActiveTab('events')} className={getTabClass('events')}>Peristiwa</button>
-                        <button onClick={() => setActiveTab('characters')} className={getTabClass('characters')}>Tokoh</button>
-                        <button onClick={() => setActiveTab('rules')} className={getTabClass('rules')}>Aturan Dunia</button>
-                    </div>
-                </div>
-                <div className="flex-grow min-h-0 overflow-y-auto pr-2">
-                    {renderTabContent()}
-                </div>
+                {content}
             </div>
         </div>
     );

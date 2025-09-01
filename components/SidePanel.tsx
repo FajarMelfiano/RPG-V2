@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot, World } from '../types';
 import CharacterSheet from './CharacterSheet';
 import PartySheet from './PartySheet';
@@ -6,11 +6,14 @@ import NotesPanel from './NotesPanel';
 import InventorySheet from './InventorySheet';
 import QuestLog from './QuestLog';
 import MarketplaceScreen from './MarketplaceScreen';
-import { ShieldIcon, UsersIcon, FileTextIcon, XIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon, HomeIcon } from './icons';
+import { ShieldIcon, UsersIcon, FileTextIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon, HomeIcon, BookOpenIcon, GlobeIcon, QuestionMarkCircleIcon } from './icons';
 import EquipmentSheet from './EquipmentSheet';
 import FamilySheet from './FamilySheet';
 import MapView from './MapView';
 import ResidenceSheet from './ResidenceSheet';
+import { ActiveTab } from './MobileSheet';
+import WorldCodex from './WorldCodex';
+import GuidebookModal from './GuidebookModal';
 
 interface SidePanelProps {
     character: Character;
@@ -19,8 +22,6 @@ interface SidePanelProps {
     onNotesChange: (notes: string) => void;
     quests: Quest[];
     worldEvents: WorldEvent[];
-    isOpen: boolean;
-    onClose: () => void;
     marketplace: Marketplace;
     scene: Scene;
     onBuyItem: (item: ShopItem, shopName: string) => void;
@@ -31,19 +32,18 @@ interface SidePanelProps {
     world: World;
     directShopId: string | null;
     setDirectShopId: (id: string | null) => void;
+    onTabSelect: (tab: ActiveTab) => void;
 }
 
-type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family' | 'map' | 'residence';
 
 const SidePanel: React.FC<SidePanelProps> = (props) => {
     const { 
-        isOpen, onClose, character, party, notes, onNotesChange, quests, worldEvents, 
+        character, party, notes, onNotesChange, quests, worldEvents, 
         marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, 
-        onUnequipItem, world, directShopId, setDirectShopId 
+        onUnequipItem, world, directShopId, setDirectShopId, onTabSelect
     } = props;
 
     const [activeTab, setActiveTab] = useState<ActiveTab>('character');
-    const tabsRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (directShopId) {
@@ -51,140 +51,64 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
         }
     }, [directShopId]);
 
-    const handleWheel = (e: React.WheelEvent) => {
-        if (tabsRef.current) {
-            tabsRef.current.scrollLeft += e.deltaY;
-        }
-    };
-
     const getTabClass = (tabName: ActiveTab) => {
-        return `flex-shrink-0 py-2 px-3 text-xs font-bold rounded-md flex items-center justify-center gap-1.5 transition-all duration-300 transform border-2 min-w-[100px] ${
+        return `flex items-center justify-start gap-3 w-full p-3 rounded-lg transition-all transform ${
             activeTab === tabName 
-            ? 'bg-[var(--color-primary-dark)]/50 text-[var(--color-text-header)] border-[var(--color-primary-hover)] shadow-lg scale-105' 
-            : 'bg-stone-950/50 hover:bg-stone-900/70 text-stone-300 border-transparent hover:border-[var(--color-primary-dark)]'
+            ? 'bg-[var(--color-primary-dark)]/50 text-[var(--color-text-header)]' 
+            : 'hover:bg-stone-900/70 text-stone-300'
         }`;
     }
+    
+    const tabs: { id: ActiveTab; label: string; icon: React.ReactNode; count?: number }[] = [
+        { id: 'character', label: 'Karakter', icon: <ShieldIcon className="w-5 h-5" /> },
+        { id: 'equipment', label: 'Perlengkapan', icon: <HelmetIcon className="w-5 h-5" /> },
+        { id: 'inventory', label: 'Inventaris', icon: <ChestIcon className="w-5 h-5" /> },
+        { id: 'map', label: 'Peta', icon: <MapIcon className="w-5 h-5" /> },
+        { id: 'residence', label: 'Rumah', icon: <HomeIcon className="w-5 h-5" />, count: character.residences.length },
+        { id: 'family', label: 'Keluarga', icon: <HeartIcon className="w-5 h-5" /> },
+        { id: 'quests', label: 'Misi', icon: <ScrollIcon className="w-5 h-5" /> },
+        { id: 'marketplace', label: 'Pasar', icon: <StoreIcon className="w-5 h-5" /> },
+        { id: 'party', label: 'Party', icon: <UsersIcon className="w-5 h-5" />, count: party.length },
+        { id: 'notes', label: 'Catatan', icon: <FileTextIcon className="w-5 h-5" /> },
+        { id: 'codex', label: 'Codex', icon: <GlobeIcon className="w-5 h-5" /> },
+        { id: 'guidebook', label: 'Panduan', icon: <QuestionMarkCircleIcon className="w-5 h-5" /> },
+    ];
+
 
     const renderTabContent = () => {
         switch (activeTab) {
-            case 'character':
-                return <CharacterSheet character={character} />;
-            case 'equipment':
-                return <EquipmentSheet equipment={character.equipment} onUnequipItem={onUnequipItem} />;
-            case 'party':
-                return party.length > 0 ? <PartySheet party={party} /> : (
-                    <div className="p-4 text-center text-stone-400 mt-4 h-full flex items-center justify-center">
-                        <p>Anda sedang bertualang sendirian.</p>
-                    </div>
-                );
-            case 'family':
-                 return <FamilySheet family={character.family} />;
-            case 'inventory':
-                return <InventorySheet character={character} onEquipItem={onEquipItem} />;
-            case 'quests':
-                return <QuestLog quests={quests} worldEvents={worldEvents} />;
-            case 'map':
-                return <MapView worldMap={world.worldMap} currentLocationName={scene.location} />;
-            case 'residence':
-                return <ResidenceSheet residences={character.residences} />;
-            case 'notes':
-                return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
-            case 'marketplace':
-                return <MarketplaceScreen 
-                    marketplace={marketplace} 
-                    scene={scene} 
-                    character={character} 
-                    onBuyItem={onBuyItem} 
-                    onSellItem={onSellItem} 
-                    isLoading={isLoading} 
-                    directShopId={directShopId}
-                    setDirectShopId={setDirectShopId}
-                />;
-            default:
-                return null;
+            case 'character': return <CharacterSheet character={character} />;
+            case 'equipment': return <EquipmentSheet equipment={character.equipment} onUnequipItem={onUnequipItem} />;
+            case 'inventory': return <InventorySheet character={character} onEquipItem={onEquipItem} />;
+            case 'map': return <MapView worldMap={world.worldMap} currentLocationName={scene.location} />;
+            case 'residence': return <ResidenceSheet residences={character.residences} />;
+            case 'family': return <FamilySheet family={character.family} />;
+            case 'quests': return <QuestLog quests={quests} worldEvents={worldEvents} />;
+            case 'party': return <PartySheet party={party} />;
+            case 'notes': return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
+            case 'marketplace': return <MarketplaceScreen marketplace={marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} directShopId={directShopId} setDirectShopId={setDirectShopId} />;
+            case 'codex': return <WorldCodex world={world} isSheet />;
+            case 'guidebook': return <GuidebookModal onClose={() => {}} isSheet />;
+            default: return null;
         }
     }
 
-    const panelInnerContent = (
-        <>
-            <div className="flex-shrink-0 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-hidden">
-                <div ref={tabsRef} onWheel={handleWheel} className="flex gap-1 overflow-x-auto pb-1 -mb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
-                    <button onClick={() => setActiveTab('character')} className={getTabClass('character')} title="Karakter">
-                        <ShieldIcon className="w-5 h-5" /> <span>Karakter</span>
+    return (
+        <aside className="hidden md:w-[450px] md:flex flex-shrink-0 journal-panel p-4 gap-4">
+            <nav className="flex flex-col gap-1 bg-black/20 rounded-lg p-1 border border-stone-700 overflow-y-auto">
+                 {tabs.map(tab => (
+                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={getTabClass(tab.id)} title={tab.label}>
+                        {tab.icon}
+                        {tab.count !== undefined && tab.count > 0 && (
+                             <span className="text-xs bg-[var(--color-primary)]/80 text-white rounded-full px-1.5 py-0.5 ml-auto">{tab.count}</span>
+                        )}
                     </button>
-                    <button onClick={() => setActiveTab('equipment')} className={getTabClass('equipment')} title="Perlengkapan">
-                        <HelmetIcon className="w-5 h-5" /> <span>Perlengkapan</span>
-                    </button>
-                    <button onClick={() => setActiveTab('inventory')} className={getTabClass('inventory')} title="Inventaris">
-                        <ChestIcon className="w-5 h-5" /> <span>Inventaris</span>
-                    </button>
-                     <button onClick={() => setActiveTab('map')} className={getTabClass('map')} title="Peta">
-                        <MapIcon className="w-5 h-5" /> <span>Peta</span>
-                    </button>
-                    <button onClick={() => setActiveTab('residence')} className={getTabClass('residence')} title="Rumah">
-                        <HomeIcon className="w-5 h-5" /> <span>Rumah</span>
-                    </button>
-                    <button onClick={() => setActiveTab('family')} className={getTabClass('family')} title="Keluarga">
-                        <HeartIcon className="w-5 h-5" /> <span>Keluarga</span>
-                    </button>
-                    <button onClick={() => setActiveTab('quests')} className={getTabClass('quests')} title="Misi">
-                        <ScrollIcon className="w-5 h-5" /> <span>Misi</span>
-                    </button>
-                    <button onClick={() => setActiveTab('marketplace')} className={getTabClass('marketplace')} title="Pasar">
-                        <StoreIcon className="w-5 h-5" /> <span>Pasar</span>
-                    </button>
-                    <button onClick={() => setActiveTab('party')} className={getTabClass('party')} title="Party">
-                    <UsersIcon className="w-5 h-5" /> <span>Party ({party.length})</span>
-                    </button>
-                    <button onClick={() => setActiveTab('notes')} className={getTabClass('notes')} title="Catatan">
-                        <FileTextIcon className="w-5 h-5" /> <span>Catatan</span>
-                    </button>
-                </div>
-            </div>
+                 ))}
+            </nav>
             <div className="flex-grow min-h-0 overflow-y-auto pr-1">
                 {renderTabContent()}
             </div>
-        </>
-    );
-
-    // Mobile & Tablet: Full-screen overlay
-    const MobileJournal = (
-        <div
-            className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-            aria-hidden={!isOpen}
-        >
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose} />
-            <aside
-                className={`relative z-10 journal-panel w-full h-full p-4 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
-                aria-label="Jurnal"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 text-stone-400 hover:text-white"
-                    aria-label="Tutup Jurnal"
-                >
-                    <XIcon className="w-6 h-6" />
-                </button>
-                <div className="h-full pt-8 flex flex-col gap-4">
-                    {panelInnerContent}
-                </div>
-            </aside>
-        </div>
-    );
-
-    // Desktop: Static side panel
-    const DesktopJournal = (
-        <aside className="hidden md:w-[450px] md:flex flex-col flex-shrink-0 journal-panel p-4 gap-4">
-            {panelInnerContent}
         </aside>
-    );
-
-    return (
-        <>
-            {MobileJournal}
-            {DesktopJournal}
-        </>
     );
 };
 
