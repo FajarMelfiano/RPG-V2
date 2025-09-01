@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // FIX: Removed unused 'Party' import as it is not an exported member of types.ts.
 import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot, World } from '../types';
 import CharacterSheet from './CharacterSheet';
@@ -78,6 +78,64 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
 
     const [activeTab, setActiveTab] = useState<ActiveTab>('character');
     
+    const navRef = useRef<HTMLDivElement>(null);
+    const isDragging = useRef(false);
+    const startX = useRef(0);
+    const scrollLeft = useRef(0);
+    const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!navRef.current) return;
+        isDragging.current = true;
+        document.body.style.cursor = 'grabbing';
+        document.body.style.userSelect = 'none';
+        startX.current = e.pageX - navRef.current.offsetLeft;
+        scrollLeft.current = navRef.current.scrollLeft;
+    };
+
+    const handleMouseUpAndLeave = () => {
+        if (!isDragging.current) return;
+        isDragging.current = false;
+        document.body.style.cursor = 'default';
+        document.body.style.userSelect = 'auto';
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging.current || !navRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - navRef.current.offsetLeft;
+        const walk = (x - startX.current) * 2; // scroll-fast factor
+        navRef.current.scrollLeft = scrollLeft.current - walk;
+    };
+
+    useEffect(() => {
+        const navElement = navRef.current;
+        if (!navElement) return;
+
+        const checkForOverflow = () => {
+            const isOverflowing = navElement.scrollWidth > navElement.clientWidth;
+            const isAtEnd = Math.ceil(navElement.scrollLeft + navElement.clientWidth) >= navElement.scrollWidth;
+            setShowScrollIndicator(isOverflowing && !isAtEnd);
+        };
+        
+        checkForOverflow();
+        
+        navElement.addEventListener('scroll', checkForOverflow, { passive: true });
+        const resizeObserver = new ResizeObserver(checkForOverflow);
+        resizeObserver.observe(navElement);
+        const mutationObserver = new MutationObserver(checkForOverflow);
+        mutationObserver.observe(navElement, { childList: true, subtree: true });
+
+        document.addEventListener('mouseup', handleMouseUpAndLeave);
+
+        return () => {
+            navElement.removeEventListener('scroll', checkForOverflow);
+            resizeObserver.disconnect();
+            mutationObserver.disconnect();
+            document.removeEventListener('mouseup', handleMouseUpAndLeave);
+        };
+    }, []);
+    
     useEffect(() => {
         if (directShopId) {
             setActiveTab('marketplace');
@@ -127,8 +185,14 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
         <aside className="hidden md:w-[450px] md:flex flex-col flex-shrink-0 journal-panel p-2 space-y-2">
             <SidePanelHeader character={character} />
             
-            <div className="flex-shrink-0 border-b-2 border-t-2 border-[var(--border-color-strong)]/50 py-2">
-                <div className="overflow-x-auto side-panel-tab-nav pb-2 -mb-2">
+            <div className="flex-shrink-0 border-b-2 border-t-2 border-[var(--border-color-strong)]/50 py-2 relative">
+                <div
+                    ref={navRef}
+                    className="side-panel-tab-nav pb-2 -mb-2 cursor-grab"
+                    onMouseDown={handleMouseDown}
+                    onMouseLeave={handleMouseUpAndLeave}
+                    onMouseMove={handleMouseMove}
+                >
                      <div className="flex gap-2 px-1">
                         {tabs.map(tab => {
                              const TabIcon = tab.icon;
@@ -147,6 +211,9 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
                             )
                         })}
                     </div>
+                </div>
+                 <div className={`absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-[var(--color-bg-panel)] via-[var(--color-bg-panel)]/80 to-transparent pointer-events-none transition-opacity duration-300 ${showScrollIndicator ? 'opacity-100' : 'opacity-0'}`}>
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[var(--color-accent)] animate-pulse shadow-[0_0_8px_var(--color-accent-glow)]"></div>
                 </div>
             </div>
 
