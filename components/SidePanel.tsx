@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot, World } from '../types';
 import CharacterSheet from './CharacterSheet';
 import PartySheet from './PartySheet';
@@ -6,7 +6,7 @@ import NotesPanel from './NotesPanel';
 import InventorySheet from './InventorySheet';
 import QuestLog from './QuestLog';
 import MarketplaceScreen from './MarketplaceScreen';
-import { ShieldIcon, UsersIcon, FileTextIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon, HomeIcon, BookOpenIcon, GlobeIcon, QuestionMarkCircleIcon } from './icons';
+import { ShieldIcon, UsersIcon, FileTextIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon, HomeIcon, GlobeIcon, QuestionMarkCircleIcon, ChevronsRightIcon } from './icons';
 import EquipmentSheet from './EquipmentSheet';
 import FamilySheet from './FamilySheet';
 import MapView from './MapView';
@@ -34,6 +34,42 @@ interface SidePanelProps {
     setDirectShopId: (id: string | null) => void;
 }
 
+const AccordionItem: React.FC<{
+    title: string;
+    icon: React.FC<any>;
+    count?: number;
+    isOpen: boolean;
+    onToggle: () => void;
+    children: React.ReactNode;
+    panelRef?: React.RefObject<HTMLDivElement>;
+}> = ({ title, icon: Icon, count, isOpen, onToggle, children, panelRef }) => {
+    return (
+        <div ref={panelRef} className="sidebar-accordion-item border-b border-[var(--border-color-soft)]">
+            <button
+                onClick={onToggle}
+                aria-expanded={isOpen}
+                className="sidebar-accordion-header"
+            >
+                <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5 text-[var(--color-primary)]" />
+                        <span className="font-bold font-cinzel text-stone-200">{title}</span>
+                         {count !== undefined && count > 0 && (
+                            <span className="text-xs bg-[var(--color-primary-dark)] text-white rounded-full w-5 h-5 flex items-center justify-center">{count}</span>
+                        )}
+                    </div>
+                     <ChevronsRightIcon className="w-5 h-5 text-stone-400 sidebar-accordion-chevron" />
+                </div>
+            </button>
+            <div className="sidebar-accordion-content" aria-hidden={!isOpen}>
+                <div className="p-2">
+                   {children}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const SidePanel: React.FC<SidePanelProps> = (props) => {
     const { 
@@ -42,72 +78,62 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
         onUnequipItem, world, directShopId, setDirectShopId
     } = props;
 
-    const [activeTab, setActiveTab] = useState<ActiveTab>('character');
+    const [openSections, setOpenSections] = useState<Set<string>>(new Set(['character']));
+    const marketplaceRef = useRef<HTMLDivElement>(null);
+    
+    const toggleSection = (sectionId: string) => {
+        setOpenSections(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(sectionId)) {
+                newSet.delete(sectionId);
+            } else {
+                newSet.add(sectionId);
+            }
+            return newSet;
+        });
+    };
 
     useEffect(() => {
         if (directShopId) {
-            setActiveTab('marketplace');
+            setOpenSections(prev => new Set(prev).add('marketplace'));
+             setTimeout(() => {
+                marketplaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
         }
     }, [directShopId]);
-
-    const getTabClass = (tabName: ActiveTab) => {
-        return `flex items-center justify-center w-14 aspect-square flex-shrink-0 rounded-lg transition-all transform ${
-            activeTab === tabName 
-            ? 'bg-[var(--color-primary-dark)]/50 text-[var(--color-text-header)]' 
-            : 'hover:bg-stone-900/70 text-stone-300'
-        }`;
-    }
     
-    const tabs: { id: ActiveTab; label: string; icon: React.ReactNode; count?: number }[] = [
-        { id: 'character', label: 'Karakter', icon: <ShieldIcon className="w-6 h-6" /> },
-        { id: 'equipment', label: 'Perlengkapan', icon: <HelmetIcon className="w-6 h-6" /> },
-        { id: 'inventory', label: 'Inventaris', icon: <ChestIcon className="w-6 h-6" /> },
-        { id: 'map', label: 'Peta', icon: <MapIcon className="w-6 h-6" /> },
-        { id: 'residence', label: 'Rumah', icon: <HomeIcon className="w-6 h-6" />, count: character.residences.length },
-        { id: 'family', label: 'Keluarga', icon: <HeartIcon className="w-6 h-6" /> },
-        { id: 'quests', label: 'Misi', icon: <ScrollIcon className="w-6 h-6" /> },
-        { id: 'marketplace', label: 'Pasar', icon: <StoreIcon className="w-6 h-6" /> },
-        { id: 'party', label: 'Party', icon: <UsersIcon className="w-6 h-6" />, count: party.length },
-        { id: 'notes', label: 'Catatan', icon: <FileTextIcon className="w-6 h-6" /> },
-        { id: 'codex', label: 'Codex', icon: <GlobeIcon className="w-6 h-6" /> },
-        { id: 'guidebook', label: 'Panduan', icon: <QuestionMarkCircleIcon className="w-6 h-6" /> },
+    const panels = [
+        { id: 'character', title: 'Karakter', icon: ShieldIcon, content: <CharacterSheet character={character} /> },
+        { id: 'equipment', title: 'Perlengkapan', icon: HelmetIcon, content: <EquipmentSheet equipment={character.equipment} onUnequipItem={onUnequipItem} /> },
+        { id: 'inventory', title: 'Inventaris', icon: ChestIcon, content: <InventorySheet character={character} onEquipItem={onEquipItem} /> },
+        { id: 'map', title: 'Peta', icon: MapIcon, content: <MapView worldMap={world.worldMap} currentLocationName={scene.location} /> },
+        { id: 'residence', title: 'Properti', icon: HomeIcon, count: character.residences.length, content: <ResidenceSheet residences={character.residences} /> },
+        { id: 'family', title: 'Keluarga', icon: HeartIcon, content: <FamilySheet family={character.family} /> },
+        { id: 'quests', title: 'Misi & Tawarikh', icon: ScrollIcon, content: <QuestLog quests={quests} worldEvents={worldEvents} /> },
+        { id: 'marketplace', title: 'Pasar', icon: StoreIcon, content: <MarketplaceScreen marketplace={marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} directShopId={directShopId} setDirectShopId={setDirectShopId} />, ref: marketplaceRef },
+        { id: 'party', title: 'Party', icon: UsersIcon, count: party.length, content: <PartySheet party={party} /> },
+        { id: 'notes', title: 'Catatan', icon: FileTextIcon, content: <NotesPanel notes={notes} onNotesChange={onNotesChange} /> },
+        { id: 'codex', title: 'Codex Dunia', icon: GlobeIcon, content: <WorldCodex world={world} isSheet={true} /> },
+        { id: 'guidebook', title: 'Buku Panduan', icon: QuestionMarkCircleIcon, content: <GuidebookModal onClose={() => {}} isSheet /> },
     ];
 
 
-    const renderTabContent = () => {
-        switch (activeTab) {
-            case 'character': return <CharacterSheet character={character} />;
-            case 'equipment': return <EquipmentSheet equipment={character.equipment} onUnequipItem={onUnequipItem} />;
-            case 'inventory': return <InventorySheet character={character} onEquipItem={onEquipItem} />;
-            case 'map': return <MapView worldMap={world.worldMap} currentLocationName={scene.location} />;
-            case 'residence': return <ResidenceSheet residences={character.residences} />;
-            case 'family': return <FamilySheet family={character.family} />;
-            case 'quests': return <QuestLog quests={quests} worldEvents={worldEvents} />;
-            case 'party': return <PartySheet party={party} />;
-            case 'notes': return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
-            case 'marketplace': return <MarketplaceScreen marketplace={marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} directShopId={directShopId} setDirectShopId={setDirectShopId} />;
-            case 'codex': return <WorldCodex world={world} isSheet={true} />;
-            case 'guidebook': return <GuidebookModal onClose={() => {}} isSheet />;
-            default: return null;
-        }
-    }
-
     return (
-        <aside className="hidden md:w-[450px] md:flex flex-shrink-0 journal-panel p-4 gap-4">
-            <nav className="flex flex-col gap-2 bg-black/20 rounded-lg p-2 border border-stone-700 overflow-y-auto">
-                 {tabs.map(tab => (
-                    <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={getTabClass(tab.id)} title={tab.label}>
-                        <div className="relative">
-                            {tab.icon}
-                            {tab.count !== undefined && tab.count > 0 && (
-                                <span className="absolute -top-1 -right-1 text-xs bg-[var(--color-primary)] text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]">{tab.count}</span>
-                            )}
-                        </div>
-                    </button>
-                 ))}
-            </nav>
-            <div className="flex-grow min-h-0 overflow-y-auto pr-1">
-                {renderTabContent()}
+        <aside className="hidden md:w-[450px] md:flex flex-shrink-0 journal-panel p-2">
+            <div className="w-full h-full overflow-y-auto pr-2 sidebar-accordion">
+                {panels.map(panel => (
+                    <AccordionItem
+                        key={panel.id}
+                        title={panel.title}
+                        icon={panel.icon}
+                        count={panel.count}
+                        isOpen={openSections.has(panel.id)}
+                        onToggle={() => toggleSection(panel.id)}
+                        panelRef={panel.ref}
+                    >
+                        {panel.content}
+                    </AccordionItem>
+                ))}
             </div>
         </aside>
     );
