@@ -175,7 +175,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
 
     // Desktop: Static side panel
     const DesktopJournal = (
-        <aside className="hidden md:w-[450px] md:flex flex-col flex-shrink-0 h-full journal-panel p-4 gap-4">
+        <aside className="hidden md:w-[450px] md:flex flex-col flex-shrink-0 journal-panel p-4 gap-4">
             {panelInnerContent}
         </aside>
     );

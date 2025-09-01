@@ -719,7 +719,7 @@ const App: React.FC = () => {
                 onCancel={handleCancelConfirmation}
             />
         )}
-        <main className="h-full w-full flex flex-col">
+        <main className="flex-1 w-full flex flex-col min-h-0">
             {renderContent()}
         </main>
     </div>
