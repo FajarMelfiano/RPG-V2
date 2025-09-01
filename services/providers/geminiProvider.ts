@@ -360,7 +360,7 @@ Tugas Anda:
 6.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: worldGenerationSchema }
         });
@@ -395,7 +395,7 @@ Tugas Anda:
 9.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: characterGenerationSchema }
         });
@@ -408,23 +408,24 @@ Tugas Anda:
         const prompt = `Anda adalah Dungeon Master (DM) AI yang logis dan konsisten. Misi utama Anda adalah menjaga kontinuitas cerita, realisme, dan menciptakan pengalaman yang dinamis. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
 
 **ATURAN INTI & PRINSIP (WAJIB DIIKUTI):**
-1.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'. JANGAN mengulang nama lokasi yang sudah ada untuk tempat baru.
-2.  **Penalaran Logis & Matematis**: Anda adalah AI yang cerdas. Saat pemain meminta perhitungan atau membuat keputusan berdasarkan logika, berikan jawaban yang akurat secara matematis dan masuk akal.
-3.  **ATURAN INTERVENSI & KOREKSI GM (BARU & KRITIS)**: Jika aksi pemain mengandung kesalahan faktual yang jelas (misal: salah menyebut nama NPC/lokasi yang ada di adegan, mencoba berinteraksi dengan sesuatu yang tidak ada), Anda **WAJIB** memberikan koreksi singkat dan sopan melalui bidang \`gmInterventionOoc\`. JANGAN menarasikan hasil aksi yang salah. Cukup berikan koreksi. Contoh: "Tidak ada NPC bernama 'Grom' di sini, tapi ada 'Grek'. Apakah Anda bermaksud berbicara dengannya?".
-4.  **ATURAN PEMERIKSAAN KETERAMPILAN (DIPERBARUI & KRITIS)**:
-    *   **KAPAN WAJIB DIGUNAKAN**: Anda **WAJIB** membuat \`skillCheck\` untuk setiap aksi pemain yang hasilnya tidak pasti dan memiliki kemungkinan **GAGAL** serta konsekuensi yang berarti.
-    *   **KAPAN TIDAK BOLEH DIGUNAKAN**: **JANGAN** membuat \`skillCheck\` untuk aksi-aksi sepele yang tidak memiliki kemungkinan gagal. Contoh: Berjalan di ruangan aman, mengambil barang tidak dijaga, membeli barang di toko, atau mengajukan pertanyaan sederhana pada NPC yang ramah.
+1.  **ATURAN #1 - HINDARI LEMPARAN DADU YANG TIDAK PERLU**: Ini adalah aturan terpenting. **JANGAN** membuat \`skillCheck\` untuk aksi-aksi yang biasa dan tidak memiliki risiko atau konsekuensi kegagalan yang jelas. Aksi seperti berjalan ke lokasi yang diketahui, berbicara, bertanya, atau mengamati lingkungan secara umum **TIDAK** memerlukan lemparan dadu. Hanya gunakan \`skillCheck\` jika ada **ketegangan dramatis** dan **hasil yang tidak pasti**.
+2.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'. JANGAN mengulang nama lokasi yang sudah ada untuk tempat baru.
+3.  **Penalaran Logis & Matematis**: Anda adalah AI yang cerdas. Saat pemain meminta perhitungan atau membuat keputusan berdasarkan logika, berikan jawaban yang akurat secara matematis dan masuk akal.
+4.  **ATURAN INTERVENSI & KOREKSI GM (BARU & KRITIS)**: Jika aksi pemain mengandung kesalahan faktual yang jelas (misal: salah menyebut nama NPC/lokasi yang ada di adegan, mencoba berinteraksi dengan sesuatu yang tidak ada), Anda **WAJIB** memberikan koreksi singkat dan sopan melalui bidang \`gmInterventionOoc\`. JANGAN menarasikan hasil aksi yang salah. Cukup berikan koreksi. Contoh: "Tidak ada NPC bernama 'Grom' di sini, tapi ada 'Grek'. Apakah Anda bermaksud berbicara dengannya?".
+5.  **ATURAN PEMERIKSAAN KETERAMPILAN (DIPERBARUI & KRITIS)**:
+    *   **KAPAN WAJIB DIGUNAKAN**: Anda **WAJIB** membuat \`skillCheck\` hanya untuk aksi pemain yang hasilnya tidak pasti, memiliki kemungkinan **GAGAL**, dan kegagalan tersebut memiliki **konsekuensi yang berarti**. Contoh: Mencoba memanjat dinding licin, menipu penjaga, melucuti perangkap.
+    *   **KAPAN DILARANG KERAS**: **JANGAN** membuat \`skillCheck\` untuk aksi-aksi sepele. Contoh: Berjalan ke pasar, mengambil kunci dari meja, membeli barang di toko, atau mengajukan pertanyaan sederhana pada NPC yang ramah. Jika ragu, **JANGAN** lakukan pemeriksaan.
     *   **NARASI BERDASARKAN HASIL**: Narasi Anda (\`narasiBaru\`) **HARUS** secara langsung mencerminkan hasil dari \`skillCheck\` tersebut.
-5.  **Manajemen Peta & Penemuan**: Jika pemain berpindah ke lokasi BARU atau NPC mengungkapkan lokasi baru, Anda **WAJIB** memperbarui \`mapUpdate\`.
-6.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di Peta Dunia.
-7.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar), populasikan dengan **5-10 NPC yang beragam**.
+6.  **Manajemen Peta & Penemuan**: Jika pemain berpindah ke lokasi BARU atau NPC mengungkapkan lokasi baru, Anda **WAJIB** memperbarui \`mapUpdate\`.
+7.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di Peta Dunia.
+8.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar), populasikan dengan **5-10 NPC yang beragam**.
 
 **MANAJEMEN EKONOMI & INTERAKSI (SANGAT KRITIS):**
-8.  **ATURAN KONSISTENSI TRANSAKSI**: Sebelum menarasikan dialog tentang penjualan, **WAJIB PERIKSA** status karakter (\`character.inventory\`, \`character.residences\`). Jika pemain **SUDAH MEMILIKI** item atau properti tersebut, **JANGAN** menawarkan untuk menjualnya lagi.
-9.  **MANAJEMEN PROPERTI**: Jika pemain membeli rumah, proses transaksi di \`pembaruanKarakter\` dengan mengisi \`residenceGained\`. Setelah pemain memiliki properti, AI **HARUS** mengingatnya.
-10. **Tautan Pedagang ke Toko**: Jika ada NPC pedagang di adegan, **WAJIB** isi bidang \`shopId\` mereka dengan ID yang sesuai dari DAFTAR TOKO DUNIA. Pastikan ID toko ada di \`sceneUpdate.availableShopIds\`.
-11. **Sinkronisasi Inventaris**: Apa pun yang dideskripsikan dalam narasi mengenai barang dagangan **HARUS** tercermin secara akurat dalam data \`marketplaceUpdate\`.
-12. **Inventaris Dinamis**: Jika pemain bertanya kepada pedagang tentang item spesial, Anda **HARUS** secara dinamis memperbarui inventaris toko tersebut di \`marketplaceUpdate\` dengan menambahkan 1-3 item baru yang tematik.
+9.  **ATURAN KONSISTENSI TRANSAKSI**: Sebelum menarasikan dialog tentang penjualan, **WAJIB PERIKSA** status karakter (\`character.inventory\`, \`character.residences\`). Jika pemain **SUDAH MEMILIKI** item atau properti tersebut, **JANGAN** menawarkan untuk menjualnya lagi.
+10. **MANAJEMEN PROPERTI**: Jika pemain membeli rumah, proses transaksi di \`pembaruanKarakter\` dengan mengisi \`residenceGained\`. Setelah pemain memiliki properti, AI **HARUS** mengingatnya.
+11. **Tautan Pedagang ke Toko**: Jika ada NPC pedagang di adegan, **WAJIB** isi bidang \`shopId\` mereka dengan ID yang sesuai dari DAFTAR TOKO DUNIA. Pastikan ID toko ada di \`sceneUpdate.availableShopIds\`.
+12. **Sinkronisasi Inventaris**: Apa pun yang dideskripsikan dalam narasi mengenai barang dagangan **HARUS** tercermin secara akurat dalam data \`marketplaceUpdate\`.
+13. **Inventaris Dinamis**: Jika pemain bertanya kepada pedagang tentang item spesial, Anda **HARUS** secara dinamis memperbarui inventaris toko tersebut di \`marketplaceUpdate\` dengan menambahkan 1-3 item baru yang tematik.
 
 **KONTEKS SAAT INI (Kebenaran Dasar):**
 -   **Giliran Saat Ini**: ${turnCount}
@@ -444,7 +445,7 @@ Tugas Anda:
 6.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON.`;
         
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: gameTurnSchema }
         });
@@ -463,7 +464,7 @@ Konteks Cerita:
 Jawaban Anda (sebagai GM):`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
         });
         const text = response.text;

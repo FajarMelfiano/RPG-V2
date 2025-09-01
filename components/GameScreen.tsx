@@ -3,7 +3,7 @@ import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC, Characte
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
-import { CoinIcon } from './icons';
+import { CoinIcon, FileTextIcon, GlobeIcon, QuestionMarkCircleIcon, XIcon } from './icons';
 import WorldCodex from './WorldCodex';
 import NpcDetailModal from './NpcDetailModal';
 import GuidebookModal from './GuidebookModal';
@@ -73,9 +73,17 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
   const [directShopId, setDirectShopId] = useState<string | null>(null);
   const [selectedNpc, setSelectedNpc] = useState<NPC | null>(null);
 
+  const [isCodexOpen, setIsCodexOpen] = useState(false);
+  const [isGuidebookOpen, setIsGuidebookOpen] = useState(false);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
+
   useEffect(() => {
     if (!savedCharacter.hasSeenGuidebook) {
-      setActiveSheet('guidebook');
+      if (window.innerWidth >= 768) { // md breakpoint
+        setIsGuidebookOpen(true);
+      } else {
+        setActiveSheet('guidebook');
+      }
     }
   }, [savedCharacter.hasSeenGuidebook]);
 
@@ -84,6 +92,7 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
       onMarkGuidebookAsRead();
     }
     setActiveSheet(null);
+    setIsGuidebookOpen(false);
   };
 
   const handleShowNpcDetails = (npc: NPC) => {
@@ -135,6 +144,46 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
             onInteract={handleNpcInteraction}
         />
       )}
+      
+      <div className="hidden md:flex flex-col gap-4 fixed top-1/2 -translate-y-1/2 right-6 z-30">
+        <button onClick={() => setIsCodexOpen(true)} className="floating-button" title="Codex Dunia">
+          <GlobeIcon className="w-7 h-7" />
+        </button>
+        <button onClick={() => setIsNotesOpen(true)} className="floating-button" title="Catatan">
+          <FileTextIcon className="w-7 h-7" />
+        </button>
+        <button onClick={() => setIsGuidebookOpen(true)} className="floating-button" title="Buku Panduan">
+          <QuestionMarkCircleIcon className="w-7 h-7" />
+        </button>
+      </div>
+
+      <WorldCodex world={world} isOpen={isCodexOpen} onClose={() => setIsCodexOpen(false)} />
+      <GuidebookModal isOpen={isGuidebookOpen} onClose={handleCloseGuidebook} />
+
+      {isNotesOpen && (
+          <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn"
+              onClick={() => setIsNotesOpen(false)}
+              role="dialog"
+              aria-modal="true"
+          >
+              <div
+                  className="journal-panel w-full max-w-2xl h-full max-h-[70vh] p-4 sm:p-6 relative animate-zoomIn flex flex-col"
+                  onClick={(e) => e.stopPropagation()}
+              >
+                  <button
+                      onClick={() => setIsNotesOpen(false)}
+                      className="absolute top-4 right-4 text-stone-400 hover:text-white transition-colors z-10"
+                      aria-label="Tutup Catatan"
+                  >
+                      <XIcon className="w-6 h-6" />
+                  </button>
+                  <div className="h-full">
+                      <NotesPanel notes={savedCharacter.notes} onNotesChange={onNotesChange} />
+                  </div>
+              </div>
+          </div>
+      )}
 
       <MobileHeader character={character} />
 
@@ -142,8 +191,6 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
         <SidePanel
           character={character}
           party={party}
-          notes={notes}
-          onNotesChange={onNotesChange}
           quests={world.quests}
           worldEvents={world.worldEvents}
           marketplace={world.marketplace}

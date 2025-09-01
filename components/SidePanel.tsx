@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-// FIX: Removed unused 'Party' import as it is not an exported member of types.ts.
 import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot, World } from '../types';
 import CharacterSheet from './CharacterSheet';
 import PartySheet from './PartySheet';
@@ -19,8 +18,6 @@ import GuidebookModal from './GuidebookModal';
 interface SidePanelProps {
     character: Character;
     party: Character[];
-    notes: string;
-    onNotesChange: (notes: string) => void;
     quests: Quest[];
     worldEvents: WorldEvent[];
     marketplace: Marketplace;
@@ -71,7 +68,7 @@ const SidePanelHeader: React.FC<{ character: Character }> = ({ character }) => {
 
 const SidePanel: React.FC<SidePanelProps> = (props) => {
     const { 
-        character, party, notes, onNotesChange, quests, worldEvents, 
+        character, party, quests, worldEvents, 
         marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, 
         onUnequipItem, world, directShopId, setDirectShopId
     } = props;
@@ -142,9 +139,6 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
         }
     }, [directShopId]);
     
-    // FIX: Refactored tab definitions to resolve a TypeScript type inference error.
-    // By defining the full configuration array with the correct type first,
-    // we ensure that the 'id' property is correctly typed as 'ActiveTab' before filtering.
     const tabsConfig: { id: ActiveTab; title: string; icon: React.FC<any>; count?: number; hasContent: boolean }[] = [
         { id: 'character', title: 'Karakter', icon: ShieldIcon, hasContent: true },
         { id: 'equipment', title: 'Perlengkapan', icon: HelmetIcon, hasContent: true },
@@ -155,9 +149,6 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
         { id: 'quests', title: 'Misi & Tawarikh', icon: ScrollIcon, hasContent: true },
         { id: 'marketplace', title: 'Pasar', icon: StoreIcon, hasContent: scene.availableShopIds && scene.availableShopIds.length > 0 },
         { id: 'party', title: 'Party', icon: UsersIcon, count: party.length, hasContent: party.length > 0 },
-        { id: 'notes', title: 'Catatan', icon: FileTextIcon, hasContent: true },
-        { id: 'codex', title: 'Codex Dunia', icon: GlobeIcon, hasContent: true },
-        { id: 'guidebook', title: 'Buku Panduan', icon: QuestionMarkCircleIcon, hasContent: true },
     ];
 
     const tabs = tabsConfig.filter(tab => tab.hasContent);
@@ -173,9 +164,6 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
             case 'quests': return <QuestLog quests={quests} worldEvents={worldEvents} />;
             case 'marketplace': return <MarketplaceScreen marketplace={marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} directShopId={directShopId} setDirectShopId={setDirectShopId} />;
             case 'party': return <PartySheet party={party} />;
-            case 'notes': return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
-            case 'codex': return <WorldCodex world={world} isSheet={true} />;
-            case 'guidebook': return <GuidebookModal onClose={() => {}} isSheet />;
             default: return null;
         }
     };
