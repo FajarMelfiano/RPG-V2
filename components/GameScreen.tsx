@@ -65,7 +65,7 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
   const { character, party, scene, storyHistory, notes } = savedCharacter;
 
   return (
-    <div className="w-full max-w-screen-2xl mx-auto flex-1 flex flex-col p-2 sm:p-4 md:grid md:grid-cols-[minmax(380px,28vw),1fr] md:gap-6">
+    <div className="w-full max-w-screen-2xl mx-auto flex-1 flex flex-col md:flex-row p-2 sm:p-4 md:gap-6">
       
       {selectedNpc && (
         <NpcDetailModal 
@@ -108,7 +108,6 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
       />
       
       {/* Container utama untuk StoryLog dan ActionInput */}
-      {/* Pada layar kecil, ini adalah satu-satunya elemen dalam flow. Pada desktop, ini adalah kolom grid kedua. */}
       <main className="flex-1 flex flex-col min-h-0 relative">
         <StoryLog 
           storyHistory={storyHistory} 
