@@ -206,6 +206,7 @@ export interface GameTurnResponse {
         join?: Omit<Character, 'id'>;
         leave?: string; // name of character leaving
     };
+    gmInterventionOoc?: string;
 }
 
 export interface AppNotification {

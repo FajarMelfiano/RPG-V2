@@ -1,5 +1,3 @@
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot, World } from '../types';
 import CharacterSheet from './CharacterSheet';
@@ -176,7 +174,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
 
     // Desktop: Static side panel
     const DesktopJournal = (
-        <aside className="hidden md:flex flex-col w-[380px] lg:w-[420px] xl:w-[450px] flex-shrink-0 h-full journal-panel p-4">
+        <aside className="hidden md:flex flex-col flex-shrink-0 h-full journal-panel p-4">
              <div className="h-full">
                 <PanelContent {...props} />
             </div>

@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect } from 'react';
 import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC } from '../types';
 import StoryLog from './StoryLog';
@@ -68,7 +65,7 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
   const { character, party, scene, storyHistory, notes } = savedCharacter;
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto h-screen flex flex-col md:flex-row gap-4 sm:gap-6 p-2 sm:p-4">
+    <div className="w-full max-w-[1600px] mx-auto h-full p-2 sm:p-4 md:grid md:grid-cols-[420px,1fr] md:gap-6">
       
       {selectedNpc && (
         <NpcDetailModal 
@@ -84,6 +81,7 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
         onClose={() => setIsCodexOpen(false)}
       />
 
+      {/* FIX: Removed the `world` prop as it is not defined on GuidebookModalProps. */}
       <GuidebookModal 
         isOpen={isGuidebookOpen}
         onClose={handleCloseGuidebook}
@@ -110,7 +108,9 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
         setDirectShopId={setDirectShopId}
       />
       
-      <main className="flex-1 h-full flex flex-col min-h-0 relative">
+      {/* Container utama untuk StoryLog dan ActionInput */}
+      {/* Pada layar kecil, ini adalah satu-satunya elemen dalam flow. Pada desktop, ini adalah kolom grid kedua. */}
+      <main className="flex-1 flex flex-col min-h-0 relative h-full md:h-auto">
         <StoryLog 
           storyHistory={storyHistory} 
           scene={scene}

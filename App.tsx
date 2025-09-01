@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap, Stats, Residence } from './types';
 import StartScreen from './components/StartScreen';
@@ -616,10 +613,17 @@ const App: React.FC = () => {
       const isPurchase = updates && updates.perubahanEmas && updates.perubahanEmas < 0 && ((updates.itemDiterima && updates.itemDiterima.length > 0) || updates.residenceGained);
       
       const newEntries: StoryEntry[] = [];
+
+      if (response.gmInterventionOoc) {
+        newEntries.push({ type: 'ooc_response', content: `[Koreksi GM] ${response.gmInterventionOoc}`});
+      }
       if(response.skillCheck) {
           newEntries.push({ type: 'dice_roll', content: '', rollDetails: response.skillCheck });
       }
-      newEntries.push({ type: 'narrative', content: response.narasiBaru });
+      if (response.narasiBaru) {
+          newEntries.push({ type: 'narrative', content: response.narasiBaru });
+      }
+      
       const finalHistory = [...currentHistory, ...newEntries];
       
       if (isPurchase) {
@@ -704,7 +708,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-300">
+    <div className="h-full bg-stone-950 text-stone-300">
         <NotificationContainer notifications={notifications} />
         {confirmation?.isOpen && (
             <ConfirmationModal
@@ -715,7 +719,7 @@ const App: React.FC = () => {
                 onCancel={handleCancelConfirmation}
             />
         )}
-        <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="h-full flex flex-col items-center justify-center">
             {renderContent()}
         </div>
     </div>
