@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { Character, AnyItem, EquippableItem, ItemRarity, InventoryItem } from '../types';
 import { ChestIcon, CoinIcon } from './icons';
