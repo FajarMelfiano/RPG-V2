@@ -708,7 +708,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-full bg-stone-950 text-stone-300">
+    <div className="h-full flex flex-col bg-stone-950 text-stone-300">
         <NotificationContainer notifications={notifications} />
         {confirmation?.isOpen && (
             <ConfirmationModal
@@ -719,7 +719,7 @@ const App: React.FC = () => {
                 onCancel={handleCancelConfirmation}
             />
         )}
-        <main className="h-full w-full">
+        <main className="h-full w-full flex flex-col">
             {renderContent()}
         </main>
     </div>
