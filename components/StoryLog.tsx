@@ -84,7 +84,7 @@ const StoryLog: React.FC<{
   }, [storyHistory]);
 
   return (
-    <div className="world-panel flex-grow h-full flex flex-col min-h-0 relative">
+    <div className="world-panel flex-grow flex flex-col min-h-0 relative">
         <StoryHeader scene={scene} onNpcClick={onNpcClick}/>
         <div className="flex-grow p-4 overflow-y-auto min-h-0" style={{ scrollbarGutter: 'stable' }}>
           <div className="space-y-4">
