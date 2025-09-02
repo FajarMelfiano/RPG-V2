@@ -143,7 +143,7 @@ Tugas Anda (Ikuti dengan SANGAT TELITI):
 9.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash",
     contents: prompt,
     config: {
       responseMimeType: "application/json",
@@ -187,7 +187,7 @@ Tugas Anda:
 8.  **Format Respons**: Pastikan respons Anda sesuai dengan skema JSON yang disediakan.`;
   
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
+    model: "gemini-2.0-flash",
     contents: prompt,
     config: {
         responseMimeType: "application/json",
