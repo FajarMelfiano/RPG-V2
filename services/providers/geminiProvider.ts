@@ -91,8 +91,9 @@ const mapNodeSchema = {
         id: { type: Type.STRING },
         name: { type: Type.STRING },
         description: { type: Type.STRING },
+        type: { type: Type.STRING, description: "Jenis lokasi (misalnya, 'City', 'Town', 'Forest', 'Mountain', 'Dungeon', 'Camp', 'Other'). WAJIB diisi." },
     },
-    required: ["id", "name", "description"]
+    required: ["id", "name", "description", "type"]
 };
 
 const mapEdgeSchema = {
@@ -356,11 +357,11 @@ Tugas Anda:
 2.  **Pilih Tema Visual (WAJIB)**: Berdasarkan 'Konsep Inti Dunia', pilih SATU tema visual yang paling cocok dari daftar berikut: ['dark_fantasy', 'cyberpunk', 'steampunk', 'high_fantasy'].
 3.  **Ciptakan Pasar Awal (Marketplace)**: Buatlah toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
 4.  **Isi Inventaris Toko**: Untuk setiap toko, buat inventaris yang kaya dengan **8 hingga 15 item** yang relevan. Berikan ID unik (UUID), \`category\`, dan \`usageNotes\` untuk setiap item.
-5.  **Buat Peta Awal (WorldMap)**: Ciptakan peta relasional awal. Buat 3-5 lokasi (node) yang saling terhubung di sekitar area awal. Setiap node harus memiliki ID unik, nama, dan deskripsi singkat. Tentukan jalur (edge) yang menghubungkan node-node ini, lengkap dengan arah (misal, 'Utara', 'Jalan Berbatu').
+5.  **Buat Peta Awal (WorldMap)**: Ciptakan peta relasional awal. Buat 3-5 lokasi (node) yang saling terhubung di sekitar area awal. Setiap node harus memiliki ID unik, nama, deskripsi singkat, dan **jenis ('type') yang sesuai (misalnya, 'City', 'Forest')**. Tentukan jalur (edge) yang menghubungkan node-node ini, lengkap dengan arah (misal, 'Utara', 'Jalan Berbatu').
 6.  **Format JSON**: Pastikan output Anda sesuai dengan skema JSON yang diberikan.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: worldGenerationSchema }
         });
@@ -395,7 +396,7 @@ Tugas Anda:
 9.  **Format JSON**: Pastikan output sesuai dengan skema.`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: characterGenerationSchema }
         });
@@ -405,47 +406,59 @@ Tugas Anda:
 
     async generateNextScene(character: Character, party: Character[], scene: Scene, history: StoryEntry[], longTermMemory: WorldMemory, notes: string, quests: Quest[], worldEvents: WorldEvent[], turnCount: number, playerAction: string, transactionLog: TransactionLogEntry[], marketplace: Marketplace, worldMap: WorldMap): Promise<GameTurnResponse> {
         
+        const currentLocationNode = worldMap.nodes.find(node => node.name === scene.location);
+        const charactersInScene = [character.name, ...party.map(p => p.name), ...scene.npcs.map(n => n.name)];
+
+        const shopsInScene = marketplace.shops.filter(shop => 
+            scene.availableShopIds?.includes(shop.id)
+        );
+
+        const marketplaceContext = shopsInScene.map(shop => {
+            const npcOwner = scene.npcs.find(npc => npc.shopId === shop.id);
+            return {
+                shopId: shop.id,
+                shopName: shop.name,
+                owner: npcOwner?.name || 'Tidak diketahui',
+                inventory: shop.inventory.map(item => ({
+                    name: item.item.name,
+                    price: item.item.value,
+                    stock: item.quantity
+                }))
+            };
+        });
+
         const prompt = `Anda adalah Dungeon Master (DM) AI yang logis dan konsisten. Misi utama Anda adalah menjaga kontinuitas cerita, realisme, dan menciptakan pengalaman yang dinamis. SEMUA TEKS HARUS DALAM BAHASA INDONESIA.
 
 **ATURAN INTI & PRINSIP (WAJIB DIIKUTI):**
-1.  **ATURAN #1 - HINDARI LEMPARAN DADU YANG TIDAK PERLU**: Ini adalah aturan terpenting. **JANGAN** membuat \`skillCheck\` untuk aksi-aksi yang biasa dan tidak memiliki risiko atau konsekuensi kegagalan yang jelas. Aksi seperti berjalan ke lokasi yang diketahui, berbicara, bertanya, atau mengamati lingkungan secara umum **TIDAK** memerlukan lemparan dadu. Hanya gunakan \`skillCheck\` jika ada **ketegangan dramatis** dan **hasil yang tidak pasti**.
-2.  **Prinsip Realisme & Konsistensi**: Semua peristiwa HARUS mengikuti logika internal dunia. Keputusan naratif HARUS didasarkan pada peristiwa masa lalu yang tercatat di 'MEMORI DUNIA'. JANGAN mengulang nama lokasi yang sudah ada untuk tempat baru.
-3.  **Penalaran Logis & Matematis**: Anda adalah AI yang cerdas. Saat pemain meminta perhitungan atau membuat keputusan berdasarkan logika, berikan jawaban yang akurat secara matematis dan masuk akal.
-4.  **ATURAN INTERVENSI & KOREKSI GM (BARU & KRITIS)**: Jika aksi pemain mengandung kesalahan faktual yang jelas (misal: salah menyebut nama NPC/lokasi yang ada di adegan, mencoba berinteraksi dengan sesuatu yang tidak ada), Anda **WAJIB** memberikan koreksi singkat dan sopan melalui bidang \`gmInterventionOoc\`. JANGAN menarasikan hasil aksi yang salah. Cukup berikan koreksi. Contoh: "Tidak ada NPC bernama 'Grom' di sini, tapi ada 'Grek'. Apakah Anda bermaksud berbicara dengannya?".
-5.  **ATURAN PEMERIKSAAN KETERAMPILAN (DIPERBARUI & KRITIS)**:
-    *   **KAPAN WAJIB DIGUNAKAN**: Anda **WAJIB** membuat \`skillCheck\` hanya untuk aksi pemain yang hasilnya tidak pasti, memiliki kemungkinan **GAGAL**, dan kegagalan tersebut memiliki **konsekuensi yang berarti**. Contoh: Mencoba memanjat dinding licin, menipu penjaga, melucuti perangkap.
-    *   **KAPAN DILARANG KERAS**: **JANGAN** membuat \`skillCheck\` untuk aksi-aksi sepele. Contoh: Berjalan ke pasar, mengambil kunci dari meja, membeli barang di toko, atau mengajukan pertanyaan sederhana pada NPC yang ramah. Jika ragu, **JANGAN** lakukan pemeriksaan.
-    *   **NARASI BERDASARKAN HASIL**: Narasi Anda (\`narasiBaru\`) **HARUS** secara langsung mencerminkan hasil dari \`skillCheck\` tersebut.
-6.  **Manajemen Peta & Penemuan**: Jika pemain berpindah ke lokasi BARU atau NPC mengungkapkan lokasi baru, Anda **WAJIB** memperbarui \`mapUpdate\`.
-7.  **Konsistensi Lokasi**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di Peta Dunia.
-8.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar), populasikan dengan **5-10 NPC yang beragam**.
-
-**MANAJEMEN EKONOMI & INTERAKSI (SANGAT KRITIS):**
-9.  **ATURAN KONSISTENSI TRANSAKSI**: Sebelum menarasikan dialog tentang penjualan, **WAJIB PERIKSA** status karakter (\`character.inventory\`, \`character.residences\`). Jika pemain **SUDAH MEMILIKI** item atau properti tersebut, **JANGAN** menawarkan untuk menjualnya lagi.
-10. **MANAJEMEN PROPERTI**: Jika pemain membeli rumah, proses transaksi di \`pembaruanKarakter\` dengan mengisi \`residenceGained\`. Setelah pemain memiliki properti, AI **HARUS** mengingatnya.
-11. **Tautan Pedagang ke Toko**: Jika ada NPC pedagang di adegan, **WAJIB** isi bidang \`shopId\` mereka dengan ID yang sesuai dari DAFTAR TOKO DUNIA. Pastikan ID toko ada di \`sceneUpdate.availableShopIds\`.
-12. **Sinkronisasi Inventaris**: Apa pun yang dideskripsikan dalam narasi mengenai barang dagangan **HARUS** tercermin secara akurat dalam data \`marketplaceUpdate\`.
-13. **Inventaris Dinamis**: Jika pemain bertanya kepada pedagang tentang item spesial, Anda **HARUS** secara dinamis memperbarui inventaris toko tersebut di \`marketplaceUpdate\` dengan menambahkan 1-3 item baru yang tematik.
+1.  **FOKUS PADA KONTEKS & KARAKTER YANG HADIR (ATURAN #1 PALING KRITIS)**: Narasi Anda HARUS berpusat pada aksi dan dialog dari karakter yang secara eksplisit ada di adegan saat ini. Jangan pernah menarasikan tindakan atau respons dari karakter yang tidak ada dalam daftar 'KARAKTER DI ADEGAN'. Jika seorang karakter (misalnya 'Freya') melakukan sesuatu, respons harus datang dari karakter lain yang hadir, BUKAN dari karakter acak seperti 'Penjaga Kota' yang tidak ada di sana. Pelanggaran aturan ini merusak permainan.
+2.  **Pembaruan Adegan Dinamis (SANGAT PENTING)**: Jika aksi pemain secara logis mengakibatkan perpindahan ke sub-lokasi (misalnya, 'masuk ke dalam rumah', 'turun ke ruang bawah tanah'), Anda **WAJIB** memperbarui \`sceneUpdate\` secara detail. \`sceneUpdate.location\` harus diubah menjadi nama sub-lokasi yang lebih spesifik (misalnya, dari 'Jalan Utama' menjadi 'Di Dalam Rumah Eldrin'). Deskripsikan interiornya, suasana, dan yang paling penting, **populasikan \`sceneUpdate.npcs\` dengan karakter yang relevan** yang seharusnya berada di lokasi baru tersebut.
+3.  **ATURAN INTERVENSI & KOREKSI GM (KRITIS)**: Jika aksi pemain mengandung kesalahan faktual yang jelas (misal: salah menyebut nama NPC/lokasi yang ada di adegan), Anda **WAJIB** memberikan koreksi singkat dan sopan melalui bidang \`gmInterventionOoc\`. JANGAN menarasikan hasil aksi yang salah. Cukup berikan koreksi. Contoh: "Tidak ada NPC bernama 'Grom' di sini, tapi ada 'Grek'. Apakah Anda bermaksud berbicara dengannya?".
+4.  **HINDARI LEMPARAN DADU YANG TIDAK PERLU**: **JANGAN** membuat \`skillCheck\` untuk aksi-aksi biasa seperti berjalan, berbicara, atau mengamati. Hanya gunakan \`skillCheck\` jika ada **ketegangan dramatis** dan **hasil yang tidak pasti** dengan **konsekuensi kegagalan yang jelas**.
+5.  **MANAJEMEN PETA & PENCEGAHAN DUPLIKASI (SANGAT KRITIS)**: Sebelum menambahkan lokasi baru ke \`mapUpdate\`, Anda **WAJIB** memeriksa 'DAFTAR LOKASI DI PETA'.
+    *   **JANGAN BUAT DUPLIKAT**: Jika sebuah lokasi dengan nama yang sama atau sangat mirip sudah ada, **GUNAKAN KEMBALI NODE YANG ADA** dan JANGAN membuat node baru.
+    *   **KONSISTENSI LOKASI**: Nama lokasi di \`sceneUpdate.location\` HARUS SAMA PERSIS dengan nama node yang relevan di 'DAFTAR LOKASI DI PETA'.
+    *   **NODE BARU**: Ciptakan node baru di \`mapUpdate\` HANYA untuk lokasi yang benar-benar baru dan belum pernah disebutkan. Pastikan node baru memiliki 'type' yang sesuai.
+6.  **MANAJEMEN EKONOMI (SANGAT KRITIS)**: Ketika menangani transaksi atau menjawab pertanyaan tentang harga, Anda **HARUS** mengacu pada harga yang tercantum dalam 'INFORMASI PASAR'. Jangan pernah mengarang harga. Jika pemain bertanya harga, berikan harga dari data tersebut. Periksa kepemilikan emas pemain sebelum memproses pembelian. **Pembelian Properti**: Jika pemain setuju untuk membeli properti, perbarui \`pembaruanKarakter\` dengan \`perubahanEmas\` (negatif) DAN \`residenceGained\` dengan detail properti yang baru. Pastikan ID properti unik.
 
 **KONTEKS SAAT INI (Kebenaran Dasar):**
 -   **Giliran Saat Ini**: ${turnCount}
--   **PETA DUNIA**: ${JSON.stringify(worldMap)}
--   **DAFTAR TOKO DUNIA**: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}
--   **MEMORI DUNIA**: ${JSON.stringify(longTermMemory)}
--   **KARAKTER PEMAIN (KEPEMILIKAN SAAT INI)**: ${JSON.stringify({ name: character.name, stats: character.stats, gold: character.gold, inventory: character.inventory.map(i => `${i.item.name} (x${i.quantity})`), residences: character.residences.map(r => r.name) })}
--   **ADEGAN SAAT INI**: ${JSON.stringify(scene)}
+-   **DAFTAR LOKASI DI PETA (ID & NAMA)**: ${JSON.stringify(worldMap.nodes.map(n => ({id: n.id, name: n.name})))}
+-   **LOKASI SAAT INI**: "${scene.location}" (ID Node: ${currentLocationNode ? currentLocationNode.id : 'Tidak diketahui'})
+-   **KARAKTER DI ADEGAN**: ${JSON.stringify(charactersInScene)}
+-   **INFORMASI PASAR DI LOKASI INI**: ${JSON.stringify(marketplaceContext)}
+-   **MEMORI DUNIA**: ${JSON.stringify(longTermMemory.worldStateSummary)}
+-   **KEPEMILIKAN PEMAIN**: Emas: ${character.gold}, Properti: ${character.residences.map(r => r.name).join(', ') || 'Tidak ada'}
 -   **AKSI PEMAIN**: "${playerAction}"
 
 **TUGAS ANDA (Ikuti Secara Berurutan):**
-1.  **Analisis & Kontekstualisasi**: Pahami aksi pemain dalam konteks MEMORI DUNIA, PETA DUNIA, dan KEPEMILIKAN PEMAIN saat ini.
-2.  **Terapkan Aturan**: Terapkan **ATURAN INTERVENSI GM** jika ada kesalahan. Jika tidak, lanjutkan. Terapkan **ATURAN PEMERIKSAAN KETERAMPILAN** jika aksi pemain memerlukannya.
-3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain dan hasil \`skillCheck\` (jika ada), dengan mematuhi semua aturan di atas.
-4.  **Perbarui Status & Dunia**: Laporkan HANYA perubahan pada HP, mana, emas, item, atau properti baru di \`pembaruanKarakter\`. Perbarui Peta, Adegan, dan Marketplace sesuai aturan.
-5.  **Konsolidasi Memori**: Sintesiskan peristiwa PENTING, lalu keluarkan objek memori yang telah disempurnakan di \`memoryUpdate\`.
-6.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON.`;
+1.  **Analisis & Kontekstualisasi**: Pahami aksi pemain dalam konteks LOKASI SAAT INI dan KARAKTER DI ADEGAN. Jika ini adalah interaksi ekonomi, rujuk **INFORMASI PASAR** dan **KEPEMILIKAN PEMAIN**.
+2.  **Terapkan Aturan**: Terapkan **ATURAN FOKUS KONTEKS**, **ATURAN INTERVENSI GM**, dan **ATURAN MANAJEMEN PETA** terlebih dahulu. Jika pemain pindah lokasi, terapkan **ATURAN PEMBARUAN ADEGAN DINAMIS**.
+3.  **Narasikan Hasil**: Tulis narasi (\`narasiBaru\`) yang merupakan kelanjutan LOGIS dari aksi pemain, dengan mematuhi semua aturan di atas.
+4.  **Perbarui Dunia**: Perbarui HANYA apa yang berubah. Isi \`sceneUpdate\`, \`pembaruanKarakter\`, \`mapUpdate\`, dll., hanya jika ada perubahan. Jika pemain hanya berpindah antar lokasi yang sudah ada, \`mapUpdate\` harus kosong atau null.
+5.  **Format Respons**: Pastikan output Anda sesuai dengan skema JSON.`;
         
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
             config: { responseMimeType: "application/json", responseSchema: gameTurnSchema }
         });
@@ -464,7 +477,7 @@ Konteks Cerita:
 Jawaban Anda (sebagai GM):`;
 
         const response = await generateContentWithRotation({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-flash",
             contents: { parts: [{ text: prompt }] },
         });
         const text = response.text;

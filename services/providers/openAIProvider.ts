@@ -1,5 +1,3 @@
-
-
 import OpenAI from 'openai';
 // FIX: Added WorldMap to imports to support world map generation.
 import { Character, GameTurnResponse, Scene, StoryEntry, Quest, WorldEvent, Marketplace, TransactionLogEntry, WorldTheme, WorldMemory, WorldMap, Residence } from '../../types';
@@ -28,7 +26,7 @@ Aturan Penting:
 - Buat Marketplace awal dengan toko-toko berikut: 'general_store', 'blacksmith', 'alchemist', 'traveling_merchant'.
 - Isi setiap toko dengan 3-7 item yang relevan.
 - **SETIAP ITEM HARUS MEMILIKI ID UNIK, KATEGORI, DAN CATATAN PENGGUNAAN**. Fokus pada deskripsi item, bukan statistik numerik.
-- **Buat Peta Awal (WorldMap)**: Ciptakan 3-5 lokasi (node) yang saling terhubung di sekitar area awal. Tentukan jalur (edge) yang menghubungkannya.
+- **Buat Peta Awal (WorldMap)**: Ciptakan 3-5 lokasi (node) yang saling terhubung di sekitar area awal. Setiap node HARUS memiliki 'type' (misalnya, 'City', 'Forest'). Tentukan jalur (edge) yang menghubungkannya.
 
 Struktur JSON yang DIWAJIBKAN:
 {
@@ -50,7 +48,7 @@ Struktur JSON yang DIWAJIBKAN:
     ]
   },
   "worldMap": {
-      "nodes": [ { "id": "string", "name": "string", "description": "string" } ],
+      "nodes": [ { "id": "string", "name": "string", "description": "string", "type": "string" } ],
       "edges": [ { "fromNodeId": "string", "toNodeId": "string", "direction": "string", "description": "string" } ]
   }
 }`;
@@ -133,17 +131,19 @@ Masukan Pemain untuk Karakter:
             return '';
         }).join('\n');
 
+        const currentLocationNode = worldMap.nodes.find(node => node.name === scene.location);
+        const charactersInScene = [character.name, ...party.map(p => p.name), ...scene.npcs.map(n => n.name)];
+
+
         const systemPrompt = `Anda adalah Dungeon Master (DM) AI yang logis. Lanjutkan cerita. Balas HANYA dengan sebuah objek JSON tunggal yang valid.
 
 Aturan Utama:
-1.  **Konsistensi Naratif**: Baca 'MEMORI DUNIA' dan 'Latar Belakang Karakter'. Cerita Anda HARUS konsisten dengan informasi ini.
-2.  **KONSISTENSI TRANSAKSI**: Periksa inventaris dan properti pemain. JANGAN menawarkan untuk menjual item/properti yang sudah mereka miliki.
-3.  **Populasi Adegan**: Jika adegan berada di lokasi yang ramai (kota, pasar, kedai), populasikan dengan 5-10 NPC yang beragam.
+1.  **FOKUS PADA KONTEKS (KRITIS)**: Narasi Anda HARUS berpusat pada aksi dan dialog dari karakter yang ada di adegan saat ini. Jangan pernah menarasikan tindakan dari karakter yang tidak ada dalam daftar 'KARAKTER DI ADEGAN'.
+2.  **Pembaruan Adegan Dinamis (KRITIS)**: Jika aksi pemain secara logis mengakibatkan perpindahan ke sub-lokasi (misalnya, 'masuk ke dalam rumah'), Anda **WAJIB** memperbarui \`sceneUpdate\` secara detail. Ubah \`location\` menjadi nama yang lebih spesifik, deskripsikan interiornya, dan populasikan \`sceneUpdate.npcs\` dengan karakter yang relevan yang seharusnya ada di sana.
+3.  **Konsistensi Naratif**: Baca 'MEMORI DUNIA'. Cerita Anda HARUS konsisten dengan informasi ini.
 4.  **Tautkan Pedagang**: Jika NPC di adegan adalah seorang pedagang, isi bidang \`shopId\` mereka dengan ID toko yang sesuai dari 'DAFTAR TOKO DUNIA'.
-5.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter (termasuk properti baru di \`residenceGained\`).
-6.  **Perbarui Memori**: Jika terjadi peristiwa penting, perbarui ringkasan di \`memoryUpdate.worldStateSummary\` agar lebih relevan.
-7.  **Detail Item Baru**: Setiap item baru yang ditambahkan ke inventaris pemain melalui \`pembaruanKarakter.itemDiterima\` HARUS menyertakan \`category\` dan \`usageNotes\`.
-8.  **Pembaruan Peta Dinamis**: Jika seorang NPC mengungkapkan lokasi baru yang dapat ditindaklanjuti dalam percakapan, perbarui \`mapUpdate\` dengan menambahkan node dan edge baru.
+5.  **Hanya Laporkan Perubahan**: Gunakan objek \`pembaruanKarakter\` untuk melaporkan HANYA apa yang berubah pada status karakter.
+6.  **Pembaruan Peta Dinamis**: Jika lokasi baru diungkapkan, perbarui \`mapUpdate\` dengan menambahkan node dan edge baru. Setiap node baru HARUS memiliki 'type' yang sesuai.
 
 Struktur JSON yang DIWAJIBKAN:
 {
@@ -155,19 +155,16 @@ Struktur JSON yang DIWAJIBKAN:
   "questsUpdate": [ { ... } ],
   "worldEventsUpdate": [ { ... } ],
   "marketplaceUpdate": { "shops": [{...}] },
-  "mapUpdate": { "nodes": [{...}], "edges": [{...}] }
+  "mapUpdate": { "nodes": [{ "id": "string", "name": "string", "description": "string", "type": "string" }], "edges": [{...}] }
 }`;
 
         const userPrompt = `Giliran Saat Ini: ${turnCount}
-PETA DUNIA (Lokasi yang Diketahui): ${JSON.stringify(worldMap)}
+PETA DUNIA (Lokasi yang Diketahui): ${JSON.stringify(worldMap.nodes.map(n => n.name))}
+LOKASI SAAT INI: "${scene.location}"
+KARAKTER DI ADEGAN: ${JSON.stringify(charactersInScene)}
 MEMORI DUNIA: ${JSON.stringify(longTermMemory)}
-Latar Belakang Karakter: ${character.backstory}
 DAFTAR TOKO DUNIA: ${JSON.stringify(marketplace.shops.map(s => ({id: s.id, name: s.name})))}
-
-Kondisi Saat Ini:
-- Karakter Pemain: ${JSON.stringify({name: character.name, appearance: character.appearance, stats: character.stats, residences: character.residences.map(r=>r.name)})}
-- Adegan: ${JSON.stringify(scene, null, 2)}
-- Aksi Pemain: "${playerAction}"`;
+Aksi Pemain: "${playerAction}"`;
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",

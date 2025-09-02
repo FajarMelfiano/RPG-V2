@@ -1,38 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Character, Quest, WorldEvent, Marketplace, Scene, ShopItem, InventoryItem, ItemSlot, World } from '../types';
+import { SavedCharacter, World, ShopItem, InventoryItem, ItemSlot } from '../types';
 import CharacterSheet from './CharacterSheet';
 import PartySheet from './PartySheet';
-import NotesPanel from './NotesPanel';
 import InventorySheet from './InventorySheet';
 import QuestLog from './QuestLog';
 import MarketplaceScreen from './MarketplaceScreen';
-import { ShieldIcon, UsersIcon, FileTextIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon, HomeIcon, GlobeIcon, QuestionMarkCircleIcon, CoinIcon, ManaIcon } from './icons';
+import { ShieldIcon, UsersIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon, HomeIcon, CoinIcon, ManaIcon, SettingsIcon, BookOpenIcon } from './icons';
 import EquipmentSheet from './EquipmentSheet';
 import FamilySheet from './FamilySheet';
 import MapView from './MapView';
 import ResidenceSheet from './ResidenceSheet';
 import { ActiveTab } from './MobileSheet';
-import WorldCodex from './WorldCodex';
-import GuidebookModal from './GuidebookModal';
+import TransactionLedger from './TransactionLedger';
 
 interface SidePanelProps {
-    character: Character;
-    party: Character[];
-    quests: Quest[];
-    worldEvents: WorldEvent[];
-    marketplace: Marketplace;
-    scene: Scene;
+    savedCharacter: SavedCharacter;
+    world: World;
     onBuyItem: (item: ShopItem, shopName: string) => void;
     onSellItem: (item: InventoryItem, shopName: string) => void;
     isLoading: boolean;
     onEquipItem: (itemId: string) => void;
     onUnequipItem: (slot: ItemSlot) => void;
-    world: World;
     directShopId: string | null;
     setDirectShopId: (id: string | null) => void;
+    onOpenSettings: () => void;
+    onTravelClick: (destinationName: string) => void;
 }
 
-const SidePanelHeader: React.FC<{ character: Character }> = ({ character }) => {
+const SidePanelHeader: React.FC<{ character: SavedCharacter['character'] }> = ({ character }) => {
     const { name, stats, gold, race, characterClass } = character;
     const healthPercentage = stats.maxHealth > 0 ? (stats.health / stats.maxHealth) * 100 : 0;
     const manaPercentage = stats.maxMana > 0 ? (stats.mana / stats.maxMana) * 100 : 0;
@@ -68,10 +63,12 @@ const SidePanelHeader: React.FC<{ character: Character }> = ({ character }) => {
 
 const SidePanel: React.FC<SidePanelProps> = (props) => {
     const { 
-        character, party, quests, worldEvents, 
-        marketplace, scene, onBuyItem, onSellItem, isLoading, onEquipItem, 
-        onUnequipItem, world, directShopId, setDirectShopId
+        savedCharacter, world, onBuyItem, onSellItem, isLoading, 
+        onEquipItem, onUnequipItem, directShopId, setDirectShopId, onOpenSettings,
+        onTravelClick
     } = props;
+    const { character, party, transactionLog, scene } = savedCharacter;
+    const { quests, worldEvents, marketplace } = world;
 
     const [activeTab, setActiveTab] = useState<ActiveTab>('character');
     
@@ -148,6 +145,7 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
         { id: 'family', title: 'Keluarga', icon: HeartIcon, hasContent: true },
         { id: 'quests', title: 'Misi & Tawarikh', icon: ScrollIcon, hasContent: true },
         { id: 'marketplace', title: 'Pasar', icon: StoreIcon, hasContent: scene.availableShopIds && scene.availableShopIds.length > 0 },
+        { id: 'ledger', title: 'Buku Besar', icon: BookOpenIcon, hasContent: transactionLog.length > 0 },
         { id: 'party', title: 'Party', icon: UsersIcon, count: party.length, hasContent: party.length > 0 },
     ];
 
@@ -158,12 +156,13 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
             case 'character': return <CharacterSheet character={character} />;
             case 'equipment': return <EquipmentSheet equipment={character.equipment} onUnequipItem={onUnequipItem} />;
             case 'inventory': return <InventorySheet character={character} onEquipItem={onEquipItem} />;
-            case 'map': return <MapView worldMap={world.worldMap} currentLocationName={scene.location} />;
+            case 'map': return <MapView worldMap={world.worldMap} currentLocationName={scene.location} onTravelClick={onTravelClick} />;
             case 'residence': return <ResidenceSheet residences={character.residences} />;
             case 'family': return <FamilySheet family={character.family} />;
             case 'quests': return <QuestLog quests={quests} worldEvents={worldEvents} />;
             case 'marketplace': return <MarketplaceScreen marketplace={marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} directShopId={directShopId} setDirectShopId={setDirectShopId} />;
             case 'party': return <PartySheet party={party} />;
+            case 'ledger': return <TransactionLedger log={transactionLog} />;
             default: return null;
         }
     };
@@ -198,6 +197,13 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
                                 </button>
                             )
                         })}
+                         <button
+                            onClick={onOpenSettings}
+                            className="side-panel-tab relative flex-shrink-0 p-2 rounded-lg"
+                            title="Pengaturan"
+                        >
+                            <SettingsIcon className="w-6 h-6" />
+                        </button>
                     </div>
                 </div>
                  <div className={`absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-[var(--color-bg-panel)] via-[var(--color-bg-panel)]/80 to-transparent pointer-events-none transition-opacity duration-300 ${showScrollIndicator ? 'opacity-100' : 'opacity-0'}`}>

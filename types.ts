@@ -178,6 +178,7 @@ export interface MapNode {
   id: string;
   name: string;
   description: string;
+  type: string;
 }
 
 export interface MapEdge {

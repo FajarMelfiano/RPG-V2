@@ -1,7 +1,7 @@
 import React from 'react';
-import { XIcon, ShieldIcon, HelmetIcon, ChestIcon, MapIcon, HomeIcon, HeartIcon, ScrollIcon, StoreIcon, UsersIcon, FileTextIcon, GlobeIcon, QuestionMarkCircleIcon, MoreHorizontalIcon } from './icons';
+import { XIcon, ShieldIcon, HelmetIcon, ChestIcon, MapIcon, HomeIcon, HeartIcon, ScrollIcon, StoreIcon, UsersIcon, FileTextIcon, GlobeIcon, QuestionMarkCircleIcon, MoreHorizontalIcon, BookOpenIcon, SettingsIcon } from './icons';
 
-export type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family' | 'map' | 'residence' | 'codex' | 'guidebook' | 'more_menu';
+export type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family' | 'map' | 'residence' | 'codex' | 'guidebook' | 'more_menu' | 'ledger' | 'settings';
 
 interface MobileSheetProps {
     activeTab: ActiveTab | null;
@@ -22,6 +22,8 @@ const tabsConfig: Record<ActiveTab, { title: string; icon: React.ReactNode }> = 
     notes: { title: 'Catatan', icon: <FileTextIcon className="w-6 h-6" /> },
     codex: { title: 'Codex Dunia', icon: <GlobeIcon className="w-6 h-6" /> },
     guidebook: { title: 'Buku Panduan', icon: <QuestionMarkCircleIcon className="w-6 h-6" /> },
+    ledger: { title: 'Buku Besar', icon: <BookOpenIcon className="w-6 h-6" /> },
+    settings: { title: 'Pengaturan', icon: <SettingsIcon className="w-6 h-6" /> },
     more_menu: { title: 'Menu Lainnya', icon: <MoreHorizontalIcon className="w-6 h-6" /> },
 };
 

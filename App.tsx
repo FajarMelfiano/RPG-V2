@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap, Stats, Residence } from './types';
+import { GameState, Character, StoryEntry, Scene, AppNotification, World, SavedCharacter, Quest, WorldEvent, Marketplace, ShopItem, InventoryItem, TransactionLogEntry, ItemSlot, AnyItem, EquippableItem, CharacterUpdatePayload, WorldMemory, WorldMap, Stats, Residence, WorldTheme, MapEdge } from './types';
 import StartScreen from './components/StartScreen';
 import WorldCreationScreen from './components/WorldCreationScreen';
 import WorldLobbyScreen from './components/WorldLobbyScreen';
@@ -53,9 +53,11 @@ const App: React.FC = () => {
               if (!char.character.residences) {
                   char.character.residences = [];
               }
-              // Tambahkan flag buku panduan untuk karakter lama, set ke true
               if (char.hasSeenGuidebook === undefined) {
                   char.hasSeenGuidebook = true; 
+              }
+               if (!char.transactionLog) {
+                  char.transactionLog = [];
               }
               return char;
            });
@@ -246,6 +248,14 @@ const App: React.FC = () => {
     const updatedCharacter = { ...activeCharacter, hasSeenGuidebook: true };
     updateActiveCharacterAndWorld(updatedCharacter);
   }, [activeCharacter]);
+
+  const handleThemeChange = useCallback((newTheme: WorldTheme) => {
+    if (!activeWorld) return;
+    const updatedWorld = { ...activeWorld, theme: newTheme };
+    const newWorlds = worlds.map(w => w.id === activeWorld.id ? updatedWorld : w);
+    persistWorlds(newWorlds);
+    setActiveWorld(updatedWorld);
+  }, [activeWorld, worlds]);
   
   const handleBuyItem = useCallback((item: ShopItem, shopId: string) => {
       if (!activeCharacter || !activeWorld) return;
@@ -464,6 +474,7 @@ const App: React.FC = () => {
       const applyAIResponse = (finalHistory: StoryEntry[]) => {
         let updatedCharacter = { ...activeCharacter.character };
         const updates = response.pembaruanKarakter;
+        let newTransactions: TransactionLogEntry[] = [];
   
         if (updates) {
           if (updates.perubahanHp) {
@@ -555,12 +566,23 @@ const App: React.FC = () => {
         }
         
         if (response.mapUpdate) {
-          const oldNodeIds = new Set(activeWorld.worldMap.nodes.map(n => n.id));
-          const newNodes = response.mapUpdate.nodes.filter(n => !oldNodeIds.has(n.id));
-          newNodes.forEach(node => {
-            addNotification(`Peta Diperbarui: Lokasi '${node.name}' ditambahkan`, 'event');
-          });
-          updatedWorld.worldMap = response.mapUpdate;
+            const existingMap = updatedWorld.worldMap || { nodes: [], edges: [] };
+            
+            const existingNodeIds = new Set(existingMap.nodes.map(n => n.id));
+            const uniqueNewNodes = response.mapUpdate.nodes.filter(n => !existingNodeIds.has(n.id));
+            
+            uniqueNewNodes.forEach(node => {
+                addNotification(`Peta Diperbarui: Lokasi '${node.name}' ditambahkan`, 'event');
+            });
+
+            const edgeToKey = (e: MapEdge) => [e.fromNodeId, e.toNodeId].sort().join('-');
+            const existingEdgeKeys = new Set(existingMap.edges.map(edgeToKey));
+            const uniqueNewEdges = response.mapUpdate.edges.filter(e => !existingEdgeKeys.has(edgeToKey(e)));
+
+            updatedWorld.worldMap = {
+                nodes: [...existingMap.nodes, ...uniqueNewNodes],
+                edges: [...existingMap.edges, ...uniqueNewEdges],
+            };
         }
   
         if (response.marketplaceUpdate) {
@@ -599,7 +621,7 @@ const App: React.FC = () => {
           storyHistory: finalHistory,
           turnCount: newTurnCount,
           lastPlayed: new Date().toISOString(),
-          transactionLog: [], // Hapus log setelah AI melihatnya
+          transactionLog: [...activeCharacter.transactionLog, ...newTransactions],
         };
         
         updateActiveCharacterAndWorld(updatedSavedCharacter, updatedWorld);
@@ -687,6 +709,7 @@ const App: React.FC = () => {
             onEquipItem={handleEquipItem}
             onUnequipItem={handleUnequipItem}
             onMarkGuidebookAsRead={handleMarkGuidebookAsRead}
+            onThemeChange={handleThemeChange}
           />;
         }
         break;

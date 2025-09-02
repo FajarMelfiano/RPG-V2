@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC, Character } from '../types';
+import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC, Character, WorldTheme } from '../types';
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
@@ -20,6 +20,8 @@ import MarketplaceScreen from './MarketplaceScreen';
 import PartySheet from './PartySheet';
 import NotesPanel from './NotesPanel';
 import MoreMenuSheet from './MoreMenuSheet';
+import TransactionLedger from './TransactionLedger';
+import SettingsModal from './SettingsModal';
 
 interface GameScreenProps {
   world: World;
@@ -33,6 +35,7 @@ interface GameScreenProps {
   onEquipItem: (itemId: string) => void;
   onUnequipItem: (slot: ItemSlot) => void;
   onMarkGuidebookAsRead: () => void;
+  onThemeChange: (theme: WorldTheme) => void;
 }
 
 const MobileHeader: React.FC<{ character: Character }> = ({ character }) => {
@@ -66,7 +69,7 @@ const MobileHeader: React.FC<{ character: Character }> = ({ character }) => {
 
 
 const GameScreen: React.FC<GameScreenProps> = (props) => {
-  const { world, savedCharacter, onPlayerAction, isLoading, error, onNotesChange, onBuyItem, onSellItem, onEquipItem, onUnequipItem, onMarkGuidebookAsRead } = props;
+  const { world, savedCharacter, onPlayerAction, isLoading, error, onNotesChange, onBuyItem, onSellItem, onEquipItem, onUnequipItem, onMarkGuidebookAsRead, onThemeChange } = props;
   
   const [actionText, setActionText] = useState('');
   const [activeSheet, setActiveSheet] = useState<ActiveTab | null>(null);
@@ -76,6 +79,7 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
   const [isCodexOpen, setIsCodexOpen] = useState(false);
   const [isGuidebookOpen, setIsGuidebookOpen] = useState(false);
   const [isNotesOpen, setIsNotesOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     if (!savedCharacter.hasSeenGuidebook) {
@@ -109,8 +113,17 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
   };
 
   const handleTabSelect = (tab: ActiveTab) => {
+    if (tab === 'settings') {
+      setIsSettingsOpen(true);
+      return;
+    }
     setActiveSheet(tab);
   }
+
+  const handleTravelClick = (destinationName: string) => {
+    setActionText(`Pergi ke ${destinationName}`);
+    setActiveSheet(null); // Close sheet on mobile after clicking
+  };
 
   const { character, party, scene, storyHistory, notes } = savedCharacter;
 
@@ -120,7 +133,7 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
       case 'character': return <CharacterSheet character={character} />;
       case 'equipment': return <EquipmentSheet equipment={character.equipment} onUnequipItem={onUnequipItem} />;
       case 'inventory': return <InventorySheet character={character} onEquipItem={onEquipItem} />;
-      case 'map': return <MapView worldMap={world.worldMap} currentLocationName={scene.location} />;
+      case 'map': return <MapView worldMap={world.worldMap} currentLocationName={scene.location} onTravelClick={handleTravelClick} />;
       case 'residence': return <ResidenceSheet residences={character.residences} />;
       case 'family': return <FamilySheet family={character.family} />;
       case 'quests': return <QuestLog quests={world.quests} worldEvents={world.worldEvents} />;
@@ -129,6 +142,7 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
       case 'marketplace': return <MarketplaceScreen marketplace={world.marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} directShopId={directShopId} setDirectShopId={setDirectShopId} />;
       case 'codex': return <WorldCodex world={world} isSheet={true}/>;
       case 'guidebook': return <GuidebookModal onClose={handleCloseGuidebook} isSheet={true}/>;
+      case 'ledger': return <TransactionLedger log={savedCharacter.transactionLog} />;
       case 'more_menu': return <MoreMenuSheet onSelectTab={handleTabSelect} character={character} party={party} />;
       default: return null;
     }
@@ -159,6 +173,12 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
 
       <WorldCodex world={world} isOpen={isCodexOpen} onClose={() => setIsCodexOpen(false)} />
       <GuidebookModal isOpen={isGuidebookOpen} onClose={handleCloseGuidebook} />
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentTheme={world.theme}
+        onThemeChange={onThemeChange}
+      />
 
       {isNotesOpen && (
           <div
@@ -189,20 +209,17 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
 
       <div className="w-full max-w-screen-2xl mx-auto flex-1 flex flex-col md:flex-row md:gap-6 md:p-4 min-h-0">
         <SidePanel
-          character={character}
-          party={party}
-          quests={world.quests}
-          worldEvents={world.worldEvents}
-          marketplace={world.marketplace}
-          scene={scene}
+          savedCharacter={savedCharacter}
+          world={world}
           onBuyItem={onBuyItem}
           onSellItem={onSellItem}
           isLoading={isLoading}
           onEquipItem={onEquipItem}
           onUnequipItem={onUnequipItem}
-          world={world}
           directShopId={directShopId}
           setDirectShopId={setDirectShopId}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onTravelClick={handleTravelClick}
         />
         
         <main className="flex-1 flex flex-col min-h-0 relative">

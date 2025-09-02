@@ -9,7 +9,9 @@ import {
     UsersIcon, 
     FileTextIcon, 
     GlobeIcon, 
-    QuestionMarkCircleIcon 
+    QuestionMarkCircleIcon,
+    BookOpenIcon,
+    SettingsIcon
 } from './icons';
 
 interface MoreMenuSheetProps {
@@ -29,6 +31,8 @@ const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({ onSelectTab, character, p
         { tab: 'notes', label: 'Catatan', icon: <FileTextIcon className="w-6 h-6" /> },
         { tab: 'codex', label: 'Codex Dunia', icon: <GlobeIcon className="w-6 h-6" /> },
         { tab: 'guidebook', label: 'Buku Panduan', icon: <QuestionMarkCircleIcon className="w-6 h-6" /> },
+        { tab: 'ledger', label: 'Buku Besar', icon: <BookOpenIcon className="w-6 h-6" /> },
+        { tab: 'settings', label: 'Pengaturan', icon: <SettingsIcon className="w-6 h-6" /> },
     ];
 
     return (

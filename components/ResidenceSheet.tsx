@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Residence } from '../types';
 import { HomeIcon } from './icons';

@@ -35,52 +35,62 @@ const CharacterCreationScreen: React.FC<CharacterCreationScreenProps> = ({ world
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl w-full mx-auto journal-panel flex flex-col max-h-[90vh] sm:max-h-[95vh]">
-      <div className="flex-shrink-0">
-        <h1 className="text-3xl md:text-4xl font-bold text-[var(--color-text-header)] mb-2 text-center text-glow">Ciptakan Pahlawanmu</h1>
-        <p className="text-stone-400 mb-4 text-center text-xs sm:text-sm italic">
-          Anda sedang menciptakan karakter di dunia ini.
-        </p>
-        <div className="mb-6 p-3 bg-black/20 rounded-lg border border-[var(--border-color-strong)]/50 max-h-24 overflow-y-auto">
-          <p className="text-sm text-stone-300 italic">"{worldContext}"</p>
-        </div>
-      </div>
+    <div className="w-full h-full flex flex-col items-center justify-center p-4 animate-fadeIn">
+      <div className="w-full max-w-4xl mx-auto world-panel p-6 sm:p-8 flex flex-col max-h-[95vh]">
+        <header className="text-center mb-6 flex-shrink-0">
+          <h1 className="text-4xl md:text-5xl font-bold text-[var(--color-text-header)] mb-3 tracking-wider text-glow font-cinzel">Gulungan Sang Pahlawan</h1>
+          <p className="text-stone-400 text-xs sm:text-sm italic">Anda sedang menciptakan karakter di dunia ini. Konteks dunia:</p>
+          <div className="mt-2 max-w-2xl mx-auto p-2 bg-black/20 rounded-lg border border-[var(--border-color-strong)]/50 max-h-20 overflow-y-auto">
+            <p className="text-sm text-stone-300 italic">"{worldContext}"</p>
+          </div>
+        </header>
 
-      <div className="flex-grow min-h-0 overflow-y-auto pr-2">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-              <label htmlFor="concept" className="block text-[var(--color-text-header)] font-bold mb-2 text-glow">Konsep Inti</label>
-              <input id="concept" name="concept" type="text" value={formData.concept} onChange={handleInputChange} placeholder="Contoh: Prajurit kurcaci tangguh dengan kapak raksasa" className="w-full p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all focus:border-[var(--color-primary)] focus:shadow-[0_0_10px_var(--color-accent-glow)]" disabled={isLoading} />
-          </div>
-          <div>
-              <label htmlFor="background" className="block text-[var(--color-text-header)] font-bold mb-2 text-glow">Latar Belakang & Pengalaman</label>
-              <textarea id="background" name="background" value={formData.background} onChange={handleInputChange} placeholder="Contoh: Dikenal sebagai 'Pahlawan Grimsbane' setelah mengusir kultus dari desaku. Aku selalu membawa belati perak milik ibuku untuk keberuntungan." className="w-full h-32 p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all resize-none focus:border-[var(--color-primary)] focus:shadow-[0_0_10px_var(--color-accent-glow)]" disabled={isLoading} />
-          </div>
-          
-          <div className="pt-6 mt-6 border-t-2 border-[var(--border-color-strong)]/50">
-              <h3 className="text-[var(--color-text-header)] font-bold mb-4 text-center text-glow">Atau, Pilih Arketipe</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="flex-grow min-h-0 overflow-y-auto pr-2">
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Form Section */}
+            <div className="lg:w-1/2 flex-shrink-0">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                    <label htmlFor="concept" className="block text-xl text-[var(--color-text-header)] font-bold mb-2 font-cinzel text-glow">Konsep Inti</label>
+                    <p className="text-sm text-stone-400 mb-3 italic">Siapakah karaktermu dalam satu kalimat?</p>
+                    <input id="concept" name="concept" type="text" value={formData.concept} onChange={handleInputChange} placeholder="Contoh: Prajurit kurcaci tangguh dengan kapak raksasa" className="w-full p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all focus:border-[var(--color-primary)] focus:shadow-[0_0_10px_var(--color-accent-glow)]" disabled={isLoading} />
+                </div>
+                <div>
+                    <label htmlFor="background" className="block text-xl text-[var(--color-text-header)] font-bold mb-2 font-cinzel text-glow">Latar Belakang</label>
+                    <p className="text-sm text-stone-400 mb-3 italic">Apa saja pengalaman penting yang membentuk mereka?</p>
+                    <textarea id="background" name="background" value={formData.background} onChange={handleInputChange} placeholder="Contoh: Dikenal sebagai 'Pahlawan Grimsbane' setelah mengusir kultus dari desaku. Aku selalu membawa belati perak milik ibuku untuk keberuntungan." className="w-full h-32 p-3 bg-stone-950/70 border border-stone-600 rounded-lg text-stone-200 focus:ring-2 focus:ring-[var(--color-primary)] focus:outline-none transition-all resize-none focus:border-[var(--color-primary)] focus:shadow-[0_0_10px_var(--color-accent-glow)]" disabled={isLoading} />
+                </div>
+              </form>
+            </div>
+            
+            {/* Templates Section */}
+            <div className="lg:w-1/2 flex flex-col">
+              <div className="text-center lg:text-left">
+                <h3 className="text-xl text-[var(--color-text-header)] font-bold mb-2 font-cinzel text-glow">Butuh Inspirasi?</h3>
+                <p className="text-sm text-stone-400 mb-3 italic">Pilih salah satu arketipe ini sebagai titik awal.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {templates.map((template, i) => (
-                      <button key={i} type="button" onClick={() => setFormData({concept: template.concept, background: template.background})} disabled={isLoading} className="text-left bg-stone-800/50 hover:bg-stone-800/90 hover:border-[var(--color-primary)] border border-stone-700 text-stone-300 p-4 rounded-lg transition-all transform hover:scale-105 shadow-lg">
+                      <button key={i} type="button" onClick={() => setFormData({concept: template.concept, background: template.background})} disabled={isLoading} className="text-left bg-stone-950/40 hover:bg-stone-900/60 h-full hover:border-[var(--color-primary)] border border-stone-700 text-stone-300 p-4 rounded-lg transition-all transform hover:scale-105 shadow-lg flex flex-col">
                           <span className="font-bold font-cinzel text-[var(--color-accent)]">{template.archetype}</span>
-                          <p className="text-xs text-stone-400 mt-2 italic">{template.background}</p>
+                          <p className="text-xs text-stone-400 mt-2 italic flex-grow">{template.background}</p>
                       </button>
                   ))}
               </div>
+            </div>
           </div>
-
-          <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center">
-              <button type="button" onClick={onBack} disabled={isLoading} className="bg-stone-700 hover:bg-stone-600 text-white font-bold py-3 px-6 rounded-lg transition-colors w-full sm:w-auto">
-                  Kembali
-              </button>
-              <button type="submit" disabled={isLoading || !formData.concept.trim()} className="thematic-button text-white font-bold py-3 px-8 rounded-lg text-lg sm:text-xl font-cinzel tracking-widest flex items-center justify-center w-full sm:flex-grow">
-                  {isLoading ? <LoadingSpinner /> : 'Ciptakan Karakter'}
-              </button>
-          </div>
-        </form>
+        </div>
+        
+        <div className="mt-8 pt-6 border-t-2 border-[var(--border-color-strong)]/50 flex flex-col sm:flex-row-reverse gap-4 items-center flex-shrink-0">
+            <button type="submit" onClick={handleSubmit} disabled={isLoading || !formData.concept.trim()} className="thematic-button text-white font-bold py-3 px-8 rounded-lg text-lg sm:text-xl font-cinzel tracking-widest flex items-center justify-center w-full sm:flex-grow">
+                {isLoading ? <LoadingSpinner /> : 'Ciptakan Karakter'}
+            </button>
+            <button type="button" onClick={onBack} disabled={isLoading} className="bg-stone-700 hover:bg-stone-600 text-white font-bold py-3 px-6 rounded-lg transition-colors w-full sm:w-auto">
+                Kembali
+            </button>
+        </div>
+        {error && <p className="text-red-400 mt-4 text-center bg-red-900/50 p-3 rounded-lg flex-shrink-0">{error}</p>}
       </div>
-      
-      {error && <p className="text-red-400 mt-4 text-center bg-red-900/50 p-3 rounded-lg flex-shrink-0">{error}</p>}
     </div>
   );
 };
