@@ -92,7 +92,7 @@ const StoryLog: React.FC<{
   return (
     <div ref={containerRef} className="world-panel flex-grow flex flex-col min-h-0 relative overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
         <StoryHeader scene={scene} onNpcClick={onNpcClick}/>
-        <div className="p-4">
+        <div className="p-4 pb-36 md:pb-4">
           <div className="space-y-4">
             {storyHistory.map((entry, index) => {
               if (entry.type === 'dice_roll' && entry.rollDetails) {

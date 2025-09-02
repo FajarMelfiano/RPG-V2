@@ -3,24 +3,12 @@ import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC, Characte
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
-import { CoinIcon, FileTextIcon, GlobeIcon, QuestionMarkCircleIcon, XIcon, SettingsIcon } from './icons';
+import { FileTextIcon, GlobeIcon, QuestionMarkCircleIcon, XIcon, SettingsIcon } from './icons';
 import WorldCodex from './WorldCodex';
 import NpcDetailModal from './NpcDetailModal';
 import GuidebookModal from './GuidebookModal';
-import MobileSheet, { ActiveTab } from './MobileSheet';
-import BottomNavBar from './BottomNavBar';
-import CharacterSheet from './CharacterSheet';
-import EquipmentSheet from './EquipmentSheet';
-import InventorySheet from './InventorySheet';
-import MapView from './MapView';
-import ResidenceSheet from './ResidenceSheet';
-import FamilySheet from './FamilySheet';
-import QuestLog from './QuestLog';
-import MarketplaceScreen from './MarketplaceScreen';
-import PartySheet from './PartySheet';
+import MobileSheet from './MobileSheet';
 import NotesPanel from './NotesPanel';
-import MoreMenuSheet from './MoreMenuSheet';
-import TransactionLedger from './TransactionLedger';
 import SettingsModal from './SettingsModal';
 
 interface GameScreenProps {
@@ -38,43 +26,12 @@ interface GameScreenProps {
   onThemeChange: (theme: WorldTheme) => void;
 }
 
-const MobileHeader: React.FC<{ character: Character }> = ({ character }) => {
-  const { name, stats } = character;
-  const healthPercentage = stats.maxHealth > 0 ? (stats.health / stats.maxHealth) * 100 : 0;
-  const manaPercentage = stats.maxMana > 0 ? (stats.mana / stats.maxMana) * 100 : 0;
-  return (
-    <div className="md:hidden p-2 bg-black/30 backdrop-blur-sm border-b border-[var(--border-color-strong)]/50 flex-shrink-0">
-      <div className="flex justify-between items-center gap-4">
-        <div className="flex-grow">
-          <h1 className="font-cinzel text-lg text-[var(--color-text-header)] truncate">{name}</h1>
-          <div className="flex items-center gap-2">
-              <div className="w-full bg-black/50 rounded-full h-1.5 shadow-inner border border-stone-900">
-                <div className="bg-gradient-to-r from-red-800 to-red-500 h-full rounded-full" style={{ width: `${healthPercentage}%` }}></div>
-              </div>
-              {stats.maxMana > 0 && (
-                <div className="w-full bg-black/50 rounded-full h-1.5 shadow-inner border border-stone-900">
-                  <div className="bg-gradient-to-r from-blue-800 to-blue-500 h-full rounded-full" style={{ width: `${manaPercentage}%` }}></div>
-                </div>
-              )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 bg-stone-950/50 px-2 py-1 rounded-full border border-stone-700 flex-shrink-0">
-            <CoinIcon className="w-4 h-4 text-[var(--color-accent)]" />
-            <span className="font-bold text-sm text-stone-200">{character.gold}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
 const GameScreen: React.FC<GameScreenProps> = (props) => {
-  const { world, savedCharacter, onPlayerAction, isLoading, error, onNotesChange, onBuyItem, onSellItem, onEquipItem, onUnequipItem, onMarkGuidebookAsRead, onThemeChange } = props;
+  const { world, savedCharacter, onPlayerAction, isLoading, error, onMarkGuidebookAsRead, onThemeChange } = props;
   
   const [actionText, setActionText] = useState('');
-  const [activeSheet, setActiveSheet] = useState<ActiveTab | null>(null);
-  const [directShopId, setDirectShopId] = useState<string | null>(null);
   const [selectedNpc, setSelectedNpc] = useState<NPC | null>(null);
+  const [directShopId, setDirectShopId] = useState<string | null>(null);
 
   const [isCodexOpen, setIsCodexOpen] = useState(false);
   const [isGuidebookOpen, setIsGuidebookOpen] = useState(false);
@@ -85,8 +42,6 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
     if (!savedCharacter.hasSeenGuidebook) {
       if (window.innerWidth >= 768) { // md breakpoint
         setIsGuidebookOpen(true);
-      } else {
-        setActiveSheet('guidebook');
       }
     }
   }, [savedCharacter.hasSeenGuidebook]);
@@ -95,7 +50,6 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
     if (!savedCharacter.hasSeenGuidebook) {
       onMarkGuidebookAsRead();
     }
-    setActiveSheet(null);
     setIsGuidebookOpen(false);
   };
 
@@ -107,49 +61,16 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
     setActionText(`Bicara dengan ${npc.name}`);
     if (npc.shopId) {
       setDirectShopId(npc.shopId);
-      setActiveSheet('marketplace');
     }
     setSelectedNpc(null);
   };
 
-  const handleTabSelect = (tab: ActiveTab) => {
-    if (tab === 'settings') {
-      setIsSettingsOpen(true);
-      return;
-    }
-    setActiveSheet(tab);
-  }
-
   const handleTravelClick = (destinationName: string) => {
     setActionText(`Pergi ke ${destinationName}`);
-    setActiveSheet(null); // Close sheet on mobile after clicking
   };
 
-  const { character, party, scene, storyHistory, notes } = savedCharacter;
-
-  const renderSheetContent = () => {
-    if (!activeSheet) return null;
-    switch (activeSheet) {
-      case 'character': return <CharacterSheet character={character} />;
-      case 'equipment': return <EquipmentSheet equipment={character.equipment} onUnequipItem={onUnequipItem} />;
-      case 'inventory': return <InventorySheet character={character} onEquipItem={onEquipItem} />;
-      case 'map': return <MapView worldMap={world.worldMap} currentLocationName={scene.location} onTravelClick={handleTravelClick} />;
-      case 'residence': return <ResidenceSheet residences={character.residences} />;
-      case 'family': return <FamilySheet family={character.family} />;
-      case 'quests': return <QuestLog quests={world.quests} worldEvents={world.worldEvents} />;
-      case 'party': return <PartySheet party={party} />;
-      case 'notes': return <NotesPanel notes={notes} onNotesChange={onNotesChange} />;
-      case 'marketplace': return <MarketplaceScreen marketplace={world.marketplace} scene={scene} character={character} onBuyItem={onBuyItem} onSellItem={onSellItem} isLoading={isLoading} directShopId={directShopId} setDirectShopId={setDirectShopId} />;
-      case 'codex': return <WorldCodex world={world} isSheet={true}/>;
-      case 'guidebook': return <GuidebookModal onClose={handleCloseGuidebook} isSheet={true}/>;
-      case 'ledger': return <TransactionLedger log={savedCharacter.transactionLog} />;
-      case 'more_menu': return <MoreMenuSheet onSelectTab={handleTabSelect} character={character} party={party} />;
-      default: return null;
-    }
-  }
-
   return (
-    <div className="w-full h-full flex flex-col">
+    <div className="w-full h-full flex flex-col md:flex-row md:gap-6 md:p-4 max-h-screen overflow-hidden">
       
       {selectedNpc && (
         <NpcDetailModal 
@@ -202,56 +123,44 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
                       <XIcon className="w-6 h-6" />
                   </button>
                   <div className="h-full">
-                      <NotesPanel notes={savedCharacter.notes} onNotesChange={onNotesChange} />
+                      <NotesPanel notes={savedCharacter.notes} onNotesChange={props.onNotesChange} />
                   </div>
               </div>
           </div>
       )}
 
-      <MobileHeader character={character} />
+      <SidePanel
+        {...props}
+        directShopId={directShopId}
+        setDirectShopId={setDirectShopId}
+        onTravelClick={handleTravelClick}
+      />
+      
+      <main className="flex-1 flex flex-col min-h-0 relative">
+        <StoryLog 
+          storyHistory={savedCharacter.storyHistory} 
+          scene={savedCharacter.scene}
+          onNpcClick={handleShowNpcDetails}
+        />
+        <ActionInput 
+          onAction={onPlayerAction} 
+          isLoading={isLoading} 
+          actionText={actionText}
+          setActionText={setActionText}
+        />
+      </main>
 
-      <div className="w-full max-w-screen-2xl mx-auto flex-1 flex flex-col md:flex-row md:gap-6 md:p-4 min-h-0">
-        <SidePanel
-          savedCharacter={savedCharacter}
-          world={world}
-          onBuyItem={onBuyItem}
-          onSellItem={onSellItem}
-          isLoading={isLoading}
-          onEquipItem={onEquipItem}
-          onUnequipItem={onUnequipItem}
+      <div className="md:hidden">
+        <MobileSheet 
+          {...props}
+          setActionText={setActionText}
           directShopId={directShopId}
           setDirectShopId={setDirectShopId}
           onTravelClick={handleTravelClick}
+          onShowGuidebookRequest={() => setIsGuidebookOpen(true)}
         />
-        
-        <main className="flex-1 flex flex-col min-h-0 relative">
-          <StoryLog 
-            storyHistory={storyHistory} 
-            scene={scene}
-            onNpcClick={handleShowNpcDetails}
-          />
-          <ActionInput 
-            onAction={onPlayerAction} 
-            isLoading={isLoading} 
-            actionText={actionText}
-            setActionText={setActionText}
-          />
-          {error && (
-              <div className="absolute bottom-24 left-4 right-4 p-2 text-center text-red-300 bg-red-900/80 rounded-lg text-sm shadow-lg backdrop-blur-sm border border-red-700">
-                  {error}
-              </div>
-          )}
-        </main>
       </div>
 
-      <MobileSheet 
-        activeTab={activeSheet}
-        onClose={() => setActiveSheet(null)}
-      >
-        {renderSheetContent()}
-      </MobileSheet>
-      
-      <BottomNavBar onTabSelect={handleTabSelect} />
     </div>
   );
 };

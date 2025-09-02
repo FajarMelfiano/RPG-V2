@@ -249,3 +249,6 @@ export interface World {
   marketplace: Marketplace;
   worldMap: WorldMap;
 }
+
+// FIX: Moved ActiveTab type here to be shared across components.
+export type ActiveTab = 'character' | 'equipment' | 'inventory' | 'quests' | 'marketplace' | 'party' | 'notes' | 'family' | 'map' | 'residence' | 'codex' | 'guidebook' | 'ledger' | 'settings';

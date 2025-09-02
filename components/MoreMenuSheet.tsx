@@ -1,6 +1,6 @@
 import React from 'react';
-import { ActiveTab } from './MobileSheet';
-import { Character } from '../types';
+// FIX: Imported ActiveTab from the central types file.
+import { Character, ActiveTab } from '../types';
 import { 
     HelmetIcon, 
     HomeIcon, 

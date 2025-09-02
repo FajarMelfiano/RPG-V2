@@ -1,5 +1,6 @@
 import React from 'react';
-import { ActiveTab } from './MobileSheet';
+// FIX: Imported ActiveTab from the central types file.
+import { ActiveTab } from '../types';
 import { ShieldIcon, ChestIcon, MapIcon, ScrollIcon, MoreHorizontalIcon } from './icons';
 
 interface BottomNavBarProps {
@@ -13,7 +14,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ onTabSelect }) => {
         { tab: 'inventory', label: 'Inventaris', icon: <ChestIcon className="w-6 h-6" /> },
         { tab: 'map', label: 'Peta', icon: <MapIcon className="w-6 h-6" /> },
         { tab: 'quests', label: 'Misi', icon: <ScrollIcon className="w-6 h-6" /> },
-        { tab: 'more_menu', label: 'Lainnya', icon: <MoreHorizontalIcon className="w-6 h-6" /> },
+        { tab: 'settings', label: 'Lainnya', icon: <MoreHorizontalIcon className="w-6 h-6" /> },
     ];
     
     return (

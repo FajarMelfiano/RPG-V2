@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { SavedCharacter, World, ShopItem, InventoryItem, ItemSlot } from '../types';
+// FIX: Imported ActiveTab from the central types file.
+import { SavedCharacter, World, ShopItem, InventoryItem, ItemSlot, ActiveTab } from '../types';
 import CharacterSheet from './CharacterSheet';
 import PartySheet from './PartySheet';
 import InventorySheet from './InventorySheet';
@@ -10,7 +11,6 @@ import EquipmentSheet from './EquipmentSheet';
 import FamilySheet from './FamilySheet';
 import MapView from './MapView';
 import ResidenceSheet from './ResidenceSheet';
-import { ActiveTab } from './MobileSheet';
 import TransactionLedger from './TransactionLedger';
 
 interface SidePanelProps {
