@@ -76,15 +76,23 @@ const StoryLog: React.FC<{
   onNpcClick: (npc: NPC) => void;
 }> = ({ storyHistory, scene, onNpcClick }) => {
   const endOfLogRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endOfLogRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (containerRef.current) {
+        // Hanya gulir jika pengguna berada di dekat bagian bawah
+        const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+        const isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 200;
+        if (isScrolledToBottom) {
+            endOfLogRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
   }, [storyHistory]);
 
   return (
-    <div className="world-panel flex-grow flex flex-col min-h-0 relative">
+    <div ref={containerRef} className="world-panel flex-grow flex flex-col min-h-0 relative overflow-y-auto" style={{ scrollbarGutter: 'stable' }}>
         <StoryHeader scene={scene} onNpcClick={onNpcClick}/>
-        <div className="flex-grow p-4 overflow-y-auto min-h-0" style={{ scrollbarGutter: 'stable' }}>
+        <div className="p-4">
           <div className="space-y-4">
             {storyHistory.map((entry, index) => {
               if (entry.type === 'dice_roll' && entry.rollDetails) {

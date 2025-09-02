@@ -3,7 +3,7 @@ import { World, SavedCharacter, ShopItem, InventoryItem, ItemSlot, NPC, Characte
 import StoryLog from './StoryLog';
 import ActionInput from './ActionInput';
 import SidePanel from './SidePanel';
-import { CoinIcon, FileTextIcon, GlobeIcon, QuestionMarkCircleIcon, XIcon } from './icons';
+import { CoinIcon, FileTextIcon, GlobeIcon, QuestionMarkCircleIcon, XIcon, SettingsIcon } from './icons';
 import WorldCodex from './WorldCodex';
 import NpcDetailModal from './NpcDetailModal';
 import GuidebookModal from './GuidebookModal';
@@ -169,6 +169,9 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
         <button onClick={() => setIsGuidebookOpen(true)} className="floating-button" title="Buku Panduan">
           <QuestionMarkCircleIcon className="w-7 h-7" />
         </button>
+        <button onClick={() => setIsSettingsOpen(true)} className="floating-button" title="Pengaturan">
+          <SettingsIcon className="w-7 h-7" />
+        </button>
       </div>
 
       <WorldCodex world={world} isOpen={isCodexOpen} onClose={() => setIsCodexOpen(false)} />
@@ -218,7 +221,6 @@ const GameScreen: React.FC<GameScreenProps> = (props) => {
           onUnequipItem={onUnequipItem}
           directShopId={directShopId}
           setDirectShopId={setDirectShopId}
-          onOpenSettings={() => setIsSettingsOpen(true)}
           onTravelClick={handleTravelClick}
         />
         

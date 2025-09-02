@@ -235,7 +235,7 @@ export interface SavedCharacter {
   hasSeenGuidebook: boolean;
 }
 
-export type WorldTheme = 'dark_fantasy' | 'cyberpunk' | 'steampunk' | 'high_fantasy';
+export type WorldTheme = 'dark_fantasy' | 'cyberpunk' | 'steampunk' | 'high_fantasy' | 'lovecraftian_horror' | 'solarpunk';
 
 export interface World {
   id: string;

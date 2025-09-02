@@ -5,7 +5,7 @@ import PartySheet from './PartySheet';
 import InventorySheet from './InventorySheet';
 import QuestLog from './QuestLog';
 import MarketplaceScreen from './MarketplaceScreen';
-import { ShieldIcon, UsersIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon, HomeIcon, CoinIcon, ManaIcon, SettingsIcon, BookOpenIcon } from './icons';
+import { ShieldIcon, UsersIcon, ChestIcon, ScrollIcon, StoreIcon, HelmetIcon, HeartIcon, MapIcon, HomeIcon, CoinIcon, ManaIcon, BookOpenIcon } from './icons';
 import EquipmentSheet from './EquipmentSheet';
 import FamilySheet from './FamilySheet';
 import MapView from './MapView';
@@ -23,7 +23,6 @@ interface SidePanelProps {
     onUnequipItem: (slot: ItemSlot) => void;
     directShopId: string | null;
     setDirectShopId: (id: string | null) => void;
-    onOpenSettings: () => void;
     onTravelClick: (destinationName: string) => void;
 }
 
@@ -64,71 +63,13 @@ const SidePanelHeader: React.FC<{ character: SavedCharacter['character'] }> = ({
 const SidePanel: React.FC<SidePanelProps> = (props) => {
     const { 
         savedCharacter, world, onBuyItem, onSellItem, isLoading, 
-        onEquipItem, onUnequipItem, directShopId, setDirectShopId, onOpenSettings,
+        onEquipItem, onUnequipItem, directShopId, setDirectShopId,
         onTravelClick
     } = props;
     const { character, party, transactionLog, scene } = savedCharacter;
     const { quests, worldEvents, marketplace } = world;
 
     const [activeTab, setActiveTab] = useState<ActiveTab>('character');
-    
-    const navRef = useRef<HTMLDivElement>(null);
-    const isDragging = useRef(false);
-    const startX = useRef(0);
-    const scrollLeft = useRef(0);
-    const [showScrollIndicator, setShowScrollIndicator] = useState(false);
-
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (!navRef.current) return;
-        isDragging.current = true;
-        document.body.style.cursor = 'grabbing';
-        document.body.style.userSelect = 'none';
-        startX.current = e.pageX - navRef.current.offsetLeft;
-        scrollLeft.current = navRef.current.scrollLeft;
-    };
-
-    const handleMouseUpAndLeave = () => {
-        if (!isDragging.current) return;
-        isDragging.current = false;
-        document.body.style.cursor = 'default';
-        document.body.style.userSelect = 'auto';
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging.current || !navRef.current) return;
-        e.preventDefault();
-        const x = e.pageX - navRef.current.offsetLeft;
-        const walk = (x - startX.current) * 2; // scroll-fast factor
-        navRef.current.scrollLeft = scrollLeft.current - walk;
-    };
-
-    useEffect(() => {
-        const navElement = navRef.current;
-        if (!navElement) return;
-
-        const checkForOverflow = () => {
-            const isOverflowing = navElement.scrollWidth > navElement.clientWidth;
-            const isAtEnd = Math.ceil(navElement.scrollLeft + navElement.clientWidth) >= navElement.scrollWidth;
-            setShowScrollIndicator(isOverflowing && !isAtEnd);
-        };
-        
-        checkForOverflow();
-        
-        navElement.addEventListener('scroll', checkForOverflow, { passive: true });
-        const resizeObserver = new ResizeObserver(checkForOverflow);
-        resizeObserver.observe(navElement);
-        const mutationObserver = new MutationObserver(checkForOverflow);
-        mutationObserver.observe(navElement, { childList: true, subtree: true });
-
-        document.addEventListener('mouseup', handleMouseUpAndLeave);
-
-        return () => {
-            navElement.removeEventListener('scroll', checkForOverflow);
-            resizeObserver.disconnect();
-            mutationObserver.disconnect();
-            document.removeEventListener('mouseup', handleMouseUpAndLeave);
-        };
-    }, []);
     
     useEffect(() => {
         if (directShopId) {
@@ -172,42 +113,24 @@ const SidePanel: React.FC<SidePanelProps> = (props) => {
         <aside className="hidden md:w-[450px] md:flex flex-col flex-shrink-0 journal-panel p-2 space-y-2">
             <SidePanelHeader character={character} />
             
-            <div className="flex-shrink-0 border-b-2 border-t-2 border-[var(--border-color-strong)]/50 py-2 relative">
-                <div
-                    ref={navRef}
-                    className="side-panel-tab-nav pb-2 -mb-2 cursor-grab"
-                    onMouseDown={handleMouseDown}
-                    onMouseLeave={handleMouseUpAndLeave}
-                    onMouseMove={handleMouseMove}
-                >
-                     <div className="flex gap-2 px-1">
-                        {tabs.map(tab => {
-                             const TabIcon = tab.icon;
-                             return (
-                                <button
-                                    key={tab.id}
-                                    onClick={() => setActiveTab(tab.id)}
-                                    className={`side-panel-tab relative flex-shrink-0 p-2 rounded-lg ${activeTab === tab.id ? 'active' : ''}`}
-                                    title={tab.title}
-                                >
-                                    <TabIcon className="w-6 h-6" />
-                                     {tab.count !== undefined && tab.count > 0 && (
-                                        <span className="absolute -top-2 -right-2 text-xs bg-[var(--color-primary)] text-white rounded-full w-5 h-5 flex items-center justify-center border-2 border-[var(--color-bg-panel)]">{tab.count}</span>
-                                    )}
-                                </button>
-                            )
-                        })}
-                         <button
-                            onClick={onOpenSettings}
-                            className="side-panel-tab relative flex-shrink-0 p-2 rounded-lg"
-                            title="Pengaturan"
-                        >
-                            <SettingsIcon className="w-6 h-6" />
-                        </button>
-                    </div>
-                </div>
-                 <div className={`absolute top-0 right-0 h-full w-12 bg-gradient-to-l from-[var(--color-bg-panel)] via-[var(--color-bg-panel)]/80 to-transparent pointer-events-none transition-opacity duration-300 ${showScrollIndicator ? 'opacity-100' : 'opacity-0'}`}>
-                    <div className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[var(--color-accent)] animate-pulse shadow-[0_0_8px_var(--color-accent-glow)]"></div>
+            <div className="flex-shrink-0 border-b-2 border-t-2 border-[var(--border-color-strong)]/50 py-2">
+                <div className="flex flex-wrap gap-2">
+                   {tabs.map(tab => {
+                         const TabIcon = tab.icon;
+                         return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`side-panel-tab relative flex-shrink-0 p-2 rounded-lg ${activeTab === tab.id ? 'active' : ''}`}
+                                title={tab.title}
+                            >
+                                <TabIcon className="w-6 h-6" />
+                                 {tab.count !== undefined && tab.count > 0 && (
+                                    <span className="absolute -top-2 -right-2 text-xs bg-[var(--color-primary)] text-white rounded-full w-5 h-5 flex items-center justify-center border-2 border-[var(--color-bg-panel)]">{tab.count}</span>
+                                )}
+                            </button>
+                        )
+                    })}
                 </div>
             </div>
 

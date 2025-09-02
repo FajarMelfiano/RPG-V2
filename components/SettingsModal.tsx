@@ -11,9 +11,11 @@ interface SettingsModalProps {
 
 const THEMES: { id: WorldTheme; name: string; }[] = [
     { id: 'dark_fantasy', name: 'Fantasi Gelap' },
+    { id: 'high_fantasy', name: 'Fantasi Tinggi' },
     { id: 'cyberpunk', name: 'Cyberpunk' },
     { id: 'steampunk', name: 'Steampunk' },
-    { id: 'high_fantasy', name: 'Fantasi Tinggi' },
+    { id: 'lovecraftian_horror', name: 'Horor Lovecraftian' },
+    { id: 'solarpunk', name: 'Solarpunk' },
 ];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentTheme, onThemeChange }) => {
@@ -48,7 +50,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentT
                 
                 <div className="space-y-4">
                     <label className="block text-stone-300 font-bold mb-2">Tema Visual Dunia</label>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {THEMES.map(theme => (
                             <button
                                 key={theme.id}
