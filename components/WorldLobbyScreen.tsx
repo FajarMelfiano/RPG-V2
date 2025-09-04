@@ -13,7 +13,7 @@ interface WorldLobbyScreenProps {
 const WorldLobbyScreen: React.FC<WorldLobbyScreenProps> = ({ world, onNewCharacter, onContinueCharacter, onDeleteCharacter, onBack }) => {
   return (
     <div className="w-full h-full flex flex-col items-center justify-center p-4 animate-fadeIn">
-      <div className="w-full max-w-5xl mx-auto flex flex-col h-full md:h-auto md:max-h-[90vh]">
+      <div className="w-full max-w-5xl mx-auto flex flex-col h-full md:h-auto md:max-h-[90vh] overflow-y-auto md:overflow-hidden">
         <header className="text-center mb-6 flex-shrink-0">
           <button onClick={onBack} className="text-stone-400 hover:text-[var(--color-accent)] transition-colors text-sm mb-4">
             &larr; Kembali ke Daftar Dunia

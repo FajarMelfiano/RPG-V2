@@ -104,7 +104,8 @@ const MobileSheet: React.FC<MobileSheetProps> = (props) => {
         }
     };
 
-    const TABS: { id: ActiveTab; title: string; icon: React.FC<any>; count?: number, hasContent?: boolean }[] = [
+    // FIX: Explicitly type the initial array before filtering to prevent TypeScript from widening the 'id' property to 'string' instead of 'ActiveTab'.
+    const allTabs: { id: ActiveTab; title: string; icon: React.FC<any>; count?: number, hasContent?: boolean }[] = [
         { id: 'character', title: 'Karakter', icon: ShieldIcon, hasContent: true },
         { id: 'equipment', title: 'Perlengkapan', icon: HelmetIcon, hasContent: true },
         { id: 'inventory', title: 'Inventaris', icon: ChestIcon, hasContent: true },
@@ -119,7 +120,9 @@ const MobileSheet: React.FC<MobileSheetProps> = (props) => {
         { id: 'codex', title: 'Codex', icon: GlobeIcon, hasContent: true },
         { id: 'guidebook', title: 'Panduan', icon: QuestionMarkCircleIcon, hasContent: true },
         { id: 'settings', title: 'Pengaturan', icon: SettingsIcon, hasContent: true },
-    ].filter(tab => tab.hasContent);
+    ];
+    
+    const TABS = allTabs.filter(tab => tab.hasContent);
 
 
     const renderContent = () => {
